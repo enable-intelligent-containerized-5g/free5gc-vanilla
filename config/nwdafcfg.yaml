@@ -1,0 +1,15 @@
+info:
+  version: 1.0.1
+  description: NWDAF initial local configuration
+
+configuration:
+  nwdafName: NWDAF # the name of this NWDAF
+  sbi: # Service-based interface information
+    scheme: http # the protocol for sbi (http or https)
+    registerIPv4: nwdaf-nnwdaf # IP used to register to NRF
+    bindingIPv4: 0.0.0.0 # IP used to bind the service
+    port: 29531 # Port used to bind the service
+    tls: # the local path of TLS key
+      pem: config/TLS/nwdaf.pem # NWDAF TLS Certificate
+      key: config/TLS/nwdaf.key # NWDAF TLS Private key
+  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
