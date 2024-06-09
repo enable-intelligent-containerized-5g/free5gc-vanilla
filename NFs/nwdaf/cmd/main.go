@@ -26,7 +26,7 @@ func main() {
 	}()
 
 	app := cli.NewApp()
-	app.Name = "udr"
+	app.Name = "nwdaf"
 	app.Usage = "5G Unified Data Repository (NWDAF)"
 	app.Action = action
 	app.Flags = NWDAF.GetCliCmd()
