@@ -85,25 +85,25 @@ func (udr *NWDAF) Initialize(c *cli.Context) error {
 
 func (udr *NWDAF) SetLogLevel() {
 	if factory.NwdafConfig.Logger == nil {
-		logger.InitLog.Warnln("UDR config without log level setting!!!")
+		logger.InitLog.Warnln("NWDAF config without log level setting!!!")
 		return
 	}
 
-	if factory.NwdafConfig.Logger.UDR != nil {
-		if factory.NwdafConfig.Logger.UDR.DebugLevel != "" {
-			if level, err := logrus.ParseLevel(factory.NwdafConfig.Logger.UDR.DebugLevel); err != nil {
-				logger.InitLog.Warnf("UDR Log level [%s] is invalid, set to [info] level",
-					factory.NwdafConfig.Logger.UDR.DebugLevel)
+	if factory.NwdafConfig.Logger.NWDAF != nil {
+		if factory.NwdafConfig.Logger.NWDAF.DebugLevel != "" {
+			if level, err := logrus.ParseLevel(factory.NwdafConfig.Logger.NWDAF.DebugLevel); err != nil {
+				logger.InitLog.Warnf("NWDAF Log level [%s] is invalid, set to [info] level",
+					factory.NwdafConfig.Logger.NWDAF.DebugLevel)
 				logger.SetLogLevel(logrus.InfoLevel)
 			} else {
-				logger.InitLog.Infof("UDR Log level is set to [%s] level", level)
+				logger.InitLog.Infof("NWDAF Log level is set to [%s] level", level)
 				logger.SetLogLevel(level)
 			}
 		} else {
-			logger.InitLog.Infoln("UDR Log level not set. Default set to [info] level")
+			logger.InitLog.Infoln("NWDAF Log level not set. Default set to [info] level")
 			logger.SetLogLevel(logrus.InfoLevel)
 		}
-		logger.SetReportCaller(factory.NwdafConfig.Logger.UDR.ReportCaller)
+		logger.SetReportCaller(factory.NwdafConfig.Logger.NWDAF.ReportCaller)
 	}
 }
 
@@ -203,7 +203,7 @@ func (udr *NWDAF) Start() {
 }
 
 func (udr *NWDAF) Exec(c *cli.Context) error {
-	// UDR.Initialize(cfgPath, c)
+	// NWDAF.Initialize(cfgPath, c)
 
 	logger.InitLog.Traceln("args:", c.String("udrcfg"))
 	args := udr.FilterCli(c)
@@ -279,7 +279,7 @@ func (udr *NWDAF) Exec(c *cli.Context) error {
 }
 
 func (udr *NWDAF) Terminate() {
-	logger.InitLog.Infof("Terminating UDR...")
+	logger.InitLog.Infof("Terminating NWDAF...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()
 	if problemDetails != nil {
@@ -289,5 +289,5 @@ func (udr *NWDAF) Terminate() {
 	} else {
 		logger.InitLog.Infof("Deregister from NRF successfully")
 	}
-	logger.InitLog.Infof("UDR terminated")
+	logger.InitLog.Infof("NWDAF terminated")
 }
