@@ -1,5 +1,5 @@
 /*
- * Nudr_DataRepository API OpenAPI file
+ * Nnwdaf_DataRepository API OpenAPI file
  *
  * Unified Data Repository Service
  *
@@ -10,83 +10,83 @@
 package datarepository
 
 import (
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/udr/internal/logger"
-	"github.com/free5gc/udr/internal/sbi/producer"
-	"github.com/free5gc/util/httpwrapper"
+// "net/http"
+//
+// "github.com/gin-gonic/gin"
+//
+// "github.com/free5gc/nwdaf/internal/logger"
+// "github.com/free5gc/nwdaf/internal/sbi/producer"
+// "github.com/free5gc/openapi"
+// "github.com/free5gc/openapi/models"
+// "github.com/free5gc/util/httpwrapper"
 )
 
 // HTTPCreateEeSubscriptions - Create individual EE subscription
-func HTTPCreateEeSubscriptions(c *gin.Context) {
-	var eeSubscription models.EeSubscription
-
-	requestBody, err := c.GetRawData()
-	if err != nil {
-		problemDetail := models.ProblemDetails{
-			Title:  "System failure",
-			Status: http.StatusInternalServerError,
-			Detail: err.Error(),
-			Cause:  "SYSTEM_FAILURE",
-		}
-		logger.DataRepoLog.Errorf("Get Request Body error: %+v", err)
-		c.JSON(http.StatusInternalServerError, problemDetail)
-		return
-	}
-
-	err = openapi.Deserialize(&eeSubscription, requestBody, "application/json")
-	if err != nil {
-		problemDetail := "[Request Body] " + err.Error()
-		rsp := models.ProblemDetails{
-			Title:  "Malformed request syntax",
-			Status: http.StatusBadRequest,
-			Detail: problemDetail,
-		}
-		logger.DataRepoLog.Errorln(problemDetail)
-		c.JSON(http.StatusBadRequest, rsp)
-		return
-	}
-
-	req := httpwrapper.NewRequest(c.Request, eeSubscription)
-	req.Params["ueGroupId"] = c.Params.ByName("ueGroupId")
-
-	rsp := producer.HandleCreateEeSubscriptions(req)
-
-	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
-	if err != nil {
-		logger.DataRepoLog.Errorln(err)
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  "SYSTEM_FAILURE",
-			Detail: err.Error(),
-		}
-		c.JSON(http.StatusInternalServerError, problemDetails)
-	} else {
-		c.Data(rsp.Status, "application/json", responseBody)
-	}
-}
+// func HTTPCreateEeSubscriptions(c *gin.Context) {
+// 	var eeSubscription models.EeSubscription
+//
+// 	requestBody, err := c.GetRawData()
+// 	if err != nil {
+// 		problemDetail := models.ProblemDetails{
+// 			Title:  "System failure",
+// 			Status: http.StatusInternalServerError,
+// 			Detail: err.Error(),
+// 			Cause:  "SYSTEM_FAILURE",
+// 		}
+// 		logger.DataRepoLog.Errorf("Get Request Body error: %+v", err)
+// 		c.JSON(http.StatusInternalServerError, problemDetail)
+// 		return
+// 	}
+//
+// 	err = openapi.Deserialize(&eeSubscription, requestBody, "application/json")
+// 	if err != nil {
+// 		problemDetail := "[Request Body] " + err.Error()
+// 		rsp := models.ProblemDetails{
+// 			Title:  "Malformed request syntax",
+// 			Status: http.StatusBadRequest,
+// 			Detail: problemDetail,
+// 		}
+// 		logger.DataRepoLog.Errorln(problemDetail)
+// 		c.JSON(http.StatusBadRequest, rsp)
+// 		return
+// 	}
+//
+// 	req := httpwrapper.NewRequest(c.Request, eeSubscription)
+// 	req.Params["ueGroupId"] = c.Params.ByName("ueGroupId")
+//
+// 	rsp := producer.HandleCreateEeSubscriptions(req)
+//
+// 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
+// 	if err != nil {
+// 		logger.DataRepoLog.Errorln(err)
+// 		problemDetails := models.ProblemDetails{
+// 			Status: http.StatusInternalServerError,
+// 			Cause:  "SYSTEM_FAILURE",
+// 			Detail: err.Error(),
+// 		}
+// 		c.JSON(http.StatusInternalServerError, problemDetails)
+// 	} else {
+// 		c.Data(rsp.Status, "application/json", responseBody)
+// 	}
+// }
 
 // HTTPQueryeesubscriptions - Retrieves the ee subscriptions of a UE
-func HTTPQueryeesubscriptions(c *gin.Context) {
-	req := httpwrapper.NewRequest(c.Request, nil)
-	req.Params["ueGroupId"] = c.Params.ByName("ueGroupId")
-
-	rsp := producer.HandleQueryeesubscriptions(req)
-
-	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
-	if err != nil {
-		logger.DataRepoLog.Errorln(err)
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  "SYSTEM_FAILURE",
-			Detail: err.Error(),
-		}
-		c.JSON(http.StatusInternalServerError, problemDetails)
-	} else {
-		c.Data(rsp.Status, "application/json", responseBody)
-	}
-}
+// func HTTPQueryeesubscriptions(c *gin.Context) {
+// 	req := httpwrapper.NewRequest(c.Request, nil)
+// 	req.Params["ueGroupId"] = c.Params.ByName("ueGroupId")
+//
+// 	rsp := producer.HandleQueryeesubscriptions(req)
+//
+// 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
+// 	if err != nil {
+// 		logger.DataRepoLog.Errorln(err)
+// 		problemDetails := models.ProblemDetails{
+// 			Status: http.StatusInternalServerError,
+// 			Cause:  "SYSTEM_FAILURE",
+// 			Detail: err.Error(),
+// 		}
+// 		c.JSON(http.StatusInternalServerError, problemDetails)
+// 	} else {
+// 		c.Data(rsp.Status, "application/json", responseBody)
+// 	}
+// }

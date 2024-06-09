@@ -1,5 +1,5 @@
 /*
- * Nudr_DataRepository API OpenAPI file
+ * Nnwdaf_DataRepository API OpenAPI file
  *
  * Unified Data Repository Service
  *
@@ -14,14 +14,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/free5gc/nwdaf/internal/logger"
+	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/udr/internal/logger"
-	"github.com/free5gc/udr/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 )
 
-// HTTPCreateSmfContextNon3gpp - To create an individual SMF context data of a UE in the UDR
+// HTTPCreateSmfContextNon3gpp - To create an individual SMF context data of a UE in the nwdaf
 func HTTPCreateSmfContextNon3gpp(c *gin.Context) {
 	var smfRegistration models.SmfRegistration
 
@@ -70,7 +70,7 @@ func HTTPCreateSmfContextNon3gpp(c *gin.Context) {
 	}
 }
 
-// HTTPDeleteSmfContext - To remove an individual SMF context data of a UE the UDR
+// HTTPDeleteSmfContext - To remove an individual SMF context data of a UE the nwdaf
 func HTTPDeleteSmfContext(c *gin.Context) {
 	req := httpwrapper.NewRequest(c.Request, nil)
 	req.Params["ueId"] = c.Params.ByName("ueId")

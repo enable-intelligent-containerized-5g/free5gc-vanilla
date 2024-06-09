@@ -1,5 +1,5 @@
 /*
- * Nudr_DataRepository API OpenAPI file
+ * Nnwdaf_DataRepository API OpenAPI file
  *
  * Unified Data Repository Service
  *

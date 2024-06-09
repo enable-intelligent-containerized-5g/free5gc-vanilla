@@ -23,7 +23,7 @@ import (
 	logger_util "github.com/free5gc/util/logger"
 )
 
-type UDR struct {
+type NWDAF struct {
 	KeyLogPath string
 }
 
@@ -51,11 +51,11 @@ var cliCmd = []cli.Flag{
 	},
 }
 
-func (*UDR) GetCliCmd() (flags []cli.Flag) {
+func (*NWDAF) GetCliCmd() (flags []cli.Flag) {
 	return cliCmd
 }
 
-func (udr *UDR) Initialize(c *cli.Context) error {
+func (udr *NWDAF) Initialize(c *cli.Context) error {
 	commands = Commands{
 		config: c.String("config"),
 	}
@@ -83,7 +83,7 @@ func (udr *UDR) Initialize(c *cli.Context) error {
 	return nil
 }
 
-func (udr *UDR) SetLogLevel() {
+func (udr *NWDAF) SetLogLevel() {
 	if factory.NwdafConfig.Logger == nil {
 		logger.InitLog.Warnln("UDR config without log level setting!!!")
 		return
@@ -107,7 +107,7 @@ func (udr *UDR) SetLogLevel() {
 	}
 }
 
-func (udr *UDR) FilterCli(c *cli.Context) (args []string) {
+func (udr *NWDAF) FilterCli(c *cli.Context) (args []string) {
 	for _, flag := range udr.GetCliCmd() {
 		name := flag.GetName()
 		value := fmt.Sprint(c.Generic(name))
@@ -120,7 +120,7 @@ func (udr *UDR) FilterCli(c *cli.Context) (args []string) {
 	return args
 }
 
-func (udr *UDR) Start() {
+func (udr *NWDAF) Start() {
 	// get config file info
 	config := factory.NwdafConfig
 
@@ -202,7 +202,7 @@ func (udr *UDR) Start() {
 	}
 }
 
-func (udr *UDR) Exec(c *cli.Context) error {
+func (udr *NWDAF) Exec(c *cli.Context) error {
 	// UDR.Initialize(cfgPath, c)
 
 	logger.InitLog.Traceln("args:", c.String("udrcfg"))
@@ -278,7 +278,7 @@ func (udr *UDR) Exec(c *cli.Context) error {
 	return err
 }
 
-func (udr *UDR) Terminate() {
+func (udr *NWDAF) Terminate() {
 	logger.InitLog.Infof("Terminating UDR...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()

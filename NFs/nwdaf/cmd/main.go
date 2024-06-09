@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/urfave/cli"
 
 	"github.com/free5gc/nwdaf/internal/logger"
