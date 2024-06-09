@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.0"
+	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.1"
 )
 
 type Config struct {
@@ -62,8 +62,8 @@ const (
 )
 
 type Configuration struct {
-	Sbi     *Sbi     `yaml:"sbi" valid:"required"`
-	NrfUri  string   `yaml:"nrfUri" valid:"url,required"`
+	Sbi    *Sbi   `yaml:"sbi" valid:"required"`
+	NrfUri string `yaml:"nrfUri" valid:"url,required"`
 }
 
 func (c *Configuration) validate() (bool, error) {
