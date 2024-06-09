@@ -1,5 +1,5 @@
 /*
- * Nudr_DataRepository API OpenAPI file
+ * Nnwdaf_DataRepository API OpenAPI file
  *
  * Unified Data Repository Service
  *
@@ -15,7 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/free5gc/udr/internal/logger"
+	"github.com/free5gc/nwdaf/internal/logger"
 	logger_util "github.com/free5gc/util/logger"
 )
 
@@ -146,7 +146,7 @@ func expoMsgDispatchHandlerFunc(c *gin.Context) {
 }
 
 func AddService(engine *gin.Engine) *gin.RouterGroup {
-	group := engine.Group("/nudr-dr/v1")
+	group := engine.Group("/nnwdaf-dr/v1")
 
 	for _, route := range routes {
 		switch route.Method {
@@ -515,33 +515,33 @@ var routes = Routes{
 		HTTPQueryProvisionedData,
 	},
 
-	{
-		"HTTPRemovesdmSubscriptions",
-		strings.ToUpper("Delete"),
-		"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions/:subsId",
-		HTTPRemovesdmSubscriptions,
-	},
-
-	{
-		"HTTPUpdatesdmsubscriptions",
-		strings.ToUpper("Put"),
-		"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions/:subsId",
-		HTTPUpdatesdmsubscriptions,
-	},
-
-	{
-		"HTTPCreateSdmSubscriptions",
-		strings.ToUpper("Post"),
-		"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions",
-		HTTPCreateSdmSubscriptions,
-	},
-
-	{
-		"HTTPQuerysdmsubscriptions",
-		strings.ToUpper("Get"),
-		"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions",
-		HTTPQuerysdmsubscriptions,
-	},
+	// {
+	// 	"HTTPRemovesdmSubscriptions",
+	// 	strings.ToUpper("Delete"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions/:subsId",
+	// 	HTTPRemovesdmSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPUpdatesdmsubscriptions",
+	// 	strings.ToUpper("Put"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions/:subsId",
+	// 	HTTPUpdatesdmsubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPCreateSdmSubscriptions",
+	// 	strings.ToUpper("Post"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions",
+	// 	HTTPCreateSdmSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPQuerysdmsubscriptions",
+	// 	strings.ToUpper("Get"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/sdm-subscriptions",
+	// 	HTTPQuerysdmsubscriptions,
+	// },
 
 	{
 		"HTTPCreateSmfContextNon3gpp",
@@ -648,33 +648,33 @@ var routes = Routes{
 		HTTPQueryTraceData,
 	},
 
-	{
-		"HTTPCreateAMFSubscriptions",
-		strings.ToUpper("Put"),
-		"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
-		HTTPCreateAMFSubscriptions,
-	},
-
-	{
-		"HTTPModifyAmfSubscriptionInfo",
-		strings.ToUpper("Patch"),
-		"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
-		HTTPModifyAmfSubscriptionInfo,
-	},
-
-	{
-		"HTTPRemoveAmfSubscriptionsInfo",
-		strings.ToUpper("Delete"),
-		"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
-		HTTPRemoveAmfSubscriptionsInfo,
-	},
-
-	{
-		"HTTPGetAmfSubscriptionInfo",
-		strings.ToUpper("Get"),
-		"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
-		HTTPGetAmfSubscriptionInfo,
-	},
+	// {
+	// 	"HTTPCreateAMFSubscriptions",
+	// 	strings.ToUpper("Put"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
+	// 	HTTPCreateAMFSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPModifyAmfSubscriptionInfo",
+	// 	strings.ToUpper("Patch"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
+	// 	HTTPModifyAmfSubscriptionInfo,
+	// },
+	//
+	// {
+	// 	"HTTPRemoveAmfSubscriptionsInfo",
+	// 	strings.ToUpper("Delete"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
+	// 	HTTPRemoveAmfSubscriptionsInfo,
+	// },
+	//
+	// {
+	// 	"HTTPGetAmfSubscriptionInfo",
+	// 	strings.ToUpper("Get"),
+	// 	"/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId/amf-subscriptions",
+	// 	HTTPGetAmfSubscriptionInfo,
+	// },
 }
 
 var subRoutes = Routes{
@@ -728,88 +728,88 @@ var subRoutes = Routes{
 	},
 
 	// Sepcial case
-	{
-		"HTTPRemovesubscriptionDataSubscriptions",
-		strings.ToUpper("Delete"),
-		"/subscription-data/subs-to-notify/:subsId",
-		HTTPRemovesubscriptionDataSubscriptions,
-	},
+	// {
+	// 	"HTTPRemovesubscriptionDataSubscriptions",
+	// 	strings.ToUpper("Delete"),
+	// 	"/subscription-data/subs-to-notify/:subsId",
+	// 	HTTPRemovesubscriptionDataSubscriptions,
+	// },
 }
 
 var subShortRoutes = Routes{
-	{
-		"HTTPGetSharedData",
-		strings.ToUpper("Get"),
-		"/subscription-data/shared-data",
-		HTTPGetSharedData,
-	},
-
-	{
-		"HTTPPostSubscriptionDataSubscriptions",
-		strings.ToUpper("Post"),
-		"/subscription-data/subs-to-notify",
-		HTTPPostSubscriptionDataSubscriptions,
-	},
+	// {
+	// 	"HTTPGetSharedData",
+	// 	strings.ToUpper("Get"),
+	// 	"/subscription-data/shared-data",
+	// 	HTTPGetSharedData,
+	// },
+	//
+	// {
+	// 	"HTTPPostSubscriptionDataSubscriptions",
+	// 	strings.ToUpper("Post"),
+	// 	"/subscription-data/subs-to-notify",
+	// 	HTTPPostSubscriptionDataSubscriptions,
+	// },
 }
 
 var eeShortRoutes = Routes{
-	{
-		"HTTPCreateEeGroupSubscriptions",
-		strings.ToUpper("Post"),
-		"/subscription-data/group-data/:ueGroupId/ee-subscriptions",
-		HTTPCreateEeGroupSubscriptions,
-	},
-
-	{
-		"HTTPQueryEeGroupSubscriptions",
-		strings.ToUpper("Get"),
-		"/subscription-data/group-data/:ueGroupId/ee-subscriptions",
-		HTTPQueryEeGroupSubscriptions,
-	},
-
-	{
-		"HTTPCreateEeSubscriptions",
-		strings.ToUpper("Post"),
-		"/subscription-data/:ueId/context-data/ee-subscriptions",
-		HTTPCreateEeSubscriptions,
-	},
-
-	{
-		"HTTPQueryeesubscriptions",
-		strings.ToUpper("Get"),
-		"/subscription-data/:ueId/context-data/ee-subscriptions",
-		HTTPQueryeesubscriptions,
-	},
+	// {
+	// 	"HTTPCreateEeGroupSubscriptions",
+	// 	strings.ToUpper("Post"),
+	// 	"/subscription-data/group-data/:ueGroupId/ee-subscriptions",
+	// 	HTTPCreateEeGroupSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPQueryEeGroupSubscriptions",
+	// 	strings.ToUpper("Get"),
+	// 	"/subscription-data/group-data/:ueGroupId/ee-subscriptions",
+	// 	HTTPQueryEeGroupSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPCreateEeSubscriptions",
+	// 	strings.ToUpper("Post"),
+	// 	"/subscription-data/:ueId/context-data/ee-subscriptions",
+	// 	HTTPCreateEeSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPQueryeesubscriptions",
+	// 	strings.ToUpper("Get"),
+	// 	"/subscription-data/:ueId/context-data/ee-subscriptions",
+	// 	HTTPQueryeesubscriptions,
+	// },
 }
 
 var eeRoutes = Routes{
-	{
-		"HTTPRemoveeeSubscriptions",
-		strings.ToUpper("Delete"),
-		"/subscription-data/:ueId/context-data/ee-subscriptions/:subsId",
-		HTTPRemoveeeSubscriptions,
-	},
-
-	{
-		"HTTPUpdateEesubscriptions",
-		strings.ToUpper("Put"),
-		"/subscription-data/:ueId/context-data/ee-subscriptions/:subsId",
-		HTTPUpdateEesubscriptions,
-	},
-
-	{
-		"HTTPUpdateEeGroupSubscriptions",
-		strings.ToUpper("Put"),
-		"/subscription-data/group-data/:ueGroupId/ee-subscriptions/:subsId",
-		HTTPUpdateEeGroupSubscriptions,
-	},
-
-	{
-		"HTTPRemoveEeGroupSubscriptions",
-		strings.ToUpper("Delete"),
-		"/subscription-data/group-data/:ueGroupId/ee-subscriptions/:subsId",
-		HTTPRemoveEeGroupSubscriptions,
-	},
+	// {
+	// 	"HTTPRemoveeeSubscriptions",
+	// 	strings.ToUpper("Delete"),
+	// 	"/subscription-data/:ueId/context-data/ee-subscriptions/:subsId",
+	// 	HTTPRemoveeeSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPUpdateEesubscriptions",
+	// 	strings.ToUpper("Put"),
+	// 	"/subscription-data/:ueId/context-data/ee-subscriptions/:subsId",
+	// 	HTTPUpdateEesubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPUpdateEeGroupSubscriptions",
+	// 	strings.ToUpper("Put"),
+	// 	"/subscription-data/group-data/:ueGroupId/ee-subscriptions/:subsId",
+	// 	HTTPUpdateEeGroupSubscriptions,
+	// },
+	//
+	// {
+	// 	"HTTPRemoveEeGroupSubscriptions",
+	// 	strings.ToUpper("Delete"),
+	// 	"/subscription-data/group-data/:ueGroupId/ee-subscriptions/:subsId",
+	// 	HTTPRemoveEeGroupSubscriptions,
+	// },
 }
 
 var expoRoutes = Routes{
@@ -885,12 +885,12 @@ var appInfluDataRoutes = Routes{
 		HTTPApplicationDataInfluenceDataSubsToNotifyGet,
 	},
 
-	{
-		"HTTPApplicationDataInfluenceDataSubsToNotifyPost",
-		strings.ToUpper("Post"),
-		"/application-data/influenceData/subs-to-notify",
-		HTTPApplicationDataInfluenceDataSubsToNotifyPost,
-	},
+	// {
+	// 	"HTTPApplicationDataInfluenceDataSubsToNotifyPost",
+	// 	strings.ToUpper("Post"),
+	// 	"/application-data/influenceData/subs-to-notify",
+	// 	HTTPApplicationDataInfluenceDataSubsToNotifyPost,
+	// },
 
 	{
 		"HTTPApplicationDataInfluenceDataInfluenceIdDelete",
@@ -920,10 +920,10 @@ var appInfluDataRoutes = Routes{
 		HTTPApplicationDataInfluenceDataSubsToNotifyGet,
 	},
 
-	{
-		"HTTPApplicationDataInfluenceDataSubsToNotifyPost",
-		strings.ToUpper("Post"),
-		"/application-data/influenceData/:influenceId",
-		HTTPApplicationDataInfluenceDataSubsToNotifyPost,
-	},
+	// {
+	// 	"HTTPApplicationDataInfluenceDataSubsToNotifyPost",
+	// 	strings.ToUpper("Post"),
+	// 	"/application-data/influenceData/:influenceId",
+	// 	HTTPApplicationDataInfluenceDataSubsToNotifyPost,
+	// },
 }

@@ -1,5 +1,5 @@
 /*
- * Nudr_DataRepository API OpenAPI file
+ * Nnwdaf_DataRepository API OpenAPI file
  *
  * Unified Data Repository Service
  *
@@ -14,10 +14,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/free5gc/nwdaf/internal/logger"
+	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/openapi"
 	"github.com/free5gc/openapi/models"
-	"github.com/free5gc/udr/internal/logger"
-	"github.com/free5gc/udr/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 )
 
