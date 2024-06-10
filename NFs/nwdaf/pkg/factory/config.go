@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.1"
+	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.0"
 )
 
 type Config struct {
