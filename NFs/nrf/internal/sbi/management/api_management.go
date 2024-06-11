@@ -43,6 +43,7 @@ func GetNrfInfo() *models.NrfInfo {
 	nrfinfo.ServedPcfInfo = getPcfInfo()
 	nrfinfo.ServedBsfInfo = getBsfInfo()
 	nrfinfo.ServedChfInfo = getChfInfo()
+	nrfinfo.ServedNwdafInfo = getNwdafInfo()
 
 	return &nrfinfo
 }
@@ -290,6 +291,34 @@ func getChfInfo() map[string]models.ChfInfo {
 		servedChfInfo[index] = *CHFProfile.ChfInfo
 	}
 	return servedChfInfo
+}
+
+func getNwdafInfo() map[string]models.NwdafInfo {
+	servedNwdafInfo := make(map[string]models.NwdafInfo)
+	var NWDAFProfile models.NfProfile
+
+	collName := "NfProfile"
+	filter := bson.M{"nfType": "NWDAF"}
+
+	NWDAF, err := mongoapi.RestfulAPIGetMany(collName, filter)
+	if err != nil {
+		logger.ManagementLog.Errorf("getNwdafInfo err: %+v", err)
+	}
+
+	var NWDAFStruct []models.NfProfile
+	if err := timedecode.Decode(NWDAF, &NWDAFStruct); err != nil {
+		logger.ManagementLog.Errorf("getNwdafInfo err: %+v", err)
+	}
+
+	for i := 0; i < len(NWDAFStruct); i++ {
+		err := mapstructure.Decode(NWDAFStruct[i], &NWDAFProfile)
+		if err != nil {
+			panic(err)
+		}
+		index := strconv.Itoa(i)
+		servedNwdafInfo[index] = *NWDAFProfile.NwdafInfo
+	}
+	return servedNwdafInfo
 }
 
 // DecodeNfProfile - Only support []map[string]interface to []models.NfProfile
