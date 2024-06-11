@@ -3,7 +3,7 @@ package producer
 import (
 	"net/http"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	smf_context "github.com/free5gc/smf/internal/context"
 	"github.com/free5gc/smf/internal/logger"
 	"github.com/free5gc/util/httpwrapper"

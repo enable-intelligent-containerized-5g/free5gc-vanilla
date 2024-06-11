@@ -15,9 +15,9 @@ import (
 
 	nssf_context "github.com/free5gc/nssf/internal/context"
 	"github.com/free5gc/nssf/internal/logger"
-	"github.com/enable-intelligent-and-containerized-5g/openapi"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFManagement"
+	"github.com/free5gc/openapi/models"
 )
 
 func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile, err error) {

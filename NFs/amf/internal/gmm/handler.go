@@ -28,9 +28,9 @@ import (
 	"github.com/free5gc/nas/security"
 	"github.com/free5gc/ngap/ngapConvert"
 	"github.com/free5gc/ngap/ngapType"
-	"github.com/enable-intelligent-and-containerized-5g/openapi"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFDiscovery"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/fsm"
 )
 
@@ -1482,7 +1482,7 @@ func HandleConfigurationUpdateComplete(ue *context.AmfUe,
 
 	// TODO: Stop timer T3555 in TS 24.501 Figure 5.4.4.1.1 in handler
 	// TODO: Send acknowledgment by Nudm_SMD_Info_Service to UDM in handler
-	//		import "github.com/enable-intelligent-and-containerized-5g/openapi/Nudm_SubscriberDataManagement" client.Info
+	//		import "github.com/free5gc/openapi/Nudm_SubscriberDataManagement" client.Info
 
 	return nil
 }

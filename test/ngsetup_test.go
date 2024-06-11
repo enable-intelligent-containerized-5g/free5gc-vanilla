@@ -24,7 +24,7 @@ import (
 	nrf_service "github.com/free5gc/nrf/pkg/service"
 	nssf_factory "github.com/free5gc/nssf/pkg/factory"
 	nssf_service "github.com/free5gc/nssf/pkg/service"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	pcf_factory "github.com/free5gc/pcf/pkg/factory"
 	pcf_service "github.com/free5gc/pcf/pkg/service"
 	smf_factory "github.com/free5gc/smf/pkg/factory"

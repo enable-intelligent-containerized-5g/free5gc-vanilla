@@ -10,9 +10,9 @@ import (
 	amf_context "github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/internal/util"
-	"github.com/enable-intelligent-and-containerized-5g/openapi"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFManagement"
+	"github.com/free5gc/openapi/models"
 )
 
 func BuildNFInstance(context *amf_context.AMFContext) (profile models.NfProfile, err error) {

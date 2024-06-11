@@ -32,7 +32,7 @@ import (
 	aperLogger "github.com/free5gc/aper/logger"
 	nasLogger "github.com/free5gc/nas/logger"
 	ngapLogger "github.com/free5gc/ngap/logger"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	fsmLogger "github.com/free5gc/util/fsm/logger"
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"

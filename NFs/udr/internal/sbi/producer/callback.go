@@ -1,7 +1,7 @@
 package producer
 
 import (
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/udr/internal/sbi/producer/callback"
 )
 

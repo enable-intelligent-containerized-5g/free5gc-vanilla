@@ -13,7 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	udr_context "github.com/free5gc/udr/internal/context"
 	"github.com/free5gc/udr/internal/logger"
 	"github.com/free5gc/udr/internal/util"

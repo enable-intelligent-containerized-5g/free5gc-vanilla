@@ -8,10 +8,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFDiscovery"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudm_SubscriberDataManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
+	"github.com/free5gc/openapi/Nnrf_NFManagement"
+	"github.com/free5gc/openapi/Nudm_SubscriberDataManagement"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/pfcp/pfcpType"
 	"github.com/free5gc/pfcp/pfcpUdp"
 	"github.com/free5gc/smf/internal/logger"

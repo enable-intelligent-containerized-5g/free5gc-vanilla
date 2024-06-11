@@ -6,8 +6,8 @@ import (
 
 	amf_context "github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Namf_Communication"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/Namf_Communication"
+	"github.com/free5gc/openapi/models"
 )
 
 func SendAmfStatusChangeNotify(amfStatus string, guamiList []models.Guami) {

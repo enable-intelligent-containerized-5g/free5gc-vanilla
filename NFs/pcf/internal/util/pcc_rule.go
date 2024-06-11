@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 var MediaTypeTo5qiMap = map[models.MediaType]int32{

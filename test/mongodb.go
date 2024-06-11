@@ -6,7 +6,7 @@ import (
 	"github.com/calee0219/fatal"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/mongoapi"
 )
 

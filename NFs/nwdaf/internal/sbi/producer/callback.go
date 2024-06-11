@@ -2,7 +2,7 @@ package producer
 
 import (
 	// "github.com/free5gc/nwdaf/internal/sbi/producer/callback"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 func PreHandleOnDataChangeNotify(ueId string, resourceId string, patchItems []models.PatchItem,

@@ -10,9 +10,9 @@ import (
 	nwdaf_context "github.com/free5gc/nwdaf/internal/context"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/pkg/factory"
-	"github.com/enable-intelligent-and-containerized-5g/openapi"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFManagement"
+	"github.com/free5gc/openapi/models"
 )
 
 func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
