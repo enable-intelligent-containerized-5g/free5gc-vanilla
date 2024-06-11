@@ -23,14 +23,14 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 		NfType:        models.NfType_NWDAF,
 		NfStatus:      models.NfStatus_REGISTERED,
 		Ipv4Addresses: []string{context.RegisterIPv4},
-		NwdafInfo: &models.NwdafInfo{
-			SupportedDataSets: []models.DataSetId{
-				// models.DataSetId_APPLICATION,
-				// models.DataSetId_EXPOSURE,
-				// models.DataSetId_POLICY,
-				models.DataSetId_SUBSCRIPTION,
-			},
-		},
+		// NwdafInfo: &models.NwdafInfo{
+		// 	SupportedDataSets: []models.DataSetId{
+		// 		// models.DataSetId_APPLICATION,
+		// 		// models.DataSetId_EXPOSURE,
+		// 		// models.DataSetId_POLICY,
+		// 		models.DataSetId_SUBSCRIPTION,
+		// 	}
+		// },
 	}
 
 	version := config.Info.Version
