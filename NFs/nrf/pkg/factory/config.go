@@ -12,8 +12,8 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	"github.com/free5gc/nrf/internal/logger"
 	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/nrf/internal/logger"
 	logger_util "github.com/free5gc/util/logger"
 )
 

@@ -9,8 +9,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/free5gc/nrf/internal/logger"
 	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/nrf/internal/logger"
 	timedecode "github.com/free5gc/util/mapstruct"
 	"github.com/free5gc/util/mongoapi"
 )

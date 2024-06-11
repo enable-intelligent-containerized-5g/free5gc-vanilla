@@ -11,10 +11,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"go.mongodb.org/mongo-driver/bson"
 
-	nrf_context "github.com/free5gc/nrf/internal/context"
-	"github.com/free5gc/nrf/internal/logger"
 	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFManagement"
 	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	nrf_context "github.com/free5gc/nrf/internal/context"
+	"github.com/free5gc/nrf/internal/logger"
 	"github.com/free5gc/util/httpwrapper"
 	timedecode "github.com/free5gc/util/mapstruct"
 	"github.com/free5gc/util/mongoapi"
