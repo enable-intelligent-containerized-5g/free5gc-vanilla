@@ -10,7 +10,7 @@ require (
 	github.com/free5gc/aper v1.0.4
 	github.com/free5gc/nas v1.0.7
 	github.com/free5gc/ngap v1.0.6
-	github.com/enable-intelligent-and-containerized-5g/openapi v1.0.5
+	github.com/enable-intelligent-and-containerized-5g/openapi v1.0.4
 	github.com/free5gc/util v1.0.3
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.3
