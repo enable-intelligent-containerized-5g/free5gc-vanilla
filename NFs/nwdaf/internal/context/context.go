@@ -26,7 +26,7 @@ type NWDAFContext struct {
 // Reset NWDAF Context
 func (context *NWDAFContext) Reset() {
 	context.UriScheme = models.UriScheme_HTTPS
-	context.Name = "udr"
+	context.Name = "nwdaf"
 }
 
 func (context *NWDAFContext) GetIPv4Uri() string {
