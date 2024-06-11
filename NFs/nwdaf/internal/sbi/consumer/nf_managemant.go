@@ -20,10 +20,10 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 
 	profile := models.NfProfile{
 		NfInstanceId:  context.NfId,
-		NfType:        models.NfType_UDR,
+		NfType:        models.NfType_NWDAF,
 		NfStatus:      models.NfStatus_REGISTERED,
 		Ipv4Addresses: []string{context.RegisterIPv4},
-		UdrInfo: &models.UdrInfo{
+		NwdafInfo: &models.NwdafInfo{
 			SupportedDataSets: []models.DataSetId{
 				// models.DataSetId_APPLICATION,
 				// models.DataSetId_EXPOSURE,
@@ -40,7 +40,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 	profile.NfServices = &[]models.NfService{
 		{
 			ServiceInstanceId: "datarepository",
-			ServiceName:       models.ServiceName_NUDR_DR,
+			ServiceName:       models.ServiceName_NNWDAF_ANALYTICSINFO,
 			Versions: &[]models.NfServiceVersion{
 				{
 					ApiFullVersion:  version,
@@ -60,7 +60,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 		},
 	}
 
-	// TODO: finish the Udr Info
+	// TODO: finish the Nwdaf Info
 	return profile
 }
 
@@ -76,7 +76,7 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 		_, res, err := client.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
 		if err != nil || res == nil {
 			// TODO : add log
-			fmt.Println(fmt.Errorf("UDR register to NRF Error[%s]", err.Error()))
+			fmt.Println(fmt.Errorf("NWDAF register to NRF Error[%s]", err.Error()))
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -106,15 +106,15 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 func SendDeregisterNFInstance() (problemDetails *models.ProblemDetails, err error) {
 	logger.ConsumerLog.Infof("Send Deregister NFInstance")
 
-	udrSelf := nwdaf_context.NWDAF_Self()
+	nwdafSelf := nwdaf_context.NWDAF_Self()
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
-	configuration.SetBasePath(udrSelf.NrfUri)
+	configuration.SetBasePath(nwdafSelf.NrfUri)
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
 
 	var res *http.Response
 
-	res, err = client.NFInstanceIDDocumentApi.DeregisterNFInstance(context.Background(), udrSelf.NfId)
+	res, err = client.NFInstanceIDDocumentApi.DeregisterNFInstance(context.Background(), nwdafSelf.NfId)
 	if err == nil {
 		return
 	} else if res != nil {
