@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 )
 
 // SearchNFServiceUri returns NF Uri derived from NfProfile with corresponding service

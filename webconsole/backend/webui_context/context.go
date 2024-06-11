@@ -3,7 +3,7 @@ package webui_context
 import (
 	"fmt"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	timedecode "github.com/free5gc/util/mapstruct"
 	"github.com/free5gc/util/mongoapi"
 	"github.com/free5gc/webconsole/backend/logger"

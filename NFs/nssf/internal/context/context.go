@@ -17,7 +17,7 @@ import (
 
 	"github.com/free5gc/nssf/internal/logger"
 	"github.com/free5gc/nssf/pkg/factory"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 )
 
 var nssfContext = NSSFContext{}

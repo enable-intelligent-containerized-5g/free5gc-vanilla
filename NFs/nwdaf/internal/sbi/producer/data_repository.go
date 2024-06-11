@@ -13,7 +13,7 @@ import (
 
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/util"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/free5gc/util/mongoapi"
 )

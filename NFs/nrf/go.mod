@@ -1,6 +1,6 @@
 module github.com/free5gc/nrf
 
-go 1.22.4
+go 1.13
 
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1

@@ -12,9 +12,9 @@ import (
 	amf_context "github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/nas/nasType"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nausf_UEAuthentication"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nausf_UEAuthentication"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 )
 
 func SendUEAuthenticationAuthenticateRequest(ue *amf_context.AmfUe,

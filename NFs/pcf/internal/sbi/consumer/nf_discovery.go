@@ -7,8 +7,8 @@ import (
 
 	"github.com/antihax/optional"
 
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFDiscovery"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	"github.com/free5gc/pcf/internal/logger"
 	"github.com/free5gc/pcf/internal/util"
 )
