@@ -3,7 +3,7 @@ package context
 import (
 	"github.com/free5gc/nas/nasConvert"
 	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	"github.com/free5gc/smf/internal/logger"
 )
 

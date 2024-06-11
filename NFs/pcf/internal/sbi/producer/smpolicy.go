@@ -10,9 +10,9 @@ import (
 	"github.com/antihax/optional"
 	"go.mongodb.org/mongo-driver/bson"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudr_DataRepository"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	pcf_context "github.com/free5gc/pcf/internal/context"
 	"github.com/free5gc/pcf/internal/logger"
 	"github.com/free5gc/pcf/internal/util"

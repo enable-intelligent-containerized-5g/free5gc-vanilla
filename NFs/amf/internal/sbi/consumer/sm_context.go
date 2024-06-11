@@ -12,10 +12,10 @@ import (
 	amf_context "github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/util"
 	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/Nsmf_PDUSession"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFDiscovery"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nsmf_PDUSession"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 )
 
 func SelectSmf(

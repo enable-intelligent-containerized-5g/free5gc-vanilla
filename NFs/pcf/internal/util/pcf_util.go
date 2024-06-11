@@ -8,12 +8,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/free5gc/openapi/Namf_Communication"
-	"github.com/free5gc/openapi/Npcf_AMPolicy"
-	"github.com/free5gc/openapi/Npcf_PolicyAuthorization"
-	"github.com/free5gc/openapi/Npcf_SMPolicyControl"
-	"github.com/free5gc/openapi/Nudr_DataRepository"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Namf_Communication"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Npcf_AMPolicy"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Npcf_PolicyAuthorization"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Npcf_SMPolicyControl"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudr_DataRepository"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 	"github.com/free5gc/pcf/internal/context"
 	"github.com/free5gc/pcf/internal/logger"
 )
