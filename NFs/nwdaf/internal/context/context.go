@@ -3,7 +3,7 @@ package context
 import (
 	"fmt"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
 )
 
 var nwdafContext = NWDAFContext{}
@@ -26,7 +26,7 @@ type NWDAFContext struct {
 // Reset NWDAF Context
 func (context *NWDAFContext) Reset() {
 	context.UriScheme = models.UriScheme_HTTPS
-	context.Name = "udr"
+	context.Name = "nwdaf"
 }
 
 func (context *NWDAFContext) GetIPv4Uri() string {
