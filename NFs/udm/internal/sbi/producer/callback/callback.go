@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudm_SubscriberDataManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudm_UEContextManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/Nudm_SubscriberDataManagement"
+	"github.com/free5gc/openapi/Nudm_UEContextManagement"
+	"github.com/free5gc/openapi/models"
 	udm_context "github.com/free5gc/udm/internal/context"
 	"github.com/free5gc/udm/internal/logger"
 )

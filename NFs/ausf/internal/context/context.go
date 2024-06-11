@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/free5gc/ausf/internal/logger"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 type AUSFContext struct {

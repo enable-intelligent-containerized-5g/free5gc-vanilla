@@ -10,10 +10,10 @@ import (
 	"github.com/antihax/optional"
 	"github.com/mohae/deepcopy"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nnrf_NFDiscovery"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudm_SubscriberDataManagement"
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi"
+	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
+	"github.com/free5gc/openapi/Nudm_SubscriberDataManagement"
+	"github.com/free5gc/openapi/models"
 	smf_context "github.com/free5gc/smf/internal/context"
 	"github.com/free5gc/smf/internal/logger"
 )

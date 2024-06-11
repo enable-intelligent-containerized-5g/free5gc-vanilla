@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/evanphx/json-patch v0.5.2
-	github.com/enable-intelligent-and-containerized-5g/openapi v1.0.4
+	github.com/free5gc/openapi v1.0.4
 	github.com/free5gc/util v1.0.3
 	github.com/gin-gonic/gin v1.7.3
 	github.com/google/uuid v1.3.0

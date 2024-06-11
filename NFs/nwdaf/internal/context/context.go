@@ -3,7 +3,7 @@ package context
 import (
 	"fmt"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 var nwdafContext = NWDAFContext{}

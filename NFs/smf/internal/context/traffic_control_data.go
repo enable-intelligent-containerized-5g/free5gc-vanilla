@@ -1,7 +1,7 @@
 package context
 
 import (
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/free5gc/openapi/models"
 )
 
 // TrafficControlData - Traffic control data defines how traffic data flows

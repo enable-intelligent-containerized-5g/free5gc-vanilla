@@ -6,8 +6,8 @@ package callback
 
 // 	udr_context "github.com/free5gc/nwdaf/internal/context"
 // 	"github.com/free5gc/nwdaf/internal/logger"
-// 	"github.com/enable-intelligent-and-containerized-5g/openapi/Nudr_DataRepository"
-// 	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+// 	"github.com/free5gc/openapi/Nudr_DataRepository"
+// 	"github.com/free5gc/openapi/models"
 // )
 
 // func SendOnDataChangeNotify(ueId string, notifyItems []models.NotifyItem) {
