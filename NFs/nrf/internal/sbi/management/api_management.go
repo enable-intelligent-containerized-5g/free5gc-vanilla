@@ -53,7 +53,7 @@ func getUdrInfo() map[string]models.UdrInfo {
 	var UDRProfile models.NfProfile
 
 	collName := "NfProfile"
-	filter := bson.M{"nfType": "UDR"}
+	filter := bson.M{"nfType": "UDR2"}
 
 	UDR, err := mongoapi.RestfulAPIGetMany(collName, filter)
 	if err != nil {
