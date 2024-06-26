@@ -1,0 +1,23 @@
+info:
+  version: 1.0.0
+  description: NWDAF initial local configuration
+
+configuration:
+  nwdafName: NWDAF # the name of this NWDAF
+  sbi: # Service-based interface information
+    scheme: http # the protocol for sbi (http or https)
+    registerIPv4: nwdaf-nnwdaf # IP used to register to NRF
+    bindingIPv4: 0.0.0.0 # IP used to bind the service
+    port: 8000 # Port used to bind the service
+    tls: # the local path of TLS key
+      pem: config/TLS/nwdaf.pem # NWDAF TLS Certificate
+      key: config/TLS/nwdaf.key # NWDAF TLS Private key
+  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
+
+# the kind of log output
+# debugLevel: how detailed to output, value: trace, debug, info, warn, error, fatal, panic
+# ReportCaller: enable the caller report or not, value: true or false
+logger:
+  NWDAF:
+    debugLevel: info
+    ReportCaller: false
