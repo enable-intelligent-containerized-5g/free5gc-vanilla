@@ -26,7 +26,7 @@ setup(
     author_email="",
     url="",
     keywords=["OpenAPI", "Nnwdaf_MLModelProvision"],
-    install_requires=REQUIRES,
+    install_requires=[REQUIRES],
     packages=find_packages(),
     package_data={'': ['openapi/openapi.yaml']},
     include_package_data=True,
