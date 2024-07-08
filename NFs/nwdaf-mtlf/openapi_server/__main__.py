@@ -13,7 +13,8 @@ def main():
     app.app.json_encoder = encoder.JSONEncoder
     app.add_api("openapi.yaml", arguments={"title": "Nnwdaf_MLModelProvision"}, pythonic_params=True)
 
-    cmd = "/usr/local/go/bin/go run cmd/main.go --nwdafcfg config/nwdafcfg-mtlf.yaml"
+    # cmd = "/usr/local/go/bin/go run cmd/main.go --nwdafcfg config/nwdafcfg-mtlf.yaml"
+    cmd = "../../../nwdaf-mtlf --nwdafcfg ../../../config/nwdafcfg-mtlf.yaml"
     subprocess.run([cmd], shell=True)
     app.run(port=8081)
 
