@@ -18,7 +18,7 @@ def main():
 #    app.add_api("openapi.yaml", arguments={"title": "Nnwdaf_MLModelProvision"}, pythonic_params=True)
 
     # cmd = "/usr/local/go/bin/go run cmd/main.go --nwdafcfg config/nwdafcfg-anlf.yaml"
-    cmd = "../../bin/nwdaf-anlf --nwdafcfg ../../config/nwdafcfg-anlf.yaml"
+    cmd = "../nwdaf-anlf --nwdafcfg ../config/nwdafcfg-anlf.yaml"
     subprocess.run([cmd], shell=True)
     app.run(port=8080)
 
