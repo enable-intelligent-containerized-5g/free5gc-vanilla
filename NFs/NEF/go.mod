@@ -1,18 +1,18 @@
-module nwdaf.com
+module nef.com
 
 go 1.14
 
-replace nwdaf.com/logger => ../logger
+replace nef.com/logger => ../logger
 
-replace nwdaf.com/service => ../service
+replace nef.com/service => ../service
 
-replace nwdaf.com/factory => ../factory
+replace nef.com/factory => ../factory
 
-replace nwdaf.com/util => ../util
+replace nef.com/util => ../util
 
-replace nwdaf.com/consumer => ../consumer
+replace nef.com/consumer => ../consumer
 
-replace nwdaf.com/context => ../context
+replace nef.com/context => ../context
 
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.0
@@ -24,6 +24,7 @@ require (
 	github.com/free5gc/version v1.0.0
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/uuid v1.3.0
+	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.7.0
