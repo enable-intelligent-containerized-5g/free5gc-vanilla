@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nrf/internal/logger"
 	"github.com/free5gc/nrf/pkg/factory"
 )

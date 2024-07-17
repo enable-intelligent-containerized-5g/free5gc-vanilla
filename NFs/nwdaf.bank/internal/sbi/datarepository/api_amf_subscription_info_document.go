@@ -16,8 +16,8 @@ import (
 //
 // "github.com/free5gc/nwdaf/internal/logger"
 // "github.com/free5gc/nwdaf/internal/sbi/producer"
-// "github.com/enable-intelligent-and-containerized-5g/openapi"
-// "github.com/enable-intelligent-and-containerized-5g/openapi/models"
+// "github.com/enable-intelligent-containerized-5g/openapi"
+// "github.com/enable-intelligent-containerized-5g/openapi/models"
 // "github.com/free5gc/util/httpwrapper"
 )
 
