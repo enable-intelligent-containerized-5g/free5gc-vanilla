@@ -5,7 +5,7 @@
 package context
 
 import (
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 type UriList struct {

@@ -12,7 +12,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	"github.com/enable-intelligent-and-containerized-5g/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nrf/internal/logger"
 	logger_util "github.com/free5gc/util/logger"
 )
