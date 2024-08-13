@@ -3,21 +3,22 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  bin = "./tmp/main"
-  cmd = "go build -o ./tmp/main ./cmd"
+  bin = "./tmp/main --config ./config/smfcfg.yaml"
+  cmd = "go build -o ./tmp/main ./cmd/main.go"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
   follow_symlink = false
-  full_bin = ""
+  full_bin = "./tmp/main --config ./config/smfcfg.yaml"
   include_dir = []
   include_ext = ["go", "tpl", "tmpl", "html"]
   kill_delay = "0s"
   log = "build-errors.log"
   send_interrupt = false
-  stop_on_error = true
+  stop_on_error = false
+  build_vcs = false
 
 [color]
   app = ""
