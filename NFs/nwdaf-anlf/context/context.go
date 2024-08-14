@@ -63,7 +63,7 @@ func InitNwdafContext(config *factory.Config) {
 		return
 	}
 
-	logger.CtxLog.Infof("nwdafconfig Info: Versionnnn[%s] Description[%s]", config.Info.Version, config.Info.Description)
+	logger.CtxLog.Infof("nwdafconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
 	if configuration.NwdafName != "" {
 		nwdafContext.Name = configuration.NwdafName

@@ -18,7 +18,7 @@ var (
 
 func InitNrfContext() {
 	config := factory.NrfConfig
-	logger.InitLog.Infof("nrfconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
+	logger.InitLog.Infof("nrfconfig Info: Version [%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
 
 	NrfNfProfile.NfInstanceId = uuid.New().String()
