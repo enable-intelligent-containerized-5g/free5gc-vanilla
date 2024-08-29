@@ -35,7 +35,7 @@ release/src
 webconsole/bin
 webconsole/public
 
-tmp/
+tmp/*
 
 packages/
 free5gc.zip
