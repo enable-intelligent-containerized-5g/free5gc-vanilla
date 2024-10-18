@@ -3,13 +3,16 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
-  nwdafName: NWDAF # the name of this AMF
+  nwdafName: NWDAF-MTLF # the name of this AMF
   
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
     registerIPv4: 127.0.0.15 # IP used to register to NRF
     bindingIPv4: 127.0.0.15  # IP used to bind the service
     port: 8000 # port used to bind the service
+
+  serviceNameList: # the SBI services provided by this AMF, refer to TS 29.518
+    - subscriptions # MTLF Subscriptions service
 
   nrfUri: http://127.0.0.10:8000 # a valid URI of NRF
  

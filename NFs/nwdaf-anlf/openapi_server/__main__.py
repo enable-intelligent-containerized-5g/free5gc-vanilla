@@ -22,7 +22,7 @@ def main():
     cmd = "./tmp/main --nwdafcfg ./config/nwdafcfg-anlf.yaml" # Dev
 
     subprocess.run([cmd], shell=True)
-    app.run(port=8080)
+    app.run(port=8000)
 
 
 if __name__ == "__main__":

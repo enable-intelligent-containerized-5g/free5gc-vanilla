@@ -3,7 +3,7 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
-  nwdafName: NWDAF # the name of this AMF
+  nwdafName: NWDAF-ANLF # the name of this AMF
   
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)

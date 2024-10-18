@@ -16,9 +16,9 @@ def analytic_result() :
 
 
     else: 
-        root_nwdaf_server = f"http://192.168.221.130:8081/nnwdaf-mlmodelprovision/v1/subscriptions/sbd"
+        root_nwdaf_server = f"http://mtlf-nmtlf:8000/nnwdaf-mlmodelprovision/v1/subscriptions/sbd"
         req_body = {
-            "notifUri": "http://192.168.221.130:8081/nnwdaf-mlmodelprovision/v1/subscriptions/sbd",
+            "notifUri": "http://mtlf-nmtlf:8000/nnwdaf-mlmodelprovision/v1/subscriptions/sbd",
             "mLEventSubscs": [
                 {
                     "mLEvent": "ML_model_provision_request_drop",       

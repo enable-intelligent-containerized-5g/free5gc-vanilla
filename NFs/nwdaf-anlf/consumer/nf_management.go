@@ -28,7 +28,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 	services := []models.NfService{
 		{
 			ServiceInstanceId: "NWDAF",
-			ServiceName:       "nnwdaf",
+			ServiceName:       "nnwdaf-anlf",
 			Versions: &[]models.NfServiceVersion{
 				{
 					ApiFullVersion:  version,
