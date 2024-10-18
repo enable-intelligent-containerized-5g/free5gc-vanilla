@@ -25,6 +25,8 @@ config/test/smfcfg.test.yaml
 
 # build
 bin/
+dist/
+build/
 
 # release
 release/src
@@ -33,5 +35,8 @@ release/src
 webconsole/bin
 webconsole/public
 
+tmp/*
+
 packages/
 free5gc.zip
+__pycache__/

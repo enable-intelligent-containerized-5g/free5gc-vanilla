@@ -17,10 +17,12 @@ def main():
 #    app.app.json_encoder = encoder.JSONEncoder
 #    app.add_api("openapi.yaml", arguments={"title": "Nnwdaf_MLModelProvision"}, pythonic_params=True)
 
-    # cmd = "/usr/local/go/bin/go run cmd/main.go --nwdafcfg config/nwdafcfg-anlf.yaml"
-    cmd = "../nwdaf-anlf --nwdafcfg ../config/nwdafcfg-anlf.yaml"
+    # cmd = "/usr/local/go/bin/go run cmd/main.go --nwdafcfg config/nwdafcfg-anlf.yaml" # Example
+    # cmd = "../nwdaf-anlf --nwdafcfg ../config/nwdafcfg-anlf.yaml" # Prod
+    cmd = "./tmp/main --nwdafcfg ./config/nwdafcfg-anlf.yaml" # Dev
+
     subprocess.run([cmd], shell=True)
-    app.run(port=8080)
+    app.run(port=8000)
 
 
 if __name__ == "__main__":

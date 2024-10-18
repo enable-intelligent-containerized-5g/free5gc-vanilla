@@ -28,7 +28,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 	services := []models.NfService{
 		{
 			ServiceInstanceId: "NWDAF",
-			ServiceName:       "nnwdaf",
+			ServiceName:       "nnwdaf-mtlf",
 			Versions: &[]models.NfServiceVersion{
 				{
 					ApiFullVersion:  version,
@@ -63,7 +63,7 @@ func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfil
 	for {
 		_, res, err := client.NFInstanceIDDocumentApi.RegisterNFInstance(context.TODO(), nfInstanceId, profile)
 		if err != nil || res == nil {
-			// TODO : add log
+      logger.ConsumerLog.Errorf("NWDAF register to NRF Error[%s]", err.Error())
 			fmt.Println(fmt.Errorf("NWDAF register to NRF Error[%s]", err.Error()))
 			time.Sleep(2 * time.Second)
 			continue
