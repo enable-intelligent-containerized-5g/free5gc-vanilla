@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/gin-contrib/cors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -55,7 +56,7 @@ func (*NWDAF) GetCliCmd() (flags []cli.Flag) {
 	return cliCmd
 }
 
-func (udr *NWDAF) Initialize(c *cli.Context) error {
+func (nwdaf *NWDAF) Initialize(c *cli.Context) error {
 	commands = Commands{
 		config: c.String("config"),
 	}
@@ -70,7 +71,7 @@ func (udr *NWDAF) Initialize(c *cli.Context) error {
 		}
 	}
 
-	udr.SetLogLevel()
+	nwdaf.SetLogLevel() // No está hacinedo nada: No hay logger para NWDAF
 
 	if err := factory.CheckConfigVersion(); err != nil {
 		return err
@@ -83,7 +84,7 @@ func (udr *NWDAF) Initialize(c *cli.Context) error {
 	return nil
 }
 
-func (udr *NWDAF) SetLogLevel() {
+func (nwdaf *NWDAF) SetLogLevel() {
 	if factory.NwdafConfig.Logger == nil {
 		logger.InitLog.Warnln("NWDAF config without log level setting!!!")
 		return
@@ -107,8 +108,8 @@ func (udr *NWDAF) SetLogLevel() {
 	}
 }
 
-func (udr *NWDAF) FilterCli(c *cli.Context) (args []string) {
-	for _, flag := range udr.GetCliCmd() {
+func (nwdaf *NWDAF) FilterCli(c *cli.Context) (args []string) {
+	for _, flag := range nwdaf.GetCliCmd() {
 		name := flag.GetName()
 		value := fmt.Sprint(c.Generic(name))
 		if value == "" {
@@ -120,7 +121,7 @@ func (udr *NWDAF) FilterCli(c *cli.Context) (args []string) {
 	return args
 }
 
-func (udr *NWDAF) Start() {
+func (nwdaf *NWDAF) Start() {
 	// get config file info
 	config := factory.NwdafConfig
 
@@ -129,19 +130,17 @@ func (udr *NWDAF) Start() {
 	logger.InitLog.Infoln("Server started")
 
 	router := logger_util.NewGinWithLogrus(logger.GinLog)
-	// router.Use(cors.New(cors.Config{
-	// 	AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
-	// 	AllowHeaders: []string{
-	// 		"Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host",
-	// 		"Token", "X-Requested-With",
-	// 	},
-	// 	ExposeHeaders:    []string{"Content-Length"},
-	// 	AllowCredentials: true,
-	// 	AllowAllOrigins:  true,
-	// 	MaxAge:           86400,
-	// }))
-	//
-	// datarepository.AddService(router)
+	router.Use(cors.New(cors.Config{
+		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
+		AllowHeaders: []string{
+			"Origin", "Content-Length", "Content-Type", "User-Agent", "Referrer", "Host",
+			"Token", "X-Requested-With",
+		},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowAllOrigins:  true,
+		MaxAge:           86400,
+	}))
 
 	pemPath := util.NwdafDefaultPemPath
 	keyPath := util.NwdafDefaultKeyPath
@@ -155,9 +154,12 @@ func (udr *NWDAF) Start() {
 	util.InitNwdafContext(self)
 
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
+
+	// Register to NRF
 	profile := consumer.BuildNFInstance(self)
 	var newNrfUri string
 	var err error
+
 	newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
 	if err == nil {
 		self.NrfUri = newNrfUri
@@ -176,11 +178,11 @@ func (udr *NWDAF) Start() {
 		}()
 
 		<-signalChannel
-		udr.Terminate()
+		nwdaf.Terminate()
 		os.Exit(0)
 	}()
 
-	server, err := httpwrapper.NewHttp2Server(addr, udr.KeyLogPath, router)
+	server, err := httpwrapper.NewHttp2Server(addr, nwdaf.KeyLogPath, router)
 	if server == nil {
 		logger.InitLog.Errorf("Initialize HTTP server failed: %+v", err)
 		return
