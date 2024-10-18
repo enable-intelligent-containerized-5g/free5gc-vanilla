@@ -13,14 +13,15 @@ func init() {
 }
 
 type NWDAFContext struct {
-	Name                                    string
-	UriScheme                               models.UriScheme
-	BindingIPv4                             string
-	SBIPort                                 int
-	RegisterIPv4                            string // IP register to NRF
-	HttpIPv6Address                         string
-	NfId                                    string
-	NrfUri                                  string
+	Name            string
+	NfService       map[models.ServiceName]models.NfService
+	UriScheme       models.UriScheme
+	BindingIPv4     string
+	SBIPort         int
+	RegisterIPv4    string // IP register to NRF
+	HttpIPv6Address string
+	NfId            string
+	NrfUri          string
 }
 
 // Reset NWDAF Context

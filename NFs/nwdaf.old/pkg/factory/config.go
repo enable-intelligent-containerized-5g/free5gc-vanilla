@@ -62,8 +62,10 @@ const (
 )
 
 type Configuration struct {
-	Sbi    *Sbi   `yaml:"sbi" valid:"required"`
-	NrfUri string `yaml:"nrfUri" valid:"url,required"`
+	NwdafName       string   `yaml:"nwdafName,omitempty"`
+	Sbi             *Sbi     `yaml:"sbi" valid:"required"`
+	NrfUri          string   `yaml:"nrfUri" valid:"url,required"`
+	ServiceNameList []string `yaml:"serviceNameList" valid:"required"`
 }
 
 func (c *Configuration) validate() (bool, error) {
