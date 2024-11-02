@@ -3,6 +3,7 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
+  name: nwdaf-mtlf
   nwdafName: NWDAF-MTLF # the name of this AMF
 
   sbi: # Service-based interface information
@@ -11,7 +12,7 @@ configuration:
     bindingIPv4: 127.0.0.15 # IP used to bind the service
     port: 8000 # port used to bind the service
 
-  serviceNameList: # the SBI services provided by this AMF, refer to TS 29.518
+  serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
     - nnwdaf-eventssubscription # MTLF Subscriptions service
     - nnwdaf-mlmodelprovision # MTLF ML Model Provision service
 
