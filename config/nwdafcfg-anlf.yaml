@@ -14,7 +14,10 @@ configuration:
   nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
 
   serviceNameList: # the SBI services provided by this AnLF
-    - nnwdaf-analyticsinfo
+    - nnwdaf-analyticsinfo # Nnwdaf_AnalyticsInfo service
+    - nnwdaf-eventssubscription # Nnwdaf_EventsSubscription service
+    - nnwdaf-datamanagement # Nnwdaf_DataManagement service
+
  
   networkName:  # the name of this core network
     full: free5GC

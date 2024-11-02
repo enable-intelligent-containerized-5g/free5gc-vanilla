@@ -13,8 +13,8 @@ configuration:
     port: 8000 # port used to bind the service
 
   serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
-    - nnwdaf-eventssubscription # MTLF Subscriptions service
-    - nnwdaf-mlmodelprovision # MTLF ML Model Provision service
+    - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service
+    - nnwdaf-mlmodelinfo # Nnwdaf_MLModelInfo service
 
   nrfUri: http://127.0.0.10:8000 # a valid URI of NRF
 
