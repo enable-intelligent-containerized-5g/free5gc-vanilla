@@ -12,6 +12,7 @@ import (
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
+	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/gin-gonic/gin"
 )
@@ -76,39 +77,66 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 
 	// Validar NfSetId o NfTypes
 	// TODO: Implementar la validación de NfSetId o NfTypes
-	// err = isValidNfSetIdOrNfTypes(nfAnalyticsInfoRequest.NfSetIds, nfAnalyticsInfoRequest.NfTypes)
-	// if err != nil {
-	// 	problemDetail := "[Invalid NfSetId or NfTypes] " + err.Error()
-	// 	rsp := models.ProblemDetails{
-	// 		Title:  "Missing mandatory parameter",
-	// 		Status: http.StatusBadRequest,
-	// 		Detail: problemDetail,
-	// 	}
-	// 	logger.CfgLog.Errorf(problemDetail)
-	// 	c.JSON(http.StatusBadRequest, rsp)
-	// 	return
-	// }
-
-	if analyticsID == string(models.NwdafEvent_NF_LOAD) {
-		fmt.Println("EventId", analyticsID)
+	typePayload, err := isValidNfInstanceIdsOrNfTypes(nfAnalyticsInfoRequest.NfInstanceIds, nfAnalyticsInfoRequest.NfTypes)
+	if err != nil {
+		problemDetail := "[Invalid NfSetId or NfTypes] " + err.Error()
+		rsp := models.ProblemDetails{
+			Title:  "Missing mandatory parameter",
+			Status: http.StatusBadRequest,
+			Detail: problemDetail,
+		}
+		logger.CfgLog.Errorf(problemDetail)
+		c.JSON(http.StatusBadRequest, rsp)
+		return
 	}
 
 	req := httpwrapper.NewRequest(c.Request, nfAnalyticsInfoRequest)
-	req.Params["analytics_id"] = c.Params.ByName("analytics_id")
 
 	// Imprimir el request
-	fmt.Println(req)
+	fmt.Println("req", req)
+
+	var rsp *httpwrapper.Response
+	if analyticsID == string(models.NwdafEvent_NF_LOAD) {
+		rsp = producer.NF_Load(req, typePayload)
+	} else {
+		fmt.Println("No se ha implementado el evento")
+	}
+
+	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
+	if err != nil {
+		logger.CfgLog.Errorln(err)
+		problemDetails := models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Cause:  "SYSTEM_FAILURE",
+			Detail: err.Error(),
+		}
+		c.JSON(http.StatusInternalServerError, problemDetails)
+	} else {
+		fmt.Println("responseBody", responseBody)
+		c.Data(rsp.Status, "application/json", responseBody)
+	}
 }
 
-// isValidNfSetIdOrNfTypes verifica si el NfSetId o NfTypes
-// func isValidNfSetIdOrNfTypes(nfSetId []string, nfTypes []models.NrfNfManagementNfType) (err error) {
-// 	if len(nfSetId) == 0 && len(nfTypes) == 0 {
-// 		err = errors.New("please provide a valid NfSetId or NfTypes")
-// 		return err
-// 	}
+// isValidNfInstanceIdsOrNfTypes verifica si el NfInstanceIds o NfTypes
+func isValidNfInstanceIdsOrNfTypes(nfInstanceIds []string, nfTypes []models.NfType) (typePayload models.TypePayloadRequest, err error) {
+	if len(nfInstanceIds) == 0 && len(nfTypes) == 0 {
+		err = errors.New("please provide a valid NfInstanceIds or NfTypes")
+	}
 
-// 	// if valid, exists := models.ValidNrfNfManagementNfType[nfTypes]
-// }
+	if len(nfTypes) > 0 {
+		for _, nfType := range nfTypes {
+			if valid, exists := models.ValidNfType[nfType]; exists || valid {
+				typePayload = "NF_TYPES"
+			} else {
+				err = errors.New("please provide a valid NfType")
+			}
+		}
+	} else {
+		typePayload = "NF_INSTANCES"
+	}
+
+	return typePayload, err
+}
 
 // isValidEvent verifica si el evento es válido y retorna el nombre del evento
 func isValidEvent(event models.EventId) (analyticsID string, err error) {
@@ -122,15 +150,15 @@ func isValidEvent(event models.EventId) (analyticsID string, err error) {
 	return analyticsID, err
 }
 
-func searchAllNfs() error {
-	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-		// ServiceNames: optional.Interface{},
-	}
-	allNfs := consumer.SearchAllNfInstance("http://127.0.0.1:30050", "", models.NfType_NWDAF, param)
-	// fmt.Println("allNfs", allNfs)
-
-	return allNfs
-}
+// func searchAllNfs() error {
+// 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
+// 		// ServiceNames: optional.Interface{},
+// 	}
+// 	allNfs := consumer.SearchAllNfInstance("http://127.0.0.1:30050", "", models.NfType_NWDAF, param)
+// 	// fmt.Println("allNfs", allNfs)
+//
+// 	return allNfs
+// }
 
 func searchServiceAnaliticsInfo() error {
 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
