@@ -34,24 +34,21 @@ func SendSearchNFInstances(nrfUri string, targetNfType, requestNfType models.NfT
 }
 
 func SearchAllNfInstance(nrfUri string, targetNfType, requestNfType models.NfType,
-	param Nnrf_NFDiscovery.SearchNFInstancesParamOpts) error {
-	resp, localErr := SendSearchNFInstances(nrfUri, targetNfType, requestNfType, param)
+	param Nnrf_NFDiscovery.SearchNFInstancesParamOpts) ([]byte, error) {
+	resp, err := SendSearchNFInstances(nrfUri, targetNfType, requestNfType, param)
 
-	// Convertir `allNfs` a string en formato JSON
-    allNfsJSON, errJson := json.Marshal(resp)
-	if errJson != nil {
-        fmt.Println("Error al convertir a JSON:", localErr)
-        return nil
-    }
-
-	if localErr != nil {
-		return localErr
+	if  err != nil {
+		return nil, err
 	}
 
-	// Imprimir la representación en string de `allNfs`
-	fmt.Println("resp", string(allNfsJSON))
+	// Convertir `allNfs` a string en formato JSON
+    allNfsJSON, err := json.Marshal(resp)
+	if err != nil {
+        fmt.Println("Error al convertir a JSON:", err)
+        return nil, err
+    }
 
-	return nil
+	return allNfsJSON, nil
 }
 
 func SearchAnaliticsInfoInstance(nrfUri string, targetNfType, requestNfType models.NfType,
