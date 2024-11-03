@@ -1,4 +1,4 @@
-package mlmodelprovision
+package mlmodelinfo
 
 import (
 	"net/http"

@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.1"
+	NWDAF_EXPECTED_CONFIG_VERSION = "1.0.0"
 )
 
 type Config struct {
@@ -62,7 +62,9 @@ const (
 )
 
 type Configuration struct {
-  Name            string   `yaml:"name,omitempty"`
+	// SqlLiteTableName string   `yaml:"SqlLiteTableName" valid:"type(string),required"`
+	SqlLiteDB       string   `yaml:"SqlLiteDB" valid:"type(string),required"`
+	Name            string   `yaml:"name,omitempty"`
 	NwdafName       string   `yaml:"nwdafName,omitempty"`
 	Sbi             *Sbi     `yaml:"sbi" valid:"required"`
 	NrfUri          string   `yaml:"nrfUri" valid:"url,required"`

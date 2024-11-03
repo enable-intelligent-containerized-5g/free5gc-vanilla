@@ -11,16 +11,18 @@ import (
 )
 
 var (
-	log         *logrus.Logger
-	AppLog      *logrus.Entry
-	InitLog     *logrus.Entry
-	CfgLog      *logrus.Entry
-	HandlerLog  *logrus.Entry
-	DataRepoLog *logrus.Entry
-	UtilLog     *logrus.Entry
-	HttpLog     *logrus.Entry
-	ConsumerLog *logrus.Entry
-	GinLog      *logrus.Entry
+	log           *logrus.Logger
+	AppLog        *logrus.Entry
+	InitLog       *logrus.Entry
+	CfgLog        *logrus.Entry
+	HandlerLog    *logrus.Entry
+	DataRepoLog   *logrus.Entry
+	UtilLog       *logrus.Entry
+	HttpLog       *logrus.Entry
+	ConsumerLog   *logrus.Entry
+	DiscoveryLog  *logrus.Entry
+	GinLog        *logrus.Entry
+	ManagementLog *logrus.Entry
 )
 
 func init() {

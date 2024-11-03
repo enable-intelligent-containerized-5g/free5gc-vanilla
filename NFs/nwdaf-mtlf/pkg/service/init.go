@@ -18,10 +18,16 @@ import (
 	"github.com/free5gc/nwdaf/internal/context"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
+	"github.com/free5gc/nwdaf/internal/sbi/mlmodelinfo"
+	"github.com/free5gc/nwdaf/internal/sbi/mlmodeltraining"
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"
+
+	"database/sql"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type NWDAF struct {
@@ -125,6 +131,29 @@ func (nwdaf *NWDAF) Start() {
 	// get config file info
 	config := factory.NwdafConfig
 
+	// Path to SQLite DB in the host
+	dbPath := config.Configuration.SqlLiteDB
+	// Conect to SQLite
+	sqldb, errsql := sql.Open("sqlite3", dbPath)
+	if errsql != nil {
+		logger.InitLog.Infof("Fail to connect to SQLite DB: %+v", errsql)
+		return
+	}
+	defer sqldb.Close() // Close teh conecction
+
+	// Verify a valid connection
+	errsql = sqldb.Ping()
+	if errsql != nil {
+		logger.InitLog.Infof("Fail to connect to SQLite DB: %+v", errsql)
+		return
+	}
+
+	logger.InitLog.Infof("SQLite conection succesful")
+
+	if err := util.InitSqlLiteDB(); err != nil {
+		logger.InitLog.Infof("Error to init SQLite: %v", err)
+	}
+
 	logger.InitLog.Infof("NWDAF Config Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 
 	logger.InitLog.Infoln("Server started")
@@ -141,6 +170,9 @@ func (nwdaf *NWDAF) Start() {
 		AllowAllOrigins:  true,
 		MaxAge:           86400,
 	}))
+
+	mlmodelinfo.AddService(router)
+	mlmodeltraining.AddService(router)
 
 	pemPath := util.NwdafDefaultPemPath
 	keyPath := util.NwdafDefaultKeyPath
@@ -204,15 +236,15 @@ func (nwdaf *NWDAF) Start() {
 	}
 }
 
-func (udr *NWDAF) Exec(c *cli.Context) error {
+func (nwdaf *NWDAF) Exec(c *cli.Context) error {
 	// NWDAF.Initialize(cfgPath, c)
 
-	logger.InitLog.Traceln("args:", c.String("udrcfg"))
-	args := udr.FilterCli(c)
+	logger.InitLog.Traceln("args:", c.String("nwdafcfg"))
+	args := nwdaf.FilterCli(c)
 	logger.InitLog.Traceln("filter: ", args)
-	command := exec.Command("./udr", args...)
+	command := exec.Command("./nwdaf", args...)
 
-	if err := udr.Initialize(c); err != nil {
+	if err := nwdaf.Initialize(c); err != nil {
 		return err
 	}
 
@@ -280,7 +312,7 @@ func (udr *NWDAF) Exec(c *cli.Context) error {
 	return err
 }
 
-func (udr *NWDAF) Terminate() {
+func (nwdaf *NWDAF) Terminate() {
 	logger.InitLog.Infof("Terminating NWDAF...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()

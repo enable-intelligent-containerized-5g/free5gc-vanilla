@@ -1,4 +1,4 @@
-package mlmodelprovision
+package mlmodelinfo
 
 import (
 	"net/http"
@@ -33,7 +33,7 @@ func NewRouter() *gin.Engine {
 }
 
 func AddService(engine *gin.Engine) *gin.RouterGroup {
-	group := engine.Group("/nnwdaf-/v1")
+	group := engine.Group("/nnwdaf-mlmodelinfo/v1")
 
 	for _, route := range routes {
 		switch route.Method {
@@ -94,10 +94,10 @@ var routes = Routes{
 		Index,
 	},
 
-	Route{
+	{
 		"NwdafMlModelInfoRequest",
 		strings.ToUpper("Post"),
-		"anlf-info/:anlfNfId/mlmodelInfo/request",
+		"mlmodelinfo/request",
 		HTTPNwdafMlModelInfoRequest,
 	},
 }

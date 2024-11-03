@@ -27,7 +27,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "nwdaf"
-	app.Usage = "5G Unified Data Repository (NWDAF)"
+	app.Usage = "5G Network Data Analysis Funtion (NWDAF)"
 	app.Action = action
 	app.Flags = NWDAF.GetCliCmd()
 	if err := app.Run(os.Args); err != nil {

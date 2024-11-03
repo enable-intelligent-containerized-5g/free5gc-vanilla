@@ -1,22 +1,24 @@
 info:
-  version: 1.0.1
+  version: 1.0.0
   description: NWDAF initial local configuration
 
 configuration:
+  # SqlLiteTableName: ml_model_info # database name in MongoDB
+  SqlLiteDB: ml_model_info.db # a valid PATH of the SqlLite
   name: nwdaf-mtlf
   nwdafName: NWDAF-MTLF # the name of this AMF
 
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
-    registerIPv4: 127.0.0.15 # IP used to register to NRF
-    bindingIPv4: 127.0.0.15 # IP used to bind the service
-    port: 8000 # port used to bind the service
+    registerIPv4: 127.0.0.1 # IP used to register to NRF
+    bindingIPv4: 127.0.0.1 # IP used to bind the service
+    port: 4201 # port used to bind the service
 
   serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
     - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service
     - nnwdaf-mlmodelinfo # Nnwdaf_MLModelInfo service
 
-  nrfUri: http://127.0.0.10:8000 # a valid URI of NRF
+  nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
 
   networkName: # the name of this core network
     full: free5GC
