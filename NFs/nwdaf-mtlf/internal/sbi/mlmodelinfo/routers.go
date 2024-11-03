@@ -50,34 +50,6 @@ func AddService(engine *gin.Engine) *gin.RouterGroup {
 		}
 	}
 
-	// subPatternShort := "/subscription-data/:ueId"
-	// group.Any(subPatternShort, subMsgShortDispatchHandlerFunc)
-	//
-	// subPattern := "/subscription-data/:ueId/:servingPlmnId"
-	// group.Any(subPattern, subMsgDispatchHandlerFunc)
-	//
-	// eePatternShort := "/subscription-data/:ueId/:servingPlmnId/ee-subscriptions"
-	// group.Any(eePatternShort, eeMsgShortDispatchHandlerFunc)
-	//
-	// eePattern := "/subscription-data/:ueId/:servingPlmnId/ee-subscriptions/:subsId"
-	// group.Any(eePattern, eeMsgDispatchHandlerFunc)
-
-	/*
-	 * GIN wildcard issue:
-	 * '/application-data/influenceData/:influenceId' and
-	 * '/application-data/influenceData/subs-to-notify' patterns will be conflicted.
-	 * Only can use '/application-data/influenceData/:influenceId' pattern and
-	 * use a dispatch handler to distinguish "subs-to-notify" from ":influenceId".
-	 */
-	// appInfluDataPattern := "/application-data/influenceData/:influenceId"
-	// group.Any(appInfluDataPattern, appInfluDataMsgDispatchHandlerFunc)
-	//
-	// expoPatternShort := "/exposure-data/:ueId/:subId"
-	// group.Any(expoPatternShort, expoMsgDispatchHandlerFunc)
-	//
-	// expoPattern := "/exposure-data/:ueId/:subId/:pduSessionId"
-	// group.Any(expoPattern, expoMsgDispatchHandlerFunc)
-
 	return group
 }
 
@@ -96,7 +68,7 @@ var routes = Routes{
 
 	{
 		"NwdafMlModelInfoRequest",
-		strings.ToUpper("Post"),
+		strings.ToUpper("Get"),
 		"mlmodelinfo/request",
 		HTTPNwdafMlModelInfoRequest,
 	},

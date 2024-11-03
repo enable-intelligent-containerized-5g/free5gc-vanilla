@@ -9,32 +9,31 @@ import (
 	// "encoding/json"
 
 	"database/sql"
-
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type MlModelInfo struct {
-	URI          string `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri"`
-	Accuracy     string `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy"`
-	NF           string `json:"nf,omitempty" yaml:"nf" bson:"nf" mapstructure:"nf"`
-	TargetPeriod string `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod"`
-	EventId      string `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId"`
-}
+// type MlModelInfo struct {
+// 	URI          string `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri"`
+// 	Accuracy     string `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy"`
+// 	NF           string `json:"nf,omitempty" yaml:"nf" bson:"nf" mapstructure:"nf"`
+// 	TargetPeriod string `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod"`
+// 	EventId      string `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId"`
+// }
 
 func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.UtilLog.Warn("request.Body in HandleSaveMlModel: ", request.Body)
+	logger.MlModelTrainingLog.Warn("request.Body in HandleSaveMlModel: ", request.Body)
 
-	mlmodeldata, ok := request.Body.(MlModelInfo)
+	mlmodeldata, ok := request.Body.(models.MlModelInfoData)
 	if !ok {
 		httpwrapper.NewResponse(http.StatusBadRequest, nil, nil)
 	}
 
 	response, problemDetails := SaveMlModelProcedure(mlmodeldata)
 	if response != nil {
-		logger.UtilLog.Warn("CreateSubscription success")
+		logger.MlModelTrainingLog.Warn("CreateSubscription success")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
 	} else if problemDetails != nil {
-		logger.UtilLog.Warn("CreateSubscription failed")
+		logger.MlModelTrainingLog.Warn("CreateSubscription failed")
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
@@ -42,11 +41,11 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	logger.UtilLog.Error("CreateSubscription failed")
+	logger.MlModelTrainingLog.Error("CreateSubscription failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func SaveMlModelProcedure(mldata MlModelInfo) (sql.Result, *models.ProblemDetails) {
+func SaveMlModelProcedure(mldata models.MlModelInfoData) (sql.Result, *models.ProblemDetails) {
 	// Conectar a la base de datos SQLite
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
 	db, errCon := sql.Open("sqlite3", sqldb)
@@ -55,7 +54,7 @@ func SaveMlModelProcedure(mldata MlModelInfo) (sql.Result, *models.ProblemDetail
 			Status: http.StatusForbidden,
 			Cause:  errCon.Error(),
 		}
-		logger.UtilLog.Error("Error al abrir la base de datos: ", errCon)
+		logger.MlModelTrainingLog.Error("Error al abrir la base de datos: ", errCon)
 		return nil, ProblemSql
 	}
 	defer db.Close()
@@ -63,18 +62,19 @@ func SaveMlModelProcedure(mldata MlModelInfo) (sql.Result, *models.ProblemDetail
 	// Insertar el registro en la tabla 'records'
 	ProblemPut := &models.ProblemDetails{}
 	putData, err := db.Exec(`
-		INSERT INTO records (uri, accuracy, nf, event, target_period) 
+		INSERT INTO `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` (uri, accuracy, nf, event, target_period) 
 		VALUES (?, ?, ?, ?, ?);`,
-		mldata.URI, mldata.Accuracy, mldata.NF, mldata.TargetPeriod, mldata.EventId)
+		mldata.URI, mldata.Accuracy, mldata.NfType, mldata.TargetPeriod, mldata.EventId)
 	if err != nil {
 		ProblemPut = &models.ProblemDetails{
 			Status: http.StatusForbidden,
 			Cause:  err.Error(),
 		}
-		logger.UtilLog.Error("Error al insertar el registro: ", err)
+		logger.MlModelTrainingLog.Error("Error al insertar el registro: ", err)
 		return putData, ProblemPut
 	}
 
-	logger.UtilLog.Info("Registro insertado con éxito")
+	logger.MlModelTrainingLog.Info("Registro insertado con éxito")
+	db.Close()
 	return putData, nil
 }
