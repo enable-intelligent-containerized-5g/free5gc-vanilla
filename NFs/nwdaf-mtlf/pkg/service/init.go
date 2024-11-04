@@ -144,14 +144,14 @@ func (nwdaf *NWDAF) Start() {
 	// Verify a valid connection
 	errsql = sqldb.Ping()
 	if errsql != nil {
-		logger.InitLog.Infof("Fail to connect to SQLite DB: %+v", errsql)
+		logger.InitLog.Infof("Fail to connect to database: %+v", errsql)
 		return
 	}
 
-	logger.InitLog.Infof("SQLite conection succesful")
+	logger.InitLog.Infof("Conection succesful to database: %s", dbPath)
 
 	if err := util.InitSqlLiteDB(); err != nil {
-		logger.InitLog.Infof("Error to init SQLite: %v", err)
+		logger.InitLog.Errorf("Error to init SQLite: %v", err)
 	}
 
 	logger.InitLog.Infof("NWDAF Config Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
