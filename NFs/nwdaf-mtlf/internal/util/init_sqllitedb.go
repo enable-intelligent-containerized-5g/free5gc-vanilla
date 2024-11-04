@@ -17,21 +17,23 @@ type NfRecord struct {
 }
 
 func InitSqlLiteDB() (err error) {
+	// Database
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
-	// Nombres de las tablas
-	// mlInfoTable := factory.NwdafConfig.Configuration.SqlLiteTableName
+	// Table names
 	mlInfoTable := string(models.NwdafMLModelDB_ML_MODEL_INFO)
 	accuracyTable := string(models.NwdafMLModelDB_ACCURACY_VALUES)
 	nfTable := string(models.NwdafMLModelDB_NF_TYPES)
 	eventTable := string(models.NwdafMLModelDB_EVENT_ID)
-	db, err := sql.Open("sqlite3", sqldb)
+
+	db, err := OpenDatabase(sqldb)
+	// db, err := sql.Open("sqlite3", sqldb)
 	if err != nil {
 		logger.UtilLog.Errorf("Error opening the %s database  ", sqldb)
 		return err
 	}
 	defer db.Close()
 
-	// Eliminar tablas si existen
+	// Delete tables
 	_, err = db.Exec("DROP TABLE IF EXISTS " + eventTable + ";")
 
 	_, err = db.Exec("DROP TABLE IF EXISTS " + mlInfoTable + ";")
@@ -79,8 +81,8 @@ func InitSqlLiteDB() (err error) {
 		);
 	`)
 
-	// Habilitar claves foráneas
-    _, err = db.Exec("PRAGMA foreign_keys = ON;")
+	// // Habilitar claves foráneas
+    // _, err = db.Exec("PRAGMA foreign_keys = ON;")
 
 	// Insertar un registro en tablas
 	_, err = db.Exec(`
@@ -148,4 +150,24 @@ func InitSqlLiteDB() (err error) {
 	db.Close()
 
 	return nil
+}
+
+func SetupDatabase(db *sql.DB) error {
+    // Habilitar claves foráneas
+    _, err := db.Exec("PRAGMA foreign_keys = ON;")
+    return err
+}
+
+func OpenDatabase(dataSourceName string) (*sql.DB, error) {
+    db, err := sql.Open("sqlite3", dataSourceName)
+    if err != nil {
+        return nil, err
+    }
+
+    // Configuración inicial
+    if err := SetupDatabase(db); err != nil {
+        return nil, err
+    }
+
+    return db, nil
 }

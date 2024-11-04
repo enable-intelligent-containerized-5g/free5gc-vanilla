@@ -13,16 +13,16 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type MlModelInfo struct {
-	URI          string `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri"`
-	Accuracy     string `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy"`
-	NF           string `json:"nf,omitempty" yaml:"nf" bson:"nf" mapstructure:"nf"`
-	TargetPeriod string `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod"`
-	EventId      string `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId"`
-}
+// type MlModelInfo struct {
+// 	URI          string `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri"`
+// 	Accuracy     string `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy"`
+// 	NF           string `json:"nf,omitempty" yaml:"nf" bson:"nf" mapstructure:"nf"`
+// 	TargetPeriod string `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod"`
+// 	EventId      string `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId"`
+// }
 
 func HTTPSaveMlModel(c *gin.Context) {
-	var modelInfo MlModelInfo
+	var modelInfo models.MlModelInfoData
 
     // Step 1: Retrieve HTTP request body
     requestBody, err := c.GetRawData()
@@ -52,7 +52,7 @@ func HTTPSaveMlModel(c *gin.Context) {
         return
     }
 
-    logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
+    // logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
 
     req := httpwrapper.NewRequest(c.Request, modelInfo)
     httpResponse := producer.HandleSaveMlModel(req)

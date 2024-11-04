@@ -3,37 +3,30 @@ package producer
 import (
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
+	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 	"net/http"
-	// "encoding/json"
 
 	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// type MlModelInfo struct {
-// 	URI          string `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri"`
-// 	Accuracy     string `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy"`
-// 	NF           string `json:"nf,omitempty" yaml:"nf" bson:"nf" mapstructure:"nf"`
-// 	TargetPeriod string `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod"`
-// 	EventId      string `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId"`
-// }
 
 func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
-	logger.MlModelTrainingLog.Warn("request.Body in HandleSaveMlModel: ", request.Body)
+	logger.MlModelTrainingLog.Info("Handle SaveMlModel")
 
-	mlmodeldata, ok := request.Body.(models.MlModelInfoData)
-	if !ok {
-		httpwrapper.NewResponse(http.StatusBadRequest, nil, nil)
-	}
+    mlmodelinfo, ok := request.Body.(models.MlModelInfoData)
+    if !ok {
+        return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelInfoData")
+    }
 
-	response, problemDetails := SaveMlModelProcedure(mlmodeldata)
-	if response != nil {
-		logger.MlModelTrainingLog.Warn("CreateSubscription success")
-		return httpwrapper.NewResponse(http.StatusCreated, nil, response)
+	putData, created, problemDetails := SaveMlModelProcedure(mlmodelinfo)
+	if created {
+		logger.MlModelTrainingLog.Info("SaveMlModel success")
+		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
 	} else if problemDetails != nil {
-		logger.MlModelTrainingLog.Warn("CreateSubscription failed")
+		logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Cause)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
@@ -41,40 +34,77 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 	}
-	logger.MlModelTrainingLog.Error("CreateSubscription failed")
+	logger.MlModelTrainingLog.Error("SaveMlModel failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func SaveMlModelProcedure(mldata models.MlModelInfoData) (sql.Result, *models.ProblemDetails) {
+func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData, bool, *models.ProblemDetails) {
+	logger.MlModelTrainingLog.Info("Procedure SaveMlModel")
+
 	// Conectar a la base de datos SQLite
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
-	db, errCon := sql.Open("sqlite3", sqldb)
+	db, errCon := util.OpenDatabase(sqldb)
 	if errCon != nil {
 		ProblemSql := &models.ProblemDetails{
 			Status: http.StatusForbidden,
 			Cause:  errCon.Error(),
 		}
-		logger.MlModelTrainingLog.Error("Error al abrir la base de datos: ", errCon)
-		return nil, ProblemSql
+		logger.MlModelTrainingLog.Errorf("Error to open the database %s: %s",sqldb, errCon)
+		return models.MlModelInfoData{}, false, ProblemSql
 	}
 	defer db.Close()
 
-	// Insertar el registro en la tabla 'records'
+	// SaveMLModel
 	ProblemPut := &models.ProblemDetails{}
 	putData, err := db.Exec(`
-		INSERT INTO `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` (uri, accuracy, nf, event, target_period) 
+		INSERT INTO `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` (uri, accuracy, nf_type, event_id, target_period) 
 		VALUES (?, ?, ?, ?, ?);`,
-		mldata.URI, mldata.Accuracy, mldata.NfType, mldata.TargetPeriod, mldata.EventId)
+		string(mldata.URI), mldata.Accuracy, string(mldata.NfType), string(mldata.EventId), string(mldata.TargetPeriod))
 	if err != nil {
 		ProblemPut = &models.ProblemDetails{
 			Status: http.StatusForbidden,
 			Cause:  err.Error(),
 		}
-		logger.MlModelTrainingLog.Error("Error al insertar el registro: ", err)
-		return putData, ProblemPut
+		// logger.MlModelTrainingLog.Error("Error to insert the MlModel: ", err)
+		return models.MlModelInfoData{}, false, ProblemPut
 	}
 
-	logger.MlModelTrainingLog.Info("Registro insertado con éxito")
+	lastInsertId, err := putData.LastInsertId()
+	if err!=nil {
+		ProblemPut = &models.ProblemDetails{
+			Status: http.StatusForbidden,
+			Cause:  err.Error(),
+		}
+		// logger.MlModelTrainingLog.Errorf("Error geting the inserted MlModel id: %v", err)
+		return models.MlModelInfoData{}, true, ProblemPut
+	}
+
+	retrievedModelInfo, err := GetMlModelInfoByID(db, lastInsertId)
+	if err != nil {
+		ProblemPut = &models.ProblemDetails{
+			Status: http.StatusForbidden,
+			Cause:  err.Error(),
+		}
+        // logger.MlModelTrainingLog.Errorf("Error geting the inserted MlModel: %v", err)
+		return retrievedModelInfo, true, ProblemPut
+    }
+
+	logger.MlModelTrainingLog.Info("Mlmodel saved succesful", retrievedModelInfo)
 	db.Close()
-	return putData, nil
+	return retrievedModelInfo, true, nil
+}
+
+
+// Función para recuperar un modelo ML por ID
+func GetMlModelInfoByID(db *sql.DB, id int64) (models.MlModelInfoData, error) {
+    var modelInfo models.MlModelInfoData
+    selectSQL := `SELECT uri, accuracy, nf_type, event_id, target_period FROM `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` WHERE id = ?;`
+    row := db.QueryRow(selectSQL, id)
+
+    err := row.Scan(&modelInfo.URI, &modelInfo.Accuracy, &modelInfo.NfType, &modelInfo.EventId, &modelInfo.TargetPeriod)
+    if err != nil {
+        return models.MlModelInfoData{}, err // Retornar error
+    }
+
+    return modelInfo, nil // Retornar el objeto recuperado
 }
