@@ -16,9 +16,9 @@ import (
 func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.MlModelTrainingLog.Info("Handle SaveMlModel")
 
-    mlmodelinfo, ok := request.Body.(models.MlModelInfoData)
+    mlmodelinfo, ok := request.Body.(models.MlModelData)
     if !ok {
-        return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelInfoData")
+        return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelData")
     }
 
 	putData, created, problemDetails := SaveMlModelProcedure(mlmodelinfo)
@@ -38,7 +38,7 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData, bool, *models.ProblemDetails) {
+func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelData, bool, *models.ProblemDetails) {
 	logger.MlModelTrainingLog.Info("Procedure SaveMlModel")
 
 	// Conectar a la base de datos SQLite
@@ -50,7 +50,7 @@ func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData
 			Cause:  errCon.Error(),
 		}
 		logger.MlModelTrainingLog.Errorf("Error to open the database %s: %s",sqldb, errCon)
-		return models.MlModelInfoData{}, false, ProblemSql
+		return models.MlModelData{}, false, ProblemSql
 	}
 	defer db.Close()
 
@@ -66,7 +66,7 @@ func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData
 			Cause:  err.Error(),
 		}
 		// logger.MlModelTrainingLog.Error("Error to insert the MlModel: ", err)
-		return models.MlModelInfoData{}, false, ProblemPut
+		return models.MlModelData{}, false, ProblemPut
 	}
 
 	lastInsertId, err := putData.LastInsertId()
@@ -76,7 +76,7 @@ func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData
 			Cause:  err.Error(),
 		}
 		// logger.MlModelTrainingLog.Errorf("Error geting the inserted MlModel id: %v", err)
-		return models.MlModelInfoData{}, true, ProblemPut
+		return models.MlModelData{}, true, ProblemPut
 	}
 
 	retrievedModelInfo, err := GetMlModelInfoByID(db, lastInsertId)
@@ -96,14 +96,14 @@ func SaveMlModelProcedure(mldata models.MlModelInfoData) (models.MlModelInfoData
 
 
 // Función para recuperar un modelo ML por ID
-func GetMlModelInfoByID(db *sql.DB, id int64) (models.MlModelInfoData, error) {
-    var modelInfo models.MlModelInfoData
+func GetMlModelInfoByID(db *sql.DB, id int64) (models.MlModelData, error) {
+    var modelInfo models.MlModelData
     selectSQL := `SELECT uri, accuracy, nf_type, event_id, target_period FROM `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` WHERE id = ?;`
     row := db.QueryRow(selectSQL, id)
 
     err := row.Scan(&modelInfo.URI, &modelInfo.Accuracy, &modelInfo.NfType, &modelInfo.EventId, &modelInfo.TargetPeriod)
     if err != nil {
-        return models.MlModelInfoData{}, err // Retornar error
+        return models.MlModelData{}, err // Retornar error
     }
 
     return modelInfo, nil // Retornar el objeto recuperado

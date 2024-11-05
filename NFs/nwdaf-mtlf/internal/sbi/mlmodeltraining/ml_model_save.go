@@ -22,7 +22,7 @@ import (
 // }
 
 func HTTPSaveMlModel(c *gin.Context) {
-	var modelInfo models.MlModelInfoData
+	var modelInfo models.MlModelData
 
     // Step 1: Retrieve HTTP request body
     requestBody, err := c.GetRawData()

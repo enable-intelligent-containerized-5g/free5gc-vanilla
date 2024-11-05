@@ -74,7 +74,8 @@ func InitSqlLiteDB() (err error) {
 			accuracy TEXT NOT NULL,
 			nf_type TEXT NOT NULL,
 			event_id TEXT NOT NULL,
-			target_period TEXT NOT NULL,
+			size INTEGER NOT NULL,
+			target_period INTEGER NOT NULL,
 			FOREIGN KEY (accuracy) REFERENCES ` + accuracyTable + ` (id),
 			FOREIGN KEY (nf_type) REFERENCES ` + nfTable + ` (id),
 			FOREIGN KEY (event_id) REFERENCES ` + eventTable + ` (id)
@@ -82,16 +83,15 @@ func InitSqlLiteDB() (err error) {
 	`)
 
 	// // Habilitar claves foráneas
-    // _, err = db.Exec("PRAGMA foreign_keys = ON;")
+	// _, err = db.Exec("PRAGMA foreign_keys = ON;")
 
 	// Insertar un registro en tablas
 	_, err = db.Exec(`
 	INSERT INTO `+eventTable+` (id, event_id) 
 	VALUES (?, ?);`, "NF_LOAD", "NF_LOAD")
 
-
 	_, err = db.Exec(
-	`INSERT INTO `+accuracyTable+` (id, accuracy) 
+		`INSERT INTO `+accuracyTable+` (id, accuracy) 
 	VALUES (?, ?);`, "LOW", "LOW")
 
 	_, err = db.Exec(
@@ -100,20 +100,19 @@ func InitSqlLiteDB() (err error) {
 		"AMF", "AMF")
 
 	_, err = db.Exec(`
-    INSERT INTO `+mlInfoTable+` (uri, accuracy, nf_type, event_id, target_period) 
-    VALUES (?, ?, ?, ?, ?);`,
-		"http://example.com/model1", "LOW", "AMF", "NF_LOAD", "60") // Valores de ejemplo
+    INSERT INTO `+mlInfoTable+` (event_id, size, target_period, uri, accuracy, nf_type) 
+    VALUES (?, ?, ?, ?, ?, ?);`,
+		"NF_LOAD", 7000, 60, "http://example.com/model1", "LOW", "AMF") // Valores de ejemplo
 
 	_, err = db.Exec(`
-    INSERT INTO `+mlInfoTable+` (uri, accuracy, nf_type, event_id, target_period) 
-    VALUES (?, ?, ?, ?, ?);`,
-	"http://example.com/model2", "LOW", "AMF", "NF_LOAD", "70") // Valores de ejemplo
-
+	INSERT INTO `+mlInfoTable+` (event_id, size, target_period, uri, accuracy, nf_type) 
+	VALUES (?, ?, ?, ?, ?, ?);`,
+		"NF_LOAD", 8000, 120, "http://example.com/model2", "LOW", "AMF") // Valores de ejemplo
 
 	// // Consultar
 	// rows, err := db.Query(`
-    // SELECT id, nf_type 
-    // FROM ` + nfTable + `;`)
+	// SELECT id, nf_type
+	// FROM ` + nfTable + `;`)
 
 	// if err != nil {
 	// 	logger.UtilLog.Error("Error al consultar los registros: ", err)
@@ -153,21 +152,21 @@ func InitSqlLiteDB() (err error) {
 }
 
 func SetupDatabase(db *sql.DB) error {
-    // Habilitar claves foráneas
-    _, err := db.Exec("PRAGMA foreign_keys = ON;")
-    return err
+	// Habilitar claves foráneas
+	_, err := db.Exec("PRAGMA foreign_keys = ON;")
+	return err
 }
 
 func OpenDatabase(dataSourceName string) (*sql.DB, error) {
-    db, err := sql.Open("sqlite3", dataSourceName)
-    if err != nil {
-        return nil, err
-    }
+	db, err := sql.Open("sqlite3", dataSourceName)
+	if err != nil {
+		return nil, err
+	}
 
-    // Configuración inicial
-    if err := SetupDatabase(db); err != nil {
-        return nil, err
-    }
+	// Configuración inicial
+	if err := SetupDatabase(db); err != nil {
+		return nil, err
+	}
 
-    return db, nil
+	return db, nil
 }

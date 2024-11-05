@@ -18,7 +18,7 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 
 	response := NwdafMlModelInfoRequestProcedure()
 
-	logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
+	// logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
 
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
@@ -31,7 +31,7 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 	}
 }
 
-func NwdafMlModelInfoRequestProcedure() []models.MlModelInfoData {
+func NwdafMlModelInfoRequestProcedure() []models.MlModelDataResponse {
 	logger.MlModelInfoLog.Infoln("Procedure MlModelInfoRequest")
 	// Conectar a la base de datos SQLite
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
@@ -44,7 +44,7 @@ func NwdafMlModelInfoRequestProcedure() []models.MlModelInfoData {
 
 	// Consultar todos los registros de la tabla 'records'
 	rows, err := db.Query(`
-		SELECT uri, accuracy, nf_type, event_id, target_period 
+		SELECT event_id, size, target_period, uri, accuracy, nf_type 
 		FROM ` + string(models.NwdafMLModelDB_ML_MODEL_INFO) + `;`)
 	if err != nil {
 		logger.MlModelInfoLog.Error("Error al consultar los registros: ", err)
@@ -52,11 +52,13 @@ func NwdafMlModelInfoRequestProcedure() []models.MlModelInfoData {
 	}
 	defer rows.Close()
 
+	logger.MlModelInfoLog.Error(rows)
+
 	// Iterar sobre los resultados y mapearlos a una estructura
-	var records []models.MlModelInfoData
+	var records []models.MlModelDataResponse
 	for rows.Next() {
-		var mlmodels models.MlModelInfoData
-		err := rows.Scan(&mlmodels.URI, &mlmodels.Accuracy, &mlmodels.NfType, &mlmodels.EventId, &mlmodels.TargetPeriod)
+		var mlmodels models.MlModelDataResponse
+		err := rows.Scan(&mlmodels.EventId, &mlmodels.Size, &mlmodels.TargetPeriod, &mlmodels.URI, &mlmodels.Accuracy, &mlmodels.NfType)
 		if err != nil {
 			logger.MlModelInfoLog.Error("Error al leer los registros: ", err)
 			return nil
