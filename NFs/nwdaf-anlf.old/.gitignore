@@ -1,0 +1,5 @@
+build/*
+dist/*
+openapi_server.egg-info/
+__pycache__/*
+tmp/*

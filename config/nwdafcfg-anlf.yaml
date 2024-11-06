@@ -1,5 +1,5 @@
 info:
-  version: 1.0.1
+  version: 1.0.0
   description: NWDAF initial local configuration
 
 configuration:
@@ -7,11 +7,17 @@ configuration:
   
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
-    registerIPv4: 127.0.0.16 # IP used to register to NRF
-    bindingIPv4: 127.0.0.16  # IP used to bind the service
-    port: 8000 # port used to bind the service
+    registerIPv4: 127.0.0.1 # IP used to register to NRF
+    bindingIPv4: 127.0.0.1  # IP used to bind the service
+    port: 4200 # port used to bind the service
 
-  nrfUri: http://127.0.0.10:8000 # a valid URI of NRF
+  nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+
+  serviceNameList: # the SBI services provided by this AnLF
+    - nnwdaf-analyticsinfo # Nnwdaf_AnalyticsInfo service
+    - nnwdaf-eventssubscription # Nnwdaf_EventsSubscription service
+    - nnwdaf-datamanagement # Nnwdaf_DataManagement service
+
  
   networkName:  # the name of this core network
     full: free5GC

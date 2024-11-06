@@ -1,41 +1,26 @@
-module nwdaf.com
+module github.com/free5gc/nwdaf
 
 go 1.14
 
-replace nwdaf.com/logger => ../logger
-
-replace nwdaf.com/service => ../service
-
-replace nwdaf.com/factory => ../factory
-
-replace nwdaf.com/util => ../util
-
-replace nwdaf.com/consumer => ../consumer
-
-replace nwdaf.com/context => ../context
-
-replace nwdaf.com/mtlf => ../mtlf
-
-replace nwdaf.com/anlf => ../AnLF
-
 require (
-	github.com/antonfisher/nested-logrus-formatter v1.3.0
-	github.com/free5gc/http2_util v1.0.0
-	github.com/free5gc/http_wrapper v1.0.0
-	github.com/free5gc/logger_conf v1.0.0
-	github.com/free5gc/logger_util v1.0.0
-	github.com/free5gc/openapi v1.0.0
-	github.com/free5gc/path_util v1.0.0
-	github.com/free5gc/version v1.0.0
-	github.com/gin-gonic/gin v1.6.3
-	github.com/google/go-cmp v0.5.1 // indirect
+	github.com/antonfisher/nested-logrus-formatter v1.3.1
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/enable-intelligent-containerized-5g/openapi v1.0.4
+	github.com/free5gc/util v1.0.3
+	github.com/gin-contrib/cors v1.7.2
+	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.3.0
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/sirupsen/logrus v1.7.0
-	github.com/urfave/cli v1.22.4
-	golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	github.com/mattn/go-sqlite3 v1.14.24 // indirect
+	github.com/mitchellh/mapstructure v1.4.1
+	github.com/sirupsen/logrus v1.8.1
+	github.com/urfave/cli v1.22.5
+	go.mongodb.org/mongo-driver v1.8.4
+	golang.org/x/text v0.19.0 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/go-playground/validator.v9 v9.29.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0
+	gorm.io/driver/sqlite v1.5.6 // indirect
+	gorm.io/gorm v1.25.12 // indirect
 )
+
+replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
