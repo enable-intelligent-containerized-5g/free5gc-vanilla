@@ -52,7 +52,7 @@ func HTTPSaveMlModel(c *gin.Context) {
         return
     }
 
-    // logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
+    logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
 
     req := httpwrapper.NewRequest(c.Request, modelInfo)
     httpResponse := producer.HandleSaveMlModel(req)
