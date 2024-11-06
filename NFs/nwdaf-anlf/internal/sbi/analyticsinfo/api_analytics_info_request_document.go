@@ -7,13 +7,12 @@ import (
 
 	// "github.com/antihax/optional"
 	"github.com/enable-intelligent-containerized-5g/openapi"
-	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
-	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // HTTPNwdafAnalyticsInfoRequest - Creates a new subscription to receive notifications of ML model provisioning events
@@ -46,6 +45,21 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		}
 		logger.CfgLog.Errorf(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
+		return
+	}
+
+	// Initialize validater
+	validate := validator.New()
+
+	// Validate struct and return error if any
+	if err := validate.Struct(nfAnalyticsInfoRequest); err != nil {
+		problemDetails := models.ProblemDetails{
+			Title:  "Malformed request syntax",
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		}
+		logger.CfgLog.Errorf("Validation Error: %+v", err)
+		c.JSON(http.StatusBadRequest, problemDetails)
 		return
 	}
 
@@ -136,24 +150,4 @@ func isValidEvent(event models.EventId) (analyticsID string, err error) {
 		err = errors.New("please provide a valid event")
 	}
 	return analyticsID, err
-}
-
-// func searchAllNfs() error {
-// 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-// 		// ServiceNames: optional.Interface{},
-// 	}
-// 	allNfs := consumer.SearchAllNfInstance("http://127.0.0.1:30050", "", models.NfType_NWDAF, param)
-// 	// fmt.Println("allNfs", allNfs)
-//
-// 	return allNfs
-// }
-
-func searchServiceAnaliticsInfo() error {
-	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-		// ServiceNames: optional.Interface{},
-	}
-	allNfs := consumer.SearchAnaliticsInfoInstance("http://127.0.0.1:30050", models.NfType_NWDAF, models.NfType_NWDAF, param)
-	// fmt.Println("ServiceMlModelProvision: ", allNfs)
-
-	return allNfs
 }
