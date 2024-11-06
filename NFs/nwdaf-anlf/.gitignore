@@ -27,3 +27,7 @@ cscope.*
 # Debug
 *.log
 *.pcap
+
+# others
+tmp
+log
