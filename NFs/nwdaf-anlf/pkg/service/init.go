@@ -156,6 +156,10 @@ func (nwdaf *NWDAF) Start() {
 	self := context.NWDAF_Self()
 	util.InitNwdafContext(self)
 
+	context.GlobalNwdafContext = self
+
+	fmt.Printf("NWDAF", context.GlobalNwdafContext)
+
 	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
 
 	// Register to NRF
@@ -283,7 +287,7 @@ func (udr *NWDAF) Exec(c *cli.Context) error {
 	return err
 }
 
-func (udr *NWDAF) Terminate() {
+func (nwdaf *NWDAF) Terminate() {
 	logger.InitLog.Infof("Terminating NWDAF...")
 	// deregister with NRF
 	problemDetails, err := consumer.SendDeregisterNFInstance()

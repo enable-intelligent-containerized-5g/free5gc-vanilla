@@ -1,20 +1,18 @@
 package analyticsinfo
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
 	// "github.com/antihax/optional"
 	"github.com/enable-intelligent-containerized-5g/openapi"
-	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
-	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // HTTPNwdafAnalyticsInfoRequest - Creates a new subscription to receive notifications of ML model provisioning events
@@ -22,6 +20,7 @@ import (
 func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 	var nfAnalyticsInfoRequest models.NwdafAnalyticsInfoRequest
 
+	// Get Request Body
 	requestBody, err := c.GetRawData()
 	if err != nil {
 		logger.CfgLog.Errorf("Get Request Body error: %+v", err)
@@ -35,19 +34,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		return
 	}
 
-	// searchAllNfs() // Search NFs
-	searchServiceAnaliticsInfo() // Searh Service AnaliticsInfo
-
-	if err := json.Unmarshal(requestBody, &nfAnalyticsInfoRequest); err != nil {
-		logger.CfgLog.Errorf("Unmarshal error: %+v", err)
-		c.JSON(http.StatusBadRequest, models.ProblemDetails{
-			Title:  "Malformed request syntax",
-			Status: http.StatusBadRequest,
-			Detail: "[Request Body] " + err.Error(),
-		})
-		return
-	}
-
+	// Deserialize Request Body
 	err = openapi.Deserialize(&nfAnalyticsInfoRequest, requestBody, "application/json")
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
@@ -61,7 +48,22 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		return
 	}
 
-	// Validar el evento
+	// Initialize validater
+	validate := validator.New()
+
+	// Validate struct and return error if any
+	if err := validate.Struct(nfAnalyticsInfoRequest); err != nil {
+		problemDetails := models.ProblemDetails{
+			Title:  "Malformed request syntax",
+			Status: http.StatusBadRequest,
+			Detail: err.Error(),
+		}
+		logger.CfgLog.Errorf("Validation Error: %+v", err)
+		c.JSON(http.StatusBadRequest, problemDetails)
+		return
+	}
+
+	// Validate EventId and return the event name
 	analyticsID, err := isValidEvent(nfAnalyticsInfoRequest.EventId)
 	if err != nil {
 		problemDetail := "[Invalid event] " + err.Error()
@@ -75,7 +77,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		return
 	}
 
-	// Validar NfSetId o NfTypes
+	// Validate NfInstanceIds or NfTypes and return the typePayload
 	// TODO: Implementar la validación de NfSetId o NfTypes
 	typePayload, err := isValidNfInstanceIdsOrNfTypes(nfAnalyticsInfoRequest.NfInstanceIds, nfAnalyticsInfoRequest.NfTypes)
 	if err != nil {
@@ -90,14 +92,14 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		return
 	}
 
+	// Create a new request with the information of the request
 	req := httpwrapper.NewRequest(c.Request, nfAnalyticsInfoRequest)
 
-	// Imprimir el request
-	fmt.Println("req", req)
-
+	// Call the producer to send the request
 	var rsp *httpwrapper.Response
 	if analyticsID == string(models.NwdafEvent_NF_LOAD) {
-		rsp = producer.NF_Load(req, typePayload)
+		// Execute the NF Load event
+		rsp = producer.HandleAnalyticsInfoNfLoadMetrics(req, typePayload)
 	} else {
 		fmt.Println("No se ha implementado el evento")
 	}
@@ -148,24 +150,4 @@ func isValidEvent(event models.EventId) (analyticsID string, err error) {
 		err = errors.New("please provide a valid event")
 	}
 	return analyticsID, err
-}
-
-// func searchAllNfs() error {
-// 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-// 		// ServiceNames: optional.Interface{},
-// 	}
-// 	allNfs := consumer.SearchAllNfInstance("http://127.0.0.1:30050", "", models.NfType_NWDAF, param)
-// 	// fmt.Println("allNfs", allNfs)
-//
-// 	return allNfs
-// }
-
-func searchServiceAnaliticsInfo() error {
-	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-		// ServiceNames: optional.Interface{},
-	}
-	allNfs := consumer.SearchAnaliticsInfoInstance("http://127.0.0.1:30050", models.NfType_NWDAF, models.NfType_NWDAF, param)
-	// fmt.Println("ServiceMlModelProvision: ", allNfs)
-
-	return allNfs
 }
