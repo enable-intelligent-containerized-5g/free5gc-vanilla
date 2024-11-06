@@ -10,8 +10,6 @@ import (
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 
-	// "database/sql"
-
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -42,7 +40,6 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
 	db, errCon := util.OpenDatabase(sqldb)
 	if errCon != nil {
-		// logger.MlModelInfoLog.Errorf("Error al conectar a la base de datos: %v", errCon)
 		return models.MlModelDataResponse{}, errCon
 	}
 
@@ -50,15 +47,11 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	var mlModels []util.MlModelDataTable
 	// Consultar todos los registros de la tabla MlModelDataTable
 	result := db.
-		Preload("Event").
-		Preload("NfType").
-		Preload("Accuracy").
-		// Preload(string(models.NwdafMLModelDB_NF_TYPE_TABLE_NAME)).
-		// Preload(string(models.NwdafMLModelDB_ACCURACY_TABLE_NAME)).
-		// Preload(string(models.NwdafMLModelDB_EVENT_ID_TABLE_NAME)).
+		Preload(string(models.NwdafMLModelDB_EVENT_ID_KEY)).
+		Preload(string(models.NwdafMLModelDB_NF_TYPE_KEY)).
+		Preload(string(models.NwdafMLModelDB_ACCURACY_KEY)).
 		Find(&mlModels)
 	if result.Error != nil {
-		// logger.MlModelInfoLog.Errorf("Error al consultar la tabla: %v", result.Error)
 		return models.MlModelDataResponse{}, result.Error
 	}
 
@@ -69,14 +62,10 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 			URI:          model.URI,
 			Size:         model.Size,
 			TargetPeriod: model.TargetPeriod,
-			NfType:       models.NfType(model.NfType.NfType),
-			EventId:      models.EventId(model.Event.Event),
-			Accuracy:     models.NwdafMlModelAccuracy(model.Accuracy.Accuracy),
+			NfType:       model.NfType.NfType,
+			EventId:      model.Event.Event,
+			Accuracy:     model.Accuracy.Accuracy,
 		}
-
-		// logger.MlModelInfoLog.Infof("ID: %d, URI: %s, Size: %d, TargetPeriod: %d, NfTypeID: %s, AccuracyID: %s, EventID: %s\n",
-		// 	model.ID, model.URI, model.Size, model.TargetPeriod, model.NfTypeID, model.AccuracyID, model.EventID)
-
 		mlModelList = append(mlModelList, mlModelData)
 	}
 
