@@ -16,14 +16,14 @@ func getNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePaylo
 	// Extract the body of the request
 	analyticsInfoData := request.Body.(models.NwdafAnalyticsInfoRequest)
 
-	logger.CfgLog.Info("Analytics Info Data: ", analyticsInfoData)
+	logger.AniLog.Info("Analytics Info Data: ", analyticsInfoData)
 
 	// extract event values from analyticsInfoData
 	eventID := analyticsInfoData.EventId
 
-	logger.CfgLog.Info("Event ID: ", eventID)
+	logger.AniLog.Info("Event ID: ", eventID)
 
-	logger.CfgLog.Info("Type Payload Request: ", typePayload)
+	logger.AniLog.Info("Type Payload Request: ", typePayload)
 
 	// check the type of payload request
 	switch typePayload {
@@ -72,7 +72,7 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 	// extract event values from analyticsInfoData
 	eventID := analyticsInfoData.EventId
-	logger.CfgLog.Info("Event ID: ", eventID)
+	logger.AniLog.Info("Event ID: ", eventID)
 	// check the type of payload request
 	switch typePayload {
 	case models.TypePayloadRequest_NF_INSTANCES:
@@ -93,11 +93,11 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 	case models.TypePayloadRequest_NF_TYPES:
 		// extract nfTypes values from analytics
 		nfTypes := analyticsInfoData.NfTypes
-		logger.CfgLog.Info("NF Types: ", nfTypes)
+		logger.AniLog.Info("NF Types: ", nfTypes)
 		// return the response
 		return httpwrapper.NewResponse(http.StatusAccepted, nil, eventID)
 	default:
-		logger.CfgLog.Warn("Unknown type payload")
+		logger.AniLog.Warn("Unknown type payload")
 		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "Unknown payload type")
 	}
 }

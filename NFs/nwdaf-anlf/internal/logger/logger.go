@@ -15,6 +15,8 @@ var (
 	AppLog      *logrus.Entry
 	InitLog     *logrus.Entry
 	CfgLog      *logrus.Entry
+	ProducerLog *logrus.Entry
+	AniLog      *logrus.Entry
 	HandlerLog  *logrus.Entry
 	DataRepoLog *logrus.Entry
 	UtilLog     *logrus.Entry
@@ -38,6 +40,8 @@ func init() {
 	AppLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "App"})
 	InitLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Init"})
 	CfgLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "CFG"})
+	ProducerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Producer"})
+	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "analyticsinfo"})
 	HandlerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HDLR"})
 	DataRepoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "DRepo"})
 	UtilLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Util"})
