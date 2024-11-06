@@ -18,7 +18,7 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 
 	response := NwdafMlModelInfoRequestProcedure()
 
-	logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
+	// logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
 
 	if response != nil {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
@@ -31,7 +31,7 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 	}
 }
 
-func NwdafMlModelInfoRequestProcedure() []models.MlModelInfoData {
+func NwdafMlModelInfoRequestProcedure() []models.MlModelData {
 	logger.MlModelInfoLog.Infoln("Procedure MlModelInfoRequest")
 	// Conectar a la base de datos SQLite
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
@@ -43,32 +43,35 @@ func NwdafMlModelInfoRequestProcedure() []models.MlModelInfoData {
 	defer db.Close()
 
 	// Consultar todos los registros de la tabla 'records'
-	rows, err := db.Query(`
-		SELECT uri, accuracy, nf_type, event_id, target_period 
-		FROM ` + string(models.NwdafMLModelDB_ML_MODEL_INFO) + `;`)
+	selectSQL := `SELECT uri AS uri, accuracy AS accuracy, size AS size, nf_type AS nfType, event_id AS eventId, target_period AS targetPeriod FROM `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) +`;`
+	rows, err := db.Query(selectSQL)
 	if err != nil {
-		logger.MlModelInfoLog.Error("Error al consultar los registros: ", err)
+		logger.MlModelInfoLog.Error("Error querying mlmodels data: ", err)
 		return nil
 	}
 	defer rows.Close()
 
+	// logger.MlModelInfoLog.Error(rows)
+
 	// Iterar sobre los resultados y mapearlos a una estructura
-	var records []models.MlModelInfoData
+	var mlmodels []models.MlModelData
 	for rows.Next() {
-		var mlmodels models.MlModelInfoData
-		err := rows.Scan(&mlmodels.URI, &mlmodels.Accuracy, &mlmodels.NfType, &mlmodels.EventId, &mlmodels.TargetPeriod)
+		var mlmodel models.MlModelData
+		err := rows.Scan(&mlmodel)
 		if err != nil {
-			logger.MlModelInfoLog.Error("Error al leer los registros: ", err)
+			logger.MlModelInfoLog.Error("Error reading records: ", err)
 			return nil
 		}
-		records = append(records, mlmodels)
+		mlmodels = append(mlmodels, mlmodel)
 	}
 
 	if err := rows.Err(); err != nil {
-		logger.MlModelInfoLog.Error("Error en el procesamiento de filas: ", err)
+		logger.MlModelInfoLog.Error("Error proccesing rows: ", err)
 		return nil
 	}
 
+	logger.MlModelInfoLog.Error("models: ",mlmodels)
+
 	logger.MlModelInfoLog.Info("Registros obtenidos con éxito")
-	return records
+	return mlmodels
 }

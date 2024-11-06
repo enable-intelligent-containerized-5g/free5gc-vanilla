@@ -22,7 +22,7 @@ import (
 // }
 
 func HTTPSaveMlModel(c *gin.Context) {
-	var modelInfo models.MlModelInfoData
+	var modelInfo models.MlModelData
 
     // Step 1: Retrieve HTTP request body
     requestBody, err := c.GetRawData()
@@ -52,7 +52,7 @@ func HTTPSaveMlModel(c *gin.Context) {
         return
     }
 
-    // logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
+    logger.MlModelTrainingLog.Warn("Deserialized ModelInfo: ", modelInfo)
 
     req := httpwrapper.NewRequest(c.Request, modelInfo)
     httpResponse := producer.HandleSaveMlModel(req)
