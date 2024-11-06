@@ -1,14 +1,17 @@
 package producer
 
 import (
+	// "embed"
 	"net/http"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
+	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 
-	"database/sql"
+	// "database/sql"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -16,62 +19,68 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 	logger.MlModelInfoLog.Infoln("Handle MlModelInfoRequest")
 	// nfInstanceId := request.Params["nfInstanceID"]
 
-	response := NwdafMlModelInfoRequestProcedure()
+	response, err := NwdafMlModelInfoRequestProcedure()
 
 	// logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
 
-	if response != nil {
-		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-	} else {
+	if err != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  "UNSPECIFIED",
+			Status: http.StatusInternalServerError,
+			Cause:  err.Error(),
 		}
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+	} else {
+		return httpwrapper.NewResponse(http.StatusOK, nil, response)
+
 	}
 }
 
-func NwdafMlModelInfoRequestProcedure() []models.MlModelData {
+func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	logger.MlModelInfoLog.Infoln("Procedure MlModelInfoRequest")
+
 	// Conectar a la base de datos SQLite
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
-	db, errCon := sql.Open("sqlite3", sqldb)
+	db, errCon := util.OpenDatabase(sqldb)
 	if errCon != nil {
-		logger.MlModelInfoLog.Error("Error al abrir la base de datos: ", errCon)
-		return nil
+		// logger.MlModelInfoLog.Errorf("Error al conectar a la base de datos: %v", errCon)
+		return models.MlModelDataResponse{}, errCon
 	}
-	defer db.Close()
 
-	// Consultar todos los registros de la tabla 'records'
-	selectSQL := `SELECT uri AS uri, accuracy AS accuracy, size AS size, nf_type AS nfType, event_id AS eventId, target_period AS targetPeriod FROM `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) +`;`
-	rows, err := db.Query(selectSQL)
-	if err != nil {
-		logger.MlModelInfoLog.Error("Error querying mlmodels data: ", err)
-		return nil
+	// Variable para almacenar los resultados
+	var mlModels []util.MlModelDataTable
+	// Consultar todos los registros de la tabla MlModelDataTable
+	result := db.
+		Preload("Event").
+		Preload("NfType").
+		Preload("Accuracy").
+		// Preload(string(models.NwdafMLModelDB_NF_TYPE_TABLE_NAME)).
+		// Preload(string(models.NwdafMLModelDB_ACCURACY_TABLE_NAME)).
+		// Preload(string(models.NwdafMLModelDB_EVENT_ID_TABLE_NAME)).
+		Find(&mlModels)
+	if result.Error != nil {
+		// logger.MlModelInfoLog.Errorf("Error al consultar la tabla: %v", result.Error)
+		return models.MlModelDataResponse{}, result.Error
 	}
-	defer rows.Close()
 
-	// logger.MlModelInfoLog.Error(rows)
-
-	// Iterar sobre los resultados y mapearlos a una estructura
-	var mlmodels []models.MlModelData
-	for rows.Next() {
-		var mlmodel models.MlModelData
-		err := rows.Scan(&mlmodel)
-		if err != nil {
-			logger.MlModelInfoLog.Error("Error reading records: ", err)
-			return nil
+	var mlModelList []models.MlModelData
+	logger.MlModelInfoLog.Info("Registros obtenidos:")
+	for _, model := range mlModels {
+		mlModelData := models.MlModelData{
+			URI:          model.URI,
+			Size:         model.Size,
+			TargetPeriod: model.TargetPeriod,
+			NfType:       models.NfType(model.NfType.NfType),
+			EventId:      models.EventId(model.Event.Event),
+			Accuracy:     models.NwdafMlModelAccuracy(model.Accuracy.Accuracy),
 		}
-		mlmodels = append(mlmodels, mlmodel)
-	}
 
-	if err := rows.Err(); err != nil {
-		logger.MlModelInfoLog.Error("Error proccesing rows: ", err)
-		return nil
-	}
+		// logger.MlModelInfoLog.Infof("ID: %d, URI: %s, Size: %d, TargetPeriod: %d, NfTypeID: %s, AccuracyID: %s, EventID: %s\n",
+		// 	model.ID, model.URI, model.Size, model.TargetPeriod, model.NfTypeID, model.AccuracyID, model.EventID)
 
-	logger.MlModelInfoLog.Error("models: ",mlmodels)
+		mlModelList = append(mlModelList, mlModelData)
+	}
 
 	logger.MlModelInfoLog.Info("Registros obtenidos con éxito")
-	return mlmodels
+
+	return models.MlModelDataResponse{MlModels: mlModelList}, nil
 }
