@@ -15,11 +15,8 @@ import (
 
 func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.MlModelInfoLog.Infoln("Handle MlModelInfoRequest")
-	// nfInstanceId := request.Params["nfInstanceID"]
 
 	response, err := NwdafMlModelInfoRequestProcedure()
-
-	// logger.MlModelInfoLog.Warn("Response from NwdafMlModelInfoRequestProcedure: ", response)
 
 	if err != nil {
 		problemDetails := &models.ProblemDetails{
@@ -29,23 +26,22 @@ func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Re
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
 		return httpwrapper.NewResponse(http.StatusOK, nil, response)
-
 	}
 }
 
 func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	logger.MlModelInfoLog.Infoln("Procedure MlModelInfoRequest")
 
-	// Conectar a la base de datos SQLite
+	// connect to database
 	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
 	db, errCon := util.OpenDatabase(sqldb)
 	if errCon != nil {
 		return models.MlModelDataResponse{}, errCon
 	}
 
-	// Variable para almacenar los resultados
-	var mlModels []util.MlModelDataTable
-	// Consultar todos los registros de la tabla MlModelDataTable
+	// Results
+	var mlModels []models.MlModelDataTable
+	// Get results
 	result := db.
 		Preload(string(models.NwdafMLModelDB_EVENT_ID_KEY)).
 		Preload(string(models.NwdafMLModelDB_NF_TYPE_KEY)).
@@ -56,7 +52,6 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	}
 
 	var mlModelList []models.MlModelData
-	logger.MlModelInfoLog.Info("Registros obtenidos:")
 	for _, model := range mlModels {
 		mlModelData := models.MlModelData{
 			URI:          model.URI,
@@ -69,7 +64,7 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 		mlModelList = append(mlModelList, mlModelData)
 	}
 
-	logger.MlModelInfoLog.Info("Registros obtenidos con éxito")
+	// logger.MlModelInfoLog.Info("Registros obtenidos con éxito")
 
 	return models.MlModelDataResponse{MlModels: mlModelList}, nil
 }

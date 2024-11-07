@@ -12,6 +12,7 @@ import (
 	"syscall"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
@@ -72,11 +73,11 @@ func (nwdaf *NWDAF) Initialize(c *cli.Context) error {
 		}
 	}
 
-	nwdaf.SetLogLevel() // No está hacinedo nada: No hay logger para NWDAF
-
 	if err := factory.CheckConfigVersion(); err != nil {
 		return err
 	}
+
+	nwdaf.SetLogLevel() // No está hacinedo nada: No hay logger para NWDAF
 
 	if _, err := factory.NwdafConfig.Validate(); err != nil {
 		return err
@@ -126,11 +127,12 @@ func (nwdaf *NWDAF) Start() {
 	// get config file info
 	config := factory.NwdafConfig
 
-	logger.InitLog.Infof("NWDAF Config Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
-
 	logger.InitLog.Infoln("Server started")
 
+	gin.SetMode(gin.ReleaseMode)
+
 	router := logger_util.NewGinWithLogrus(logger.GinLog)
+
 	router.Use(cors.New(cors.Config{
 		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
 		AllowHeaders: []string{
@@ -157,10 +159,6 @@ func (nwdaf *NWDAF) Start() {
 	util.InitNwdafContext(self)
 
 	context.GlobalNwdafContext = self
-
-	fmt.Printf("NWDAF", context.GlobalNwdafContext)
-
-	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
 
 	// Register to NRF
 	profile := consumer.BuildNFInstance(self)
@@ -189,6 +187,8 @@ func (nwdaf *NWDAF) Start() {
 		os.Exit(0)
 	}()
 
+	addr := fmt.Sprintf("%s:%d", self.BindingIPv4, self.SBIPort)
+	logger.InitLog.Infof("Binding addr: [%s]", addr)
 	server, err := httpwrapper.NewHttp2Server(addr, nwdaf.KeyLogPath, router)
 	if server == nil {
 		logger.InitLog.Errorf("Initialize HTTP server failed: %+v", err)

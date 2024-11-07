@@ -1,71 +1,52 @@
 package util
 
 import (
-	// "github.com/enable-intelligent-containerized-5g/openapi"
+	"fmt"
+
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/pkg/factory"
 
-	// "database/sql"
 	_ "github.com/mattn/go-sqlite3"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-type EventTable struct {
-	ID    int64 `gorm:"primaryKey"`
-	Event models.EventId
-}
-
-type AccuracyTable struct {
-	ID       int64 `gorm:"primaryKey"`
-	Accuracy models.NwdafMlModelAccuracy
-}
-
-type NFTypeTable struct {
-	ID     int64 `gorm:"primaryKey"`
-	NfType models.NfType
-}
-
-type MlModelDataTable struct {
-	ID           int64 `gorm:"primaryKey"`
-	URI          string
-	Size         int64
-	TargetPeriod int64
-	NfTypeID     int64         `gorm:"foreignKey:ID"`
-	AccuracyID   int64         `gorm:"foreignKey:ID"`
-	EventID      int64         `gorm:"foreignKey:ID"`
-	NfType       NFTypeTable   // property name in: models.NwdafMLModelDB_NF_TYPE_KEY
-	Accuracy     AccuracyTable // property name in: models.NwdafMLModelDB_ACCURACY_KEY
-	Event        EventTable    // property name in: models.NwdafMLModelDB_EVENT_ID_KEY
-}
-
 func InitSqlLiteDB() (err error) {
 	// Database
-	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
+	dbPath := factory.NwdafConfig.Configuration.SqlLiteDB
 
-	db, err := OpenDatabase(sqldb)
+	// Open the database
+	db, err := OpenDatabase(dbPath)
 	if err != nil {
-		return err
+		return fmt.Errorf(" Fail opening the database %s: %+v", dbPath, err)
 	}
 
-	err = db.Migrator().DropTable(&MlModelDataTable{}, &NFTypeTable{}, &EventTable{}, &AccuracyTable{})
+	// Verify the conecction
+	errConnDB := db.Raw("SELECT 1").Error
+	if errConnDB != nil {
+		return fmt.Errorf(" Fail to connect to database %+v: %v", dbPath, errConnDB)
+	}
+
+	// Delete tables
+	err = db.Migrator().DropTable(&models.MlModelDataTable{}, &models.NFTypeTable{}, &models.EventTable{}, &models.AccuracyTable{})
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error dropping tables: %v", err)
 	}
 
 	// Migrate the database
-	err = db.AutoMigrate(&NFTypeTable{}, &MlModelDataTable{}, &EventTable{}, &AccuracyTable{})
+	err = db.AutoMigrate(&models.NFTypeTable{}, &models.MlModelDataTable{}, &models.EventTable{}, &models.AccuracyTable{})
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error during AutoMigrate: %v", err)
 	}
 
+	// Insert initial data
 	err = insertData(db)
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error during data insertion: %v", err)
 	}
 
-	logger.UtilLog.Infof("The database %s was started successfully", sqldb)
+	logger.InitLog.Infof("Database %s initialized successfully", dbPath)
 
 	return nil
 }
@@ -93,7 +74,7 @@ func OpenDatabase(dataSourceName string) (*gorm.DB, error) {
 
 func insertData(db *gorm.DB) error {
 	// Insertar eventos
-	events := []EventTable{
+	events := []models.EventTable{
 		{
 			Event: models.EventId_LOAD_LEVEL_INFORMATION, // Event Id value
 		},
@@ -146,7 +127,7 @@ func insertData(db *gorm.DB) error {
 	}
 
 	// Insertar precisiones
-	accuracies := []AccuracyTable{
+	accuracies := []models.AccuracyTable{
 		{
 			Accuracy: models.NwdafMlModelAccuracy_LOW, // Accuracy value
 		},
@@ -163,7 +144,7 @@ func insertData(db *gorm.DB) error {
 	}
 
 	// Insertar tipos de NF
-	nfTypes := []NFTypeTable{
+	nfTypes := []models.NFTypeTable{
 		{
 			NfType: models.NfType_NRF, // NfType value
 		},
@@ -230,12 +211,12 @@ func insertData(db *gorm.DB) error {
 	}
 	errNfTypes := db.Create(&nfTypes).Error
 	if errNfTypes != nil {
-		logger.UtilLog.Errorf("Error al insertar NfTypes: %v", errNfTypes)
+		logger.UtilLog.Errorf("Error to insert NfTypes: %v", errNfTypes)
 		return errNfTypes
 	}
 
 	// Crear modelos ML utilizando las claves foráneas
-	mlModels := []MlModelDataTable{
+	mlModels := []models.MlModelDataTable{
 		{
 			URI:          "http://example.com/model1", // URI
 			Size:         1024,                        // in Bytes

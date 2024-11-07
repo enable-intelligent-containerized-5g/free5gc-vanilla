@@ -2,6 +2,8 @@ package producer
 
 import (
 	"net/http"
+	"fmt"
+	"strings"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
@@ -10,7 +12,6 @@ import (
 	"github.com/free5gc/util/httpwrapper"
 	"gorm.io/gorm"
 
-	"database/sql"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -22,14 +23,12 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 		return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelData")
 	}
 
-	logger.MlModelTrainingLog.Warn("Handle ModelData: ", mlmodeldata)
-
 	putData, created, problemDetails := SaveMlModelProcedure(mlmodeldata)
 	if created {
-		logger.MlModelTrainingLog.Info("SaveMlModel success")
+		// logger.MlModelTrainingLog.Info("SaveMlModel success")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
 	} else if problemDetails != nil {
-		logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Cause)
+		// logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Cause)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
@@ -55,45 +54,60 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 		return models.MlModelDataResponse{}, false, problemDetails
 	}
 
+	// Validate Size
+	if mldata.Size <= 0 {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusBadRequest,
+			Cause:  fmt.Sprintf("The Size must be greater than 0, but got %d", mldata.Size),
+		}
+		return models.MlModelDataResponse{}, false, problemDetails
+	}
+
+	// Validate TargetPeriod
+	if mldata.TargetPeriod <= 0 {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusBadRequest,
+			Cause:  fmt.Sprintf("The TargetPeriod must be greater than 0, but got %d", mldata.TargetPeriod),
+		}
+		return models.MlModelDataResponse{}, false, problemDetails
+	}
+
+	// Validate URI
+	if strings.TrimSpace(mldata.URI) == "" {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusBadRequest,
+			Cause:  "The URI cannot be empty",
+		}
+		return models.MlModelDataResponse{}, false, problemDetails
+	}
+
 	// Validate EventId
-	eventFound := util.EventTable{Event: mldata.EventId}
+	eventFound := models.EventTable{Event: mldata.EventId}
 	errGetEvent := GetEventByName(&eventFound, db)
 	if errGetEvent != nil {
 		// logger.MlModelTrainingLog.Errorf("Event %s not found: %s", mldata.EventId, errGetEvent)
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  errGetEvent.Error(),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
+		return models.MlModelDataResponse{}, false, errGetEvent
 		
 	}
 
 	// Validate Accuracy
-	accuFound := util.AccuracyTable{Accuracy: mldata.Accuracy}
+	accuFound := models.AccuracyTable{Accuracy: mldata.Accuracy}
 	errGetAccu := GetAccuracyByName(&accuFound, db)
 	if errGetAccu != nil {
 		// logger.MlModelTrainingLog.Errorf("Accuracy %s not found: %s", mldata.Accuracy, errGetAccu)
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  errGetAccu.Error(),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
+		return models.MlModelDataResponse{}, false, errGetAccu
 	}
 
 	// Validate NfType
-	nfTypeFound := util.NFTypeTable{NfType: mldata.NfType}
+	nfTypeFound := models.NFTypeTable{NfType: mldata.NfType}
 	errGetNfType := GetNfTypeByName(&nfTypeFound, db)
 	if errGetNfType != nil {
 		// logger.MlModelTrainingLog.Errorf("NfType %s not found: %s", mldata.NfType, errGetNfType)
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  errGetNfType.Error(),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
+		return models.MlModelDataResponse{}, false, errGetNfType
 	}
 
 	// Create the struct
-	mlModelTableRequest := util.MlModelDataTable{
+	mlModelTableRequest := models.MlModelDataTable{
 		URI:          mldata.URI,
 		Size:         mldata.Size,
 		TargetPeriod: mldata.TargetPeriod,
@@ -104,15 +118,19 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 		Event:        eventFound,
 		NfType:       nfTypeFound,
 	}
-	errSaves := SaveMlmodel(&mlModelTableRequest, db)
-	if errSaves != nil {
+	errSaving := SaveMlmodel(&mlModelTableRequest, db)
+	if errSaving != nil {
 		// logger.MlModelTrainingLog.Errorf("MlModel not saved: %s", errSaves)
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  errSaves.Error(),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
+		return models.MlModelDataResponse{}, false, errSaving
 	}
+
+	var model2 models.MlModelDataTable
+	errGetMlModel := GetMlModelById(&model2, db, mlModelTableRequest.ID)
+	if errGetMlModel != nil {
+		// logger.MlModelTrainingLog.Errorf("MlModel not found: %s", errSaves)
+		return models.MlModelDataResponse{}, false, errGetMlModel
+	}
+
 
 	mlmodelSaved := models.MlModelData{
 		URI:          mlModelTableRequest.URI,
@@ -126,58 +144,70 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 	return models.MlModelDataResponse{MlModels: append([]models.MlModelData{}, mlmodelSaved)}, true, nil
 }
 
-// Función para recuperar un modelo ML por ID
-func GetMlModelInfoByID(db *sql.DB, id int64) (models.MlModelData, error) {
-	var modelInfo models.MlModelData
-	// selectSQL := `SELECT uri AS uri, size AS size, accuracy AS accuracy, nf_type AS nfType, event_id AS eventId, target_period AS targetPeriod FROM `+ string(models.NwdafMLModelDB_ML_MODEL_INFO) + ` WHERE id = ?;`
-	// row := db.QueryRow(selectSQL, id)
+// Get MlModel by ID
+func GetMlModelById(mlModel *models.MlModelDataTable, db *gorm.DB, id int64) *models.ProblemDetails {
+	result := db.First(&mlModel, id) // Search by ID = 1
+	if result.Error != nil {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusNotFound,
+			Cause:  fmt.Sprintf("MlModel with id %d not found", id),
+		}
+		return problemDetails
+	}
 
-	// if row == nil {
-	// 	logger.MlModelTrainingLog.Warn("row nil")
-	//     return modelInfo, http.ErrAbortHandler // Retornar error
-	// }
-
-	// logger.MlModelTrainingLog.Warn("responde select by id: ", row)
-	// err := row.Scan(&modelInfo.URI, &modelInfo.Size, &modelInfo.Accuracy, &modelInfo.NfType, &modelInfo.EventId, &modelInfo.TargetPeriod)
-	// if err != nil {
-	//     return models.MlModelData{}, err // Retornar error
-	// }
-
-	return modelInfo, nil // Retornar el objeto recuperado
+	return nil
 }
 
-func GetEventByName(event *util.EventTable, db *gorm.DB) error {
+func GetEventByName(event *models.EventTable, db *gorm.DB) *models.ProblemDetails {
 	err := db.Where(&event).First(&event).Error
 	if err != nil {
-		return err
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusNotFound,
+			Cause:  fmt.Sprintf("EventId %s not found", event.Event),
+		}
+		return problemDetails
 	}
 
 	return nil
 }
 
-func GetAccuracyByName(accuracy *util.AccuracyTable, db *gorm.DB) error {
+func GetAccuracyByName(accuracy *models.AccuracyTable, db *gorm.DB) *models.ProblemDetails {
 	err := db.Where(&accuracy).First(&accuracy).Error
 	if err != nil {
-		return err
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusNotFound,
+			Cause:  fmt.Sprintf("Accuracy %s not found", accuracy.Accuracy),
+		}
+		return problemDetails
 	}
 
 	return nil
 }
 
-func GetNfTypeByName(nf *util.NFTypeTable, db *gorm.DB) error {
+func GetNfTypeByName(nf *models.NFTypeTable, db *gorm.DB) *models.ProblemDetails {
 	err := db.Where(&nf).First(&nf).Error
 	if err != nil {
-		return err
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusNotFound,
+			Cause:  fmt.Sprintf("NfType %s not found", nf.NfType),
+		}
+		return problemDetails
 	}
 
 	return nil
 }
 
-func SaveMlmodel(mlModel *util.MlModelDataTable, db *gorm.DB) error {
+func SaveMlmodel(mlModel *models.MlModelDataTable, db *gorm.DB) *models.ProblemDetails {
 	result := db.Create(&mlModel)
 	if result.Error != nil {
-		return result.Error
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Cause:  "Could not save the model to the database",
+		}
+		return problemDetails
 	}
 
 	return nil
 }
+
+
