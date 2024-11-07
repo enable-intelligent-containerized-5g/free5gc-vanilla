@@ -30,3 +30,7 @@ cscope.*
 
 # SQL Lite
 .db
+
+# others
+tmp
+log

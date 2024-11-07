@@ -157,6 +157,8 @@ func (nrf *NRF) Start() {
 		os.Exit(0)
 	}()
 
+	// go util.BackgroundTask()
+
 	bindAddr := factory.NrfConfig.GetSbiBindingAddr()
 	logger.InitLog.Infof("Binding addr: [%s]", bindAddr)
 	server, err := httpwrapper.NewHttp2Server(bindAddr, nrf.KeyLogPath, router)
@@ -182,6 +184,7 @@ func (nrf *NRF) Start() {
 	if err != nil {
 		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
+
 }
 
 func (nrf *NRF) Exec(c *cli.Context) error {
