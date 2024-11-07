@@ -157,6 +157,7 @@ func (nrf *NRF) Start() {
 		os.Exit(0)
 	}()
 
+	// func to delete Duplicated NF
 	// go util.BackgroundTask()
 
 	bindAddr := factory.NrfConfig.GetSbiBindingAddr()
