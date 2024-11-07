@@ -13,52 +13,44 @@ import (
 	"github.com/free5gc/util/httpwrapper"
 )
 
-func getNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePayloadRequest) *httpwrapper.Response {
-	// Extract the body of the request
-	analyticsInfoData := request.Body.(models.NwdafAnalyticsInfoRequest)
+func getNfLoadMetrics() {
+}
 
-	logger.AniLog.Info("Analytics Info Data: ", analyticsInfoData)
-
-	// extract event values from analyticsInfoData
-	eventID := analyticsInfoData.EventId
-
-	logger.AniLog.Info("Event ID: ", eventID)
-
-	logger.AniLog.Info("Type Payload Request: ", typePayload)
-
-	// check the type of payload request
-	switch typePayload {
-	case models.TypePayloadRequest_NF_INSTANCES:
-		// extract nfInstance values from analytics
-		nfInstancesIds := analyticsInfoData.NfInstanceIds
-		param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-			// ServiceNames: optional.Interface{},
+func filterNfInstanceById(nfIntances *[]models.NfProfile, nfInstanceIds []string) (nfInstancesFiltered []models.NfProfile) {
+	for _, nfInstance := range *nfIntances {
+		for _, nfInstanceId := range nfInstanceIds {
+			if nfInstance.NfInstanceId == nfInstanceId {
+				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
+			}
 		}
-
-		var nfInstances []models.NfProfile
-
-		err := consumer.SearchAllNfInstance(&nfInstances, "http://127.0.0.1:30050", "", models.NfType_NWDAF, param)
-		if err != nil {
-			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
-		}
-
-		logger.AniLog.Info("All NFs: ", nfInstances)
-		logger.AniLog.Info("NF Instances IDs: ", nfInstancesIds)
-		fmt.Println("All NFs: ", nfInstances)
-		// return the response
-		return httpwrapper.NewResponse(http.StatusOK, nil, nfInstances)
-
-	case models.TypePayloadRequest_NF_TYPES:
-		// extract nfTypes values from analytics
-		nfTypes := analyticsInfoData.NfTypes
-		logger.AniLog.Info("NF Types: ", nfTypes)
-		// return the response
-		return httpwrapper.NewResponse(http.StatusAccepted, nil, eventID)
-
-	default:
-		logger.AniLog.Warn("Unknown type payload")
-		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "Unknown payload type")
 	}
+	return nfInstancesFiltered
+}
+
+func filterNfInstanceByNfType(nfIntances *[]models.NfProfile, nfTypes []models.NfType) (nfInstancesFiltered []models.NfProfile) {
+	for _, nfInstance := range *nfIntances {
+		for _, nfType := range nfTypes {
+			if nfInstance.NfType == nfType {
+				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
+			}
+		}
+	}
+	return nfInstancesFiltered
+}
+
+func filterMlModelInfo(mlModelInfoList *[]models.MlModelData, eventId *models.EventId, accuracy *models.NwdafMlModelAccuracy, targetPeriod int64) (mlModelInfoFiltered []models.MlModelData) {
+	for _, mlModelInfo := range *mlModelInfoList {
+		if mlModelInfo.EventId == *eventId && mlModelInfo.Accuracy == *accuracy && mlModelInfo.TargetPeriod == targetPeriod {
+			mlModelInfoFiltered = append(mlModelInfoFiltered, mlModelInfo)
+		}
+	}
+	return mlModelInfoFiltered
+}
+
+func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
+	startTimeUnix := startTime.Unix()
+	endTimeUnix := endTime.Unix()
+	return endTimeUnix - startTimeUnix
 }
 
 func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePayloadRequest) *httpwrapper.Response {
@@ -96,48 +88,62 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
 		}
 
+		// Filter NF instances by ID
+		nfInstancesFiltered := filterNfInstanceById(&nfInstances, nfInstancesIds)
+
+		logger.AniLog.Info("Filtered NF Instances: ", nfInstancesFiltered)
+
 		// Get StartTime and EndTime
 		startTime := analyticsInfoData.StartTime
 		endTime := analyticsInfoData.EndTime
 		currentTime := time.Now()
 
 		// Predict metrics
-		if endTime.After(currentTime) || startTime.Before(currentTime) {
+		switch {
+		case endTime.After(currentTime) || startTime.Before(currentTime):
 			fmt.Println("EndTime is greater than now")
 
 			var mtlfUri string
 
-      // Search MLF URI
+			// Search MLF URI
 			err := consumer.SearchMlModelInfoInstance(&mtlfUri, NrfUri, models.NfType_NWDAF, models.NfType_NWDAF, param)
 			if err != nil {
 				logger.AniLog.Error("MLF URI not found: ", err)
 				return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
 			}
 
-      logger.AniLog.Info("MLF URI: ", mtlfUri)
+			logger.AniLog.Info("MLF URI: ", mtlfUri)
 
-      var mlModelInfoList []models.MlModelData
+			var mlModelInfoList []models.MlModelData
 
-      // Send GetMlModelInfoList
-      err = consumer.SendGetMlModelInfoList(&mlModelInfoList, mtlfUri)
-      if err != nil {
-        logger.AniLog.Error("ML Model Info List not found: ", err)
-        return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
-      }
+			// Send GetMlModelInfoList
+			err = consumer.SendGetMlModelInfoList(&mlModelInfoList, mtlfUri)
+			if err != nil {
+				logger.AniLog.Error("ML Model Info List not found: ", err)
+				return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
+			}
 
-      return httpwrapper.NewResponse(http.StatusOK, nil, mlModelInfoList)
-		}
+			// Convert time to seconds
+			targetPeriod := parseTimeToSeconds(startTime, endTime)
 
-		// Analyze metrics existence
-		if startTime.Before(currentTime) || endTime.Before(currentTime) {
+			// Filter ML Model Info
+			mlModelInfoFiltered := filterMlModelInfo(&mlModelInfoList, &eventID, &analyticsInfoData.Accuracy, targetPeriod)
+			if mlModelInfoFiltered == nil {
+				return httpwrapper.NewResponse(http.StatusInternalServerError, nil, "ML Model Info not found")
+			}
+
+			logger.AniLog.Info("Filtered ML Model Info: ", mlModelInfoFiltered)
+
+			return httpwrapper.NewResponse(http.StatusOK, nil, mlModelInfoFiltered)
+		case startTime.Before(currentTime) || endTime.Before(currentTime):
 			fmt.Println("EndTime is less than now")
+			return httpwrapper.NewResponse(http.StatusOK, nil, nfInstances)
+		default:
+			fmt.Println("invalid time range")
+			return httpwrapper.NewResponse(http.StatusBadRequest, nil, "Invalid time range")
 		}
 
-		logger.AniLog.Info("All NFs: ", nfInstances)
-		logger.AniLog.Info("NF Instances IDs: ", nfInstancesIds)
-		fmt.Println("All NFs: ", nfInstances)
 		// return the response
-		return httpwrapper.NewResponse(http.StatusOK, nil, nfInstances)
 	case models.TypePayloadRequest_NF_TYPES:
 		// extract nfTypes values from analytics
 		nfTypes := analyticsInfoData.NfTypes
