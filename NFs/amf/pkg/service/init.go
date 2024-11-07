@@ -25,6 +25,7 @@ import (
 	"github.com/free5gc/amf/internal/sbi/httpcallback"
 	"github.com/free5gc/amf/internal/sbi/location"
 	"github.com/free5gc/amf/internal/sbi/mt"
+	"github.com/free5gc/amf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/amf/internal/sbi/oam"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
 	"github.com/free5gc/amf/internal/util"
@@ -217,6 +218,7 @@ func (amf *AMF) Start() {
 
 	httpcallback.AddService(router)
 	oam.AddService(router)
+	nfprofileprovition.AddService(router)
 	for _, serviceName := range factory.AmfConfig.Configuration.ServiceNameList {
 		switch models.ServiceName(serviceName) {
 		case models.ServiceName_NAMF_COMM:

@@ -18,6 +18,7 @@ import (
 	"github.com/free5gc/udr/internal/logger"
 	"github.com/free5gc/udr/internal/sbi/consumer"
 	"github.com/free5gc/udr/internal/sbi/datarepository"
+	"github.com/free5gc/udr/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/udr/internal/util"
 	"github.com/free5gc/udr/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
@@ -140,6 +141,7 @@ func (udr *UDR) Start() {
 	router := logger_util.NewGinWithLogrus(logger.GinLog)
 
 	datarepository.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.UdrDefaultPemPath
 	keyPath := util.UdrDefaultKeyPath

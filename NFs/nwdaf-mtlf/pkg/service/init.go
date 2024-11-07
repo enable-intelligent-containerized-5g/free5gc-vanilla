@@ -21,6 +21,7 @@ import (
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/sbi/mlmodelinfo"
 	"github.com/free5gc/nwdaf/internal/sbi/mlmodeltraining"
+	"github.com/free5gc/nwdaf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
@@ -150,6 +151,7 @@ func (nwdaf *NWDAF) Start() {
 
 	mlmodelinfo.AddService(router)
 	mlmodeltraining.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.NwdafDefaultPemPath
 	keyPath := util.NwdafDefaultKeyPath
