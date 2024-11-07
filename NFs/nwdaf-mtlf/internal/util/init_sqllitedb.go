@@ -1,6 +1,8 @@
 package util
 
 import (
+	"fmt"
+
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/pkg/factory"
@@ -12,30 +14,39 @@ import (
 
 func InitSqlLiteDB() (err error) {
 	// Database
-	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
+	dbPath := factory.NwdafConfig.Configuration.SqlLiteDB
 
-	db, err := OpenDatabase(sqldb)
+	// Open the database
+	db, err := OpenDatabase(dbPath)
 	if err != nil {
-		return err
+		return fmt.Errorf(" Fail opening the database %s: %+v", dbPath, err)
 	}
 
+	// Verify the conecction
+	errConnDB := db.Raw("SELECT 1").Error
+	if errConnDB != nil {
+		return fmt.Errorf(" Fail to connect to database %+v: %v", dbPath, errConnDB)
+	}
+
+	// Delete tables
 	err = db.Migrator().DropTable(&models.MlModelDataTable{}, &models.NFTypeTable{}, &models.EventTable{}, &models.AccuracyTable{})
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error dropping tables: %v", err)
 	}
 
 	// Migrate the database
 	err = db.AutoMigrate(&models.NFTypeTable{}, &models.MlModelDataTable{}, &models.EventTable{}, &models.AccuracyTable{})
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error during AutoMigrate: %v", err)
 	}
 
+	// Insert initial data
 	err = insertData(db)
 	if err != nil {
-		return err
+		return fmt.Errorf(" Error during data insertion: %v", err)
 	}
 
-	logger.UtilLog.Infof("The database %s was started successfully", sqldb)
+	logger.InitLog.Infof("Database %s initialized successfully", dbPath)
 
 	return nil
 }
@@ -200,7 +211,7 @@ func insertData(db *gorm.DB) error {
 	}
 	errNfTypes := db.Create(&nfTypes).Error
 	if errNfTypes != nil {
-		logger.UtilLog.Errorf("Error al insertar NfTypes: %v", errNfTypes)
+		logger.UtilLog.Errorf("Error to insert NfTypes: %v", errNfTypes)
 		return errNfTypes
 	}
 
