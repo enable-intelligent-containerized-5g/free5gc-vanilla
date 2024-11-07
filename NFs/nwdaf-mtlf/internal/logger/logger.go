@@ -48,8 +48,8 @@ func init() {
 	HttpLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HTTP"})
 	ConsumerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Consumer"})
 	GinLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "GIN"})
-	MlModelInfoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MMInfo"})
-	MlModelTrainingLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MMTInfo"})
+	MlModelInfoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MLMInfo"})
+	MlModelTrainingLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MLMT"})
 	ManagementLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MGMT"})
 }
 
