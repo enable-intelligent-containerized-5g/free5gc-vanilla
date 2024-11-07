@@ -16,14 +16,13 @@ import (
 )
 
 // HTTPNwdafAnalyticsInfoRequest - Creates a new subscription to receive notifications of ML model provisioning events
-// TODO: Implement HTTPNwdafAnalyticsInfoRequest
 func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
-	var nfAnalyticsInfoRequest models.NwdafAnalyticsInfoRequest
+	nfAnalyticsInfoRequest := models.NewNwdafAnalyticsInfoRequest()
 
 	// Get Request Body
 	requestBody, err := c.GetRawData()
 	if err != nil {
-		logger.CfgLog.Errorf("Get Request Body error: %+v", err)
+		logger.AniLog.Errorln("Get Request Body error: ", err)
 		problemDetails := models.ProblemDetails{
 			Title:  "System failure",
 			Status: http.StatusInternalServerError,
@@ -43,7 +42,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 			Status: http.StatusBadRequest,
 			Detail: problemDetail,
 		}
-		logger.CfgLog.Errorf(problemDetail)
+		logger.AniLog.Errorln(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
@@ -58,10 +57,12 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 			Status: http.StatusBadRequest,
 			Detail: err.Error(),
 		}
-		logger.CfgLog.Errorf("Validation Error: %+v", err)
+		logger.AniLog.Errorln("Validation Error: ", err)
 		c.JSON(http.StatusBadRequest, problemDetails)
 		return
 	}
+
+	logger.AniLog.Infoln("Received Analytics Info Request: ", nfAnalyticsInfoRequest)
 
 	// Validate EventId and return the event name
 	analyticsID, err := isValidEvent(nfAnalyticsInfoRequest.EventId)
@@ -72,7 +73,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 			Status: http.StatusBadRequest,
 			Detail: problemDetail,
 		}
-		logger.CfgLog.Errorf(problemDetail)
+		logger.AniLog.Errorln(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
@@ -87,7 +88,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 			Status: http.StatusBadRequest,
 			Detail: problemDetail,
 		}
-		logger.CfgLog.Errorf(problemDetail)
+		logger.AniLog.Errorln(problemDetail)
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
@@ -106,7 +107,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 
 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
 	if err != nil {
-		logger.CfgLog.Errorln(err)
+		logger.AniLog.Errorln(err)
 		problemDetails := models.ProblemDetails{
 			Status: http.StatusInternalServerError,
 			Cause:  "SYSTEM_FAILURE",

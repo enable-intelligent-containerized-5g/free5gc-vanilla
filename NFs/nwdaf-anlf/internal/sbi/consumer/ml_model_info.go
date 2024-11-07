@@ -37,5 +37,7 @@ func SendGetMlModelInfoList(mlModelInfoList *[]models.MlModelData, mtlfUri strin
 
 	logger.ConsumerLog.Info("ML Model Info List response: ", resp)
 
+	*mlModelInfoList = resp.MlModels
+
 	return nil
 }
