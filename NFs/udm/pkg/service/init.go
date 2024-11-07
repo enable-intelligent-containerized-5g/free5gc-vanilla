@@ -18,6 +18,7 @@ import (
 	"github.com/free5gc/udm/internal/sbi/consumer"
 	"github.com/free5gc/udm/internal/sbi/eventexposure"
 	"github.com/free5gc/udm/internal/sbi/httpcallback"
+	"github.com/free5gc/udm/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/udm/internal/sbi/parameterprovision"
 	"github.com/free5gc/udm/internal/sbi/subscriberdatamanagement"
 	"github.com/free5gc/udm/internal/sbi/ueauthentication"
@@ -143,6 +144,7 @@ func (udm *UDM) Start() {
 	subscriberdatamanagement.AddService(router)
 	ueauthentication.AddService(router)
 	uecontextmanagement.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.UdmDefaultPemPath
 	keyPath := util.UdmDefaultKeyPath

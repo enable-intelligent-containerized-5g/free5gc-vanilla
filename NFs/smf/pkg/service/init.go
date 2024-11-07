@@ -24,6 +24,7 @@ import (
 	"github.com/free5gc/smf/internal/sbi/callback"
 	"github.com/free5gc/smf/internal/sbi/consumer"
 	"github.com/free5gc/smf/internal/sbi/eventexposure"
+	"github.com/free5gc/smf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/smf/internal/sbi/oam"
 	"github.com/free5gc/smf/internal/sbi/pdusession"
 	"github.com/free5gc/smf/internal/util"
@@ -256,6 +257,7 @@ func (smf *SMF) Start() {
 
 	oam.AddService(router)
 	callback.AddService(router)
+	nfprofileprovition.AddService(router)
 	for _, serviceName := range factory.SmfConfig.Configuration.ServiceNameList {
 		switch models.ServiceName(serviceName) {
 		case models.ServiceName_NSMF_PDUSESSION:

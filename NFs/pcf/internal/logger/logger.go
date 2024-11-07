@@ -28,6 +28,7 @@ var (
 	ConsumerLog            *logrus.Entry
 	GinLog                 *logrus.Entry
 	NotifyEventLog         *logrus.Entry
+	NfPer                  *logrus.Entry
 )
 
 func init() {
@@ -58,6 +59,7 @@ func init() {
 	ConsumerLog = log.WithFields(logrus.Fields{"component": "PCF", "category": "Consumer"})
 	GinLog = log.WithFields(logrus.Fields{"component": "PCF", "category": "GIN"})
 	NotifyEventLog = log.WithFields(logrus.Fields{"component": "PCF", "category": "NotifyEvent"})
+	NfPer = log.WithFields(logrus.Fields{"component": "PCF", "category": "NfProfileProvition"})
 }
 
 func LogFileHook(logNfPath string, log5gcPath string) error {

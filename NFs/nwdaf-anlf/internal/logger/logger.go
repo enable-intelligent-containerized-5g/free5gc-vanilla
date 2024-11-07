@@ -17,6 +17,7 @@ var (
 	CfgLog      *logrus.Entry
 	ProducerLog *logrus.Entry
 	AniLog      *logrus.Entry
+	NfPer       *logrus.Entry
 	HandlerLog  *logrus.Entry
 	DataRepoLog *logrus.Entry
 	UtilLog     *logrus.Entry
@@ -42,6 +43,7 @@ func init() {
 	CfgLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "CFG"})
 	ProducerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Producer"})
 	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "analyticsinfo"})
+	NfPer = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "NfProfileProvition"})
 	HandlerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HDLR"})
 	DataRepoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "DRepo"})
 	UtilLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Util"})

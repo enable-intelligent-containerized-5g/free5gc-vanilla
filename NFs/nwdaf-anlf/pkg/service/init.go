@@ -20,6 +20,7 @@ import (
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/analyticsinfo"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
+	"github.com/free5gc/nwdaf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
@@ -146,6 +147,7 @@ func (nwdaf *NWDAF) Start() {
 	}))
 
 	analyticsinfo.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.NwdafDefaultPemPath
 	keyPath := util.NwdafDefaultKeyPath
