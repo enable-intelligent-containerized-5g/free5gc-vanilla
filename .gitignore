@@ -41,3 +41,4 @@ packages/
 free5gc.zip
 __pycache__/
 NFs/nwdaf-mtlf/tmp
+NFs/nwdaf-mtlf/ml_model_info.db
