@@ -32,7 +32,7 @@ func NewRouter() *gin.Engine {
 }
 
 func AddService(engine *gin.Engine) *gin.RouterGroup {
-	group := engine.Group("/nnwdaf-nfprofileporvition/v1")
+	group := engine.Group("/nudm-nfprofileporvition/v1")
 
 	for _, route := range routes {
 		switch route.Method {
