@@ -20,6 +20,7 @@ import (
 	"github.com/free5gc/nssf/internal/context"
 	"github.com/free5gc/nssf/internal/logger"
 	"github.com/free5gc/nssf/internal/sbi/consumer"
+	"github.com/free5gc/nssf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/nssf/internal/sbi/nssaiavailability"
 	"github.com/free5gc/nssf/internal/sbi/nsselection"
 	"github.com/free5gc/nssf/internal/util"
@@ -128,6 +129,7 @@ func (nssf *NSSF) Start() {
 
 	nssaiavailability.AddService(router)
 	nsselection.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.NssfDefaultPemPath
 	keyPath := util.NssfDefaultKeyPath

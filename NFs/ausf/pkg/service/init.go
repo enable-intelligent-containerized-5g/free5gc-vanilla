@@ -16,6 +16,7 @@ import (
 	ausf_context "github.com/free5gc/ausf/internal/context"
 	"github.com/free5gc/ausf/internal/logger"
 	"github.com/free5gc/ausf/internal/sbi/consumer"
+	"github.com/free5gc/ausf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/ausf/internal/sbi/ueauthentication"
 	"github.com/free5gc/ausf/internal/util"
 	"github.com/free5gc/ausf/pkg/factory"
@@ -125,6 +126,7 @@ func (ausf *AUSF) Start() {
 
 	router := logger_util.NewGinWithLogrus(logger.GinLog)
 	ueauthentication.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	pemPath := util.AusfDefaultPemPath
 	keyPath := util.AusfDefaultKeyPath

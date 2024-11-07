@@ -23,6 +23,7 @@ import (
 	"github.com/free5gc/pcf/internal/sbi/bdtpolicy"
 	"github.com/free5gc/pcf/internal/sbi/consumer"
 	"github.com/free5gc/pcf/internal/sbi/httpcallback"
+	"github.com/free5gc/pcf/internal/sbi/nfprofileprovition"
 	"github.com/free5gc/pcf/internal/sbi/notifyevent"
 	"github.com/free5gc/pcf/internal/sbi/oam"
 	"github.com/free5gc/pcf/internal/sbi/policyauthorization"
@@ -142,6 +143,7 @@ func (pcf *PCF) Start() {
 	policyauthorization.AddService(router)
 	httpcallback.AddService(router)
 	oam.AddService(router)
+	nfprofileprovition.AddService(router)
 
 	router.Use(cors.New(cors.Config{
 		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
