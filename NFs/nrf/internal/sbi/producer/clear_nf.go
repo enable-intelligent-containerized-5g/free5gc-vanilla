@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -54,10 +55,12 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 		// Get fullURI
 		services := *nfProfile.NfServices
 		baseUri := services[0].ApiPrefix
-		api := services[0].ServiceName
-		versions := *services[0].Versions
-		version := versions[0].ApiVersionInUri
-		fullURL := fmt.Sprintf("%s/%s/%s", baseUri, api, version)
+		// api := services[0].ServiceName
+		// versions := *services[0].Versions
+		// version := versions[0].ApiVersionInUri
+		endpoint := "nfprofileprovition/request"
+		// fullURL := fmt.Sprintf("%s/%s/%s", baseUri, api, version)
+		fullURL := fmt.Sprintf("%s/%s", baseUri, endpoint)
 
 		if !checkURL(fullURL) {
 			logger.DiscoveryLog.Infof("Delete NF #%d: %s", i, nfInstanceId)
@@ -76,11 +79,24 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 }
 
 func checkURL(url string) bool {
-	resp, err := http.Get(url)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
+    // Realizar la solicitud HTTP GET
+    resp, err := http.Get(url)
+    if err != nil {
+        logger.DiscoveryLog.Error("Error al hacer la solicitud:", err)
+        return false
+    }
+    defer resp.Body.Close()
 
-	return resp.StatusCode == http.StatusOK
+    // Leer el cuerpo de la respuesta
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        logger.DiscoveryLog.Error("Error al leer el cuerpo de la respuesta:", err)
+        return false
+    }
+
+    // Imprimir el cuerpo de la respuesta
+	logger.DiscoveryLog.Info("Body: ", body)
+
+	return false
+
 }

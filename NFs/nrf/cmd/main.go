@@ -11,6 +11,7 @@ import (
 	"github.com/free5gc/nrf/internal/logger"
 	"github.com/free5gc/nrf/internal/util"
 	nrf_service "github.com/free5gc/nrf/pkg/service"
+
 	"github.com/free5gc/util/version"
 )
 
