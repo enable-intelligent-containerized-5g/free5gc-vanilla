@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/enable-intelligent-containerized-5g/openapi"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nrf/internal/logger"
+	"github.com/free5gc/util/httpwrapper"
 	timedecode "github.com/free5gc/util/mapstruct"
 	"github.com/free5gc/util/mongoapi"
 )
@@ -19,8 +21,8 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 	// Crear el objeto url.Values
 	queryParameters := url.Values{}
 	// Agregar dos parámetros clave-valor
-	queryParameters.Add("target-nf-type", "NWDAF")
-	queryParameters.Add("requester-nf-type", "NWDAF")
+	queryParameters.Add("target-nf-type", "")
+	queryParameters.Add("requester-nf-type", "NRF")
 
 	filter := buildFilter(queryParameters)
 
@@ -80,6 +82,7 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 }
 
 func validateNfActive(url string, nfInstanceId string) bool {
+  logger.DiscoveryLog.Infoln("URL: ", url)
 	// Realizar la solicitud HTTP GET
 	resp, err := http.Get(url)
 	if err != nil {
@@ -95,9 +98,18 @@ func validateNfActive(url string, nfInstanceId string) bool {
 		return false
 	}
 
+  // Deserializar el cuerpo de la respuesta
+  var data httpwrapper.Response
+  err = openapi.Deserialize(&data, body, "application/json")
+  if err != nil {
+    logger.DiscoveryLog.Error("Error al deserializar el cuerpo de la respuesta:", err)
+    return false
+  }
+  nfId := data.Body
+
 	// Imprimir el cuerpo de la respuesta
-	logger.DiscoveryLog.Info("Body: ", body)
+	logger.DiscoveryLog.Info("nfId: ", nfId)
 
 	// Verificar si la respuesta coincide con el ID del NF
-	return string(body) == nfInstanceId
+	return nfId == nfInstanceId
 }
