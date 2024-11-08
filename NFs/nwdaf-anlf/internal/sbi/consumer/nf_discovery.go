@@ -59,12 +59,9 @@ func SearchMlModelInfoInstance(mtlfUri *string, nrfUri string, targetNfType, req
 		return localErr
 	}
 
-	// select the first AMF, TODO: select base on other info
-	// var TargetMtlfProfile models.NfProfile // Reemplazo de ue.TargetAmfProfile
+	// select the first MTLF, TODO: select base on other info
 	var TargetMtlfUri string // Reemplazo de ue.TargetAmfUri
 	for _, nfProfile := range resp.NfInstances {
-		// ue.TargetAmfProfile = &nfProfile
-		// TargetMtlfProfile = nfProfile
 		*mtlfUri = util.SearchNFServiceUri(nfProfile, models.ServiceName_NNWDAF_MLMODELINFO, models.NfServiceStatus_REGISTERED)
 		if *mtlfUri != "" {
 			break
@@ -73,53 +70,33 @@ func SearchMlModelInfoInstance(mtlfUri *string, nrfUri string, targetNfType, req
 
 	TargetMtlfUri = *mtlfUri
 	if TargetMtlfUri == "" {
-		logger.ConsumerLog.Error("MLF URI not found", TargetMtlfUri)
+		logger.ConsumerLog.Error("MTLF URI not found", TargetMtlfUri)
 		return errors.New("NF can not select an target AnLF by NRF")
 	}
 
 	return nil
 }
 
-func SearchMlModelInfo(nrfUri string, targetNfType, requestNfType models.NfType,
+func SearchMlModelProvisionInstance(nrfUri string, targetNfType, requestNfType models.NfType,
 	param Nnrf_NFDiscovery.SearchNFInstancesParamOpts,
 ) (err error) {
 	resp, err := sendSearchNfInstances(nrfUri, targetNfType, requestNfType, param)
 
-	// Convertir `allNfs` a string en formato JSON
-	// allNfsJSON, errJson := json.Marshal(resp)
-	// if errJson != nil {
-	//     fmt.Println("Error al convertir a JSON:", localErr)
-	//     return nil
-	// }
-
-	// if localErr != nil {
-	// 	return localErr
-	// }
-
-	// Imprimir la representación en string de `allNfs`
-	// fmt.Println("resp", string(allNfsJSON))
-
-	// select the first AMF, TODO: select base on other info
-	var amfUri string
-	// var TargetMtlfProfile models.NfProfile // Reemplazo de ue.TargetAmfProfile
+	// select the first MTLF, TODO: select base on other info
+	var mtlfUri string
 	var TargetMtlfUri string // Reemplazo de ue.TargetAmfUri
 	for _, nfProfile := range resp.NfInstances {
-		// ue.TargetAmfProfile = &nfProfile
-		// TargetMtlfProfile = nfProfile
-		amfUri = util.SearchNFServiceUri(nfProfile, models.ServiceName_NNWDAF_MLMODELPROVISION, models.NfServiceStatus_REGISTERED)
-		if amfUri != "" {
+		mtlfUri = util.SearchNFServiceUri(nfProfile, models.ServiceName_NNWDAF_MLMODELPROVISION, models.NfServiceStatus_REGISTERED)
+		if mtlfUri != "" {
 			break
 		}
 	}
 
-	// fmt.Println("Profile Found: ", TargetMtlfProfile)
-
 	// ue.TargetAmfUri = amfUri
-	TargetMtlfUri = amfUri
+	TargetMtlfUri = mtlfUri
 	if TargetMtlfUri == "" {
 		err = fmt.Errorf("NF can not select an target MTLF by NRF")
 	}
 
-	fmt.Println("TargetMtlfUri found: ", TargetMtlfUri)
 	return
 }

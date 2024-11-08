@@ -6,7 +6,7 @@ package factory
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 
@@ -17,7 +17,7 @@ var NwdafConfig Config
 
 // TODO: Support configuration update from REST api
 func InitConfigFactory(f string) error {
-	if content, err := ioutil.ReadFile(f); err != nil {
+	if content, err := os.ReadFile(f); err != nil {
 		return err
 	} else {
 		NwdafConfig = Config{}
@@ -34,7 +34,7 @@ func CheckConfigVersion() error {
 	currentVersion := NwdafConfig.GetVersion()
 
 	if currentVersion != NWDAF_EXPECTED_CONFIG_VERSION {
-		return fmt.Errorf("config version is [%s], but expected is [%s].",
+		return fmt.Errorf("Config version is [%s], but expected is [%s]",
 			currentVersion, NWDAF_EXPECTED_CONFIG_VERSION)
 	}
 

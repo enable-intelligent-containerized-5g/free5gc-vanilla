@@ -57,6 +57,7 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 			URI:          model.URI,
 			Size:         model.Size,
 			TargetPeriod: model.TargetPeriod,
+			Confidence:   model.Confidence,
 			NfType:       model.NfType.NfType,
 			EventId:      model.Event.Event,
 			Accuracy:     model.Accuracy.Accuracy,

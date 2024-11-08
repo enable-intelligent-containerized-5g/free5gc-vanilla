@@ -1,8 +1,8 @@
 package producer
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
@@ -87,7 +87,7 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 	if errGetEvent != nil {
 		// logger.MlModelTrainingLog.Errorf("Event %s not found: %s", mldata.EventId, errGetEvent)
 		return models.MlModelDataResponse{}, false, errGetEvent
-		
+
 	}
 
 	// Validate Accuracy
@@ -111,6 +111,7 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 		URI:          mldata.URI,
 		Size:         mldata.Size,
 		TargetPeriod: mldata.TargetPeriod,
+		Confidence:   mldata.Confidence,
 		AccuracyID:   accuFound.ID,
 		EventID:      eventFound.ID,
 		NfTypeID:     nfTypeFound.ID,
@@ -131,11 +132,11 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 		return models.MlModelDataResponse{}, false, errGetMlModel
 	}
 
-
 	mlmodelSaved := models.MlModelData{
 		URI:          mlModelTableRequest.URI,
 		Size:         mlModelTableRequest.Size,
 		TargetPeriod: mlModelTableRequest.TargetPeriod,
+		Confidence:   mlModelTableRequest.Confidence,
 		Accuracy:     mlModelTableRequest.Accuracy.Accuracy,
 		NfType:       mlModelTableRequest.NfType.NfType,
 		EventId:      mlModelTableRequest.Event.Event,
@@ -209,5 +210,3 @@ func SaveMlmodel(mlModel *models.MlModelDataTable, db *gorm.DB) *models.ProblemD
 
 	return nil
 }
-
-

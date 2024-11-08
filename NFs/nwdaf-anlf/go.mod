@@ -12,6 +12,8 @@ require (
 	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/mitchellh/mapstructure v1.4.1
+	github.com/prometheus/client_golang v1.20.5
+	github.com/prometheus/common v0.55.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.5
 	go.mongodb.org/mongo-driver v1.8.4

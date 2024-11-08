@@ -24,6 +24,7 @@ var (
 	HttpLog     *logrus.Entry
 	ConsumerLog *logrus.Entry
 	GinLog      *logrus.Entry
+	PcmLog      *logrus.Entry
 )
 
 func init() {
@@ -42,8 +43,9 @@ func init() {
 	InitLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Init"})
 	CfgLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "CFG"})
 	ProducerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Producer"})
-	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "analyticsinfo"})
+	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "AnalyticsInfo"})
 	NfPer = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "NfProfileProvition"})
+	PcmLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "PCM"})
 	HandlerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HDLR"})
 	DataRepoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "DRepo"})
 	UtilLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Util"})
@@ -64,6 +66,8 @@ func LogFileHook(logNfPath string, log5gcPath string) error {
 	} else {
 		return err
 	}
+
+	log.SetLevel(logrus.InfoLevel)
 
 	if fullPath, err := logger_util.CreateNfLogFile(logNfPath, "nwdaf.log"); err == nil {
 		selfLogHook, hookErr := logger_util.NewFileHook(fullPath, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0o666)
