@@ -75,7 +75,6 @@ func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
 
 // Get ML by NfType, Size, Accuracy
 func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, accuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
-
 	// Filter By NfType
 	var amfModels []models.MlModelData
 	for _, model := range *mlmodels {
@@ -163,7 +162,7 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 	}
 
 	// check the type of payload request
-	var nfFilterdByTypePayload = []models.NfProfile{}
+	nfFilterdByTypePayload := []models.NfProfile{}
 	switch typePayload {
 	case models.TypePayloadRequest_NF_INSTANCES:
 		logger.AniLog.Infof("typePayload: %s", models.TypePayloadRequest_NF_INSTANCES)
@@ -222,13 +221,13 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 }
 
 func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *models.EventId, NrfUri *string, nfInstances *[]models.NfProfile) *httpwrapper.Response {
-	var responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{}
+	responseNfLoad := models.NwdaAnalyticsInfoNfLoadResponse{}
 	// Get StartTime and EndTime
 	startTime := request.StartTime
 	endTime := request.EndTime
 	currentTime := time.Now()
 
-	var defaultValues = DefaultNfLoad{
+	defaultValues := DefaultNfLoad{
 		CpuUsage: 0.3,
 		MemUsage: 320,
 		CpuLimit: 0.5,
@@ -288,9 +287,9 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// logger.AniLog.Infof("Filtered ML Model Info(%d): %v", len(mlModelInfoFiltered), mlModelInfoFiltered)
 
 		// For each profile: get ml model, and get analitics
-		var NfLoadsAnalitics = []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			var NfLoad = models.NwdaAnalyticsInfoNfLoad{}
+			NfLoad := models.NwdaAnalyticsInfoNfLoad{}
 			nfType := profile.NfType
 
 			// Get ML by NfType, Size, Accuracy
@@ -337,9 +336,9 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		logger.AniLog.Info("Stadistics metrics: EndTime is less than now")
 
 		// For each profile: get data from Prometheus
-		var NfLoadsAnalitics = []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			var NfLoad = models.NwdaAnalyticsInfoNfLoad{}
+			NfLoad := models.NwdaAnalyticsInfoNfLoad{}
 
 			// Get CPU and RAM  from Prometheus
 
