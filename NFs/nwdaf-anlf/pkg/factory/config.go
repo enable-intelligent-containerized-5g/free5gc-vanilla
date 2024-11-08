@@ -62,10 +62,11 @@ const (
 )
 
 type Configuration struct {
-  Name            string   `yaml:"name,omitempty"`
+	Name            string   `yaml:"name,omitempty"`
 	NwdafName       string   `yaml:"nwdafName,omitempty"`
 	Sbi             *Sbi     `yaml:"sbi" valid:"required"`
 	NrfUri          string   `yaml:"nrfUri" valid:"url,required"`
+	PcmUri          string   `yaml:"pcmUri" valid:"url,required"`
 	ServiceNameList []string `yaml:"serviceNameList" valid:"required"`
 }
 
@@ -100,7 +101,7 @@ func appendInvalid(err error) error {
 
 	es := err.(govalidator.Errors).Errors()
 	for _, e := range es {
-		errs = append(errs, fmt.Errorf("Invalid %w", e))
+		errs = append(errs, fmt.Errorf(" Invalid %w", e))
 	}
 
 	return error(errs)

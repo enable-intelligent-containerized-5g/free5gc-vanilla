@@ -2,6 +2,7 @@ package util
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
@@ -56,5 +57,16 @@ func ProblemDetailsUpspecified(detail string) *models.ProblemDetails {
 		Status: http.StatusForbidden,
 		Cause:  "UNSPECIFIED",
 		Detail: detail,
+	}
+}
+
+func GetPodNameFromIpv4(str string) (parts []string) {
+	parts = strings.Split(str, "-")
+
+	if len(parts) >= 1 && strings.TrimSpace(parts[1]) != "" {
+		return parts
+
+	} else {
+		return nil
 	}
 }

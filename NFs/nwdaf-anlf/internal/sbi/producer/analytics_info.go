@@ -8,6 +8,7 @@ import (
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
+	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 )
@@ -221,24 +222,49 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 }
 
 func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *models.EventId, NrfUri *string, nfInstances *[]models.NfProfile) *httpwrapper.Response {
-	responseNfLoad := models.NwdaAnalyticsInfoNfLoadResponse{}
+	var responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{}
+	var analysisType models.AnalysisType
+
 	// Get StartTime and EndTime
 	startTime := request.StartTime
 	endTime := request.EndTime
 	currentTime := time.Now()
 
-	defaultValues := DefaultNfLoad{
-		CpuUsage: 0.3,
-		MemUsage: 320,
-		CpuLimit: 0.5,
-		MemLimit: 350,
-		NfLoad:   87.5,
+	// loc, err := time.LoadLocation("America/Bogota") // Bogotá (UTC-5)
+	// if err == nil {
+	// 	logger.AniLog.Warn("Set loc")
+	// 	currentTime = time.Now().In(loc)
+	// }
+
+	var defaultValues = models.NwdaAnalyticsInfoNfLoad{
+		CpuUsage: 0,
+		MemUsage: 0,
+		CpuLimit: 0,
+		MemLimit: 0,
+		NfLoad:   0,
+	}
+
+	// Convert time to seconds
+	targetPeriod := parseTimeToSeconds(startTime, endTime)
+
+	logger.AniLog.Infof("targetPeriod: %d", targetPeriod)
+	if targetPeriod <= 0 {
+		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be greater than StartTime")
+	}
+
+	// Convert time to seconds
+	offSet := parseTimeToSeconds(endTime, &currentTime)
+
+	logger.AniLog.Infof("offSet: %d", offSet)
+	if targetPeriod <= 0 {
+		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be smaller than CurrentTime")
 	}
 
 	// Predict metrics
 	switch {
 	case endTime.After(currentTime):
 		logger.AniLog.Info("Predict metrics: EndTime is greater than now")
+		analysisType = models.AnalysisType_PREDICTIONS
 
 		var mtlfUri string
 
@@ -268,14 +294,6 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 			return httpwrapper.NewResponse(http.StatusNotFound, nil, "Ml Model not found")
 		}
 
-		// Convert time to seconds
-		targetPeriod := parseTimeToSeconds(startTime, endTime)
-
-		logger.AniLog.Infof("targetPeriod: %d", targetPeriod)
-		if targetPeriod <= 0 {
-			return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be greater than StartTime")
-		}
-
 		// Filter ML Model Info
 		// logger.AniLog.Infof("ModelInfoList: %v", mlModelInfoList)
 		// logger.AniLog.Infof("filterMlModelInfo Params ->   eventID: %s, targetPeriod: %d", string(*eventID), targetPeriod)
@@ -289,7 +307,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// For each profile: get ml model, and get analitics
 		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			NfLoad := models.NwdaAnalyticsInfoNfLoad{}
+			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
 			nfType := profile.NfType
 
 			// Get ML by NfType, Size, Accuracy
@@ -306,6 +324,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 					NfInstanceId: profile.NfInstanceId,
 					Accuracy:     selectedModels[0].Accuracy,
 					NfType:       profile.NfType,
+					Pod:          "",
 					CpuUsage:     defaultValues.CpuUsage,
 					MemUsage:     defaultValues.MemUsage,
 					CpuLimit:     defaultValues.CpuLimit,
@@ -324,8 +343,11 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		}
 
 		responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{
-			AnaliticsNfLoad: NfLoadsAnalitics,
 			EventId:         *eventID,
+			AnalysisType:    analysisType,
+			TargetPerid:     targetPeriod,
+			OffSet:          offSet,
+			AnaliticsNfLoad: NfLoadsAnalitics,
 		}
 
 		// Return results
@@ -334,33 +356,37 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 	// Stadistics metrics
 	case startTime.Before(currentTime) && endTime.Before(currentTime):
 		logger.AniLog.Info("Stadistics metrics: EndTime is less than now")
+		analysisType = models.AnalysisType_STATISTICS
 
 		// For each profile: get data from Prometheus
 		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			NfLoad := models.NwdaAnalyticsInfoNfLoad{}
+			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
+			pod := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 
-			// Get CPU and RAM  from Prometheus
+			cpuUsage := consumer.GetCpuUsage(pod, targetPeriod, offSet)[0]
 
 			NfLoad = models.NwdaAnalyticsInfoNfLoad{
 				NfInstanceId: profile.NfInstanceId,
-				// Accuracy: selectedModels[0].Accuracy,
-				NfType:   profile.NfType,
-				CpuUsage: defaultValues.CpuUsage,
-				MemUsage: defaultValues.MemUsage,
-				CpuLimit: defaultValues.CpuLimit,
-				MemLimit: defaultValues.MemLimit,
-				NfLoad:   defaultValues.NfLoad,
-				NfStatus: profile.NfStatus,
-				// Confidence: selectedModels[0].Confidence,
+				NfType:       profile.NfType,
+				Pod:          pod,
+				CpuUsage:     cpuUsage.Value,
+				MemUsage:     defaultValues.MemUsage,
+				CpuLimit:     defaultValues.CpuLimit,
+				MemLimit:     defaultValues.MemLimit,
+				NfLoad:       defaultValues.NfLoad,
+				NfStatus:     profile.NfStatus,
 			}
 
 			NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
 		}
 
 		responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{
-			AnaliticsNfLoad: NfLoadsAnalitics,
 			EventId:         *eventID,
+			AnalysisType:    analysisType,
+			TargetPerid:     targetPeriod,
+			OffSet:          offSet,
+			AnaliticsNfLoad: NfLoadsAnalitics,
 		}
 
 		// Return results
