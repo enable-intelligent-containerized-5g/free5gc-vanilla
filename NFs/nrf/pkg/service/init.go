@@ -158,7 +158,7 @@ func (nrf *NRF) Start() {
 	}()
 
 	// func to delete Duplicated NF
-	// go util.BackgroundTask()
+	go util.BackgroundTask()
 
 	bindAddr := factory.NrfConfig.GetSbiBindingAddr()
 	logger.InitLog.Infof("Binding addr: [%s]", bindAddr)
@@ -185,7 +185,6 @@ func (nrf *NRF) Start() {
 	if err != nil {
 		logger.InitLog.Fatalf("HTTP server setup failed: %+v", err)
 	}
-
 }
 
 func (nrf *NRF) Exec(c *cli.Context) error {

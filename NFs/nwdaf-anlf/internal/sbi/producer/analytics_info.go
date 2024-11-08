@@ -76,7 +76,6 @@ func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
 
 // Get ML by NfType, Size, Accuracy
 func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, accuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
-
 	// Filter By NfType
 	var amfModels []models.MlModelData
 	for _, model := range *mlmodels {
@@ -164,7 +163,7 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 	}
 
 	// check the type of payload request
-	var nfFilterdByTypePayload = []models.NfProfile{}
+	nfFilterdByTypePayload := []models.NfProfile{}
 	switch typePayload {
 	case models.TypePayloadRequest_NF_INSTANCES:
 		logger.AniLog.Infof("typePayload: %s", models.TypePayloadRequest_NF_INSTANCES)
@@ -306,7 +305,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// logger.AniLog.Infof("Filtered ML Model Info(%d): %v", len(mlModelInfoFiltered), mlModelInfoFiltered)
 
 		// For each profile: get ml model, and get analitics
-		var NfLoadsAnalitics = []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
 			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
 			nfType := profile.NfType
@@ -360,7 +359,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		analysisType = models.AnalysisType_STATISTICS
 
 		// For each profile: get data from Prometheus
-		var NfLoadsAnalitics = []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
 			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
 			pod := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]

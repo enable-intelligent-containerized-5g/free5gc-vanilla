@@ -3,10 +3,9 @@ package producer
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"time"
-
-	"net/http"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nrf/internal/logger"
@@ -23,7 +22,7 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 	queryParameters.Add("target-nf-type", "NWDAF")
 	queryParameters.Add("requester-nf-type", "NWDAF")
 
-	var filter = buildFilter(queryParameters)
+	filter := buildFilter(queryParameters)
 
 	nfProfilesRaw, err := mongoapi.RestfulAPIGetMany("NfProfile", filter)
 	if err != nil {
@@ -52,9 +51,11 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 		// Get ID
 		nfInstanceId := nfProfile.NfInstanceId
 
-		// Get fullURI
 		services := *nfProfile.NfServices
-		baseUri := services[0].ApiPrefix
+		apiPrefix := services[0].ApiPrefix
+
+		// Difine fullURI
+		baseUri := apiPrefix + "/common-nfprofileprovition/v1"
 		// api := services[0].ServiceName
 		// versions := *services[0].Versions
 		// version := versions[0].ApiVersionInUri
@@ -62,7 +63,7 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 		// fullURL := fmt.Sprintf("%s/%s/%s", baseUri, api, version)
 		fullURL := fmt.Sprintf("%s/%s", baseUri, endpoint)
 
-		if !checkURL(fullURL) {
+		if !validateNfActive(fullURL, nfInstanceId) {
 			logger.DiscoveryLog.Infof("Delete NF #%d: %s", i, nfInstanceId)
 			err := NFDeregisterProcedure(nfInstanceId)
 			if err != nil {
@@ -78,25 +79,25 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 	return nil
 }
 
-func checkURL(url string) bool {
-    // Realizar la solicitud HTTP GET
-    resp, err := http.Get(url)
-    if err != nil {
-        logger.DiscoveryLog.Error("Error al hacer la solicitud:", err)
-        return false
-    }
-    defer resp.Body.Close()
+func validateNfActive(url string, nfInstanceId string) bool {
+	// Realizar la solicitud HTTP GET
+	resp, err := http.Get(url)
+	if err != nil {
+		logger.DiscoveryLog.Error("Error al hacer la solicitud:", err)
+		return false
+	}
+	defer resp.Body.Close()
 
-    // Leer el cuerpo de la respuesta
-    body, err := io.ReadAll(resp.Body)
-    if err != nil {
-        logger.DiscoveryLog.Error("Error al leer el cuerpo de la respuesta:", err)
-        return false
-    }
+	// Leer el cuerpo de la respuesta
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.DiscoveryLog.Error("Error al leer el cuerpo de la respuesta:", err)
+		return false
+	}
 
-    // Imprimir el cuerpo de la respuesta
+	// Imprimir el cuerpo de la respuesta
 	logger.DiscoveryLog.Info("Body: ", body)
 
-	return false
-
+	// Verificar si la respuesta coincide con el ID del NF
+	return string(body) == nfInstanceId
 }
