@@ -35,7 +35,7 @@ func SendGetMlModelInfoList(mlModelInfoList *[]models.MlModelData, mtlfUri strin
 		return localErr
 	}
 
-	logger.ConsumerLog.Info("ML Model Info List response: ", resp)
+	// logger.ConsumerLog.Info("ML Model Info List response: ", resp)
 
 	*mlModelInfoList = resp.MlModels
 

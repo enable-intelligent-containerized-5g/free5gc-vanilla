@@ -42,7 +42,7 @@ func init() {
 	InitLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Init"})
 	CfgLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "CFG"})
 	ProducerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Producer"})
-	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "analyticsinfo"})
+	AniLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "AnalyticsInfo"})
 	NfPer = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "NfProfileProvition"})
 	HandlerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HDLR"})
 	DataRepoLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "DRepo"})

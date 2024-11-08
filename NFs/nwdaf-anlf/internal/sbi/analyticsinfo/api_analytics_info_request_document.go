@@ -17,7 +17,9 @@ import (
 
 // HTTPNwdafAnalyticsInfoRequest - Creates a new subscription to receive notifications of ML model provisioning events
 func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
-	nfAnalyticsInfoRequest := models.NewNwdafAnalyticsInfoRequest()
+	logger.AniLog.Info("HTTP NwdafAnalyticsInfoRequest")
+	// nfAnalyticsInfoRequest := models.NewNwdafAnalyticsInfoRequest()
+	nfAnalyticsInfoRequest := models.NwdafAnalyticsInfoRequest{}
 
 	// Get Request Body
 	requestBody, err := c.GetRawData()
@@ -62,8 +64,6 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		return
 	}
 
-	logger.AniLog.Infoln("Received Analytics Info Request: ", nfAnalyticsInfoRequest)
-
 	// Validate EventId and return the event name
 	analyticsID, err := isValidEvent(nfAnalyticsInfoRequest.EventId)
 	if err != nil {
@@ -98,11 +98,14 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 
 	// Call the producer to send the request
 	var rsp *httpwrapper.Response
-	if analyticsID == string(models.NwdafEvent_NF_LOAD) {
+
+	if analyticsID == string(models.EventId_NF_LOAD) {
 		// Execute the NF Load event
-		rsp = producer.HandleAnalyticsInfoNfLoadMetrics(req, typePayload)
+		rsp = producer.HandleAnalyticsInfoNfLoadMetricsNew(req, typePayload)
 	} else {
-		fmt.Println("No se ha implementado el evento")
+		bodyMessage := fmt.Sprintf("The eventId %s is not implemented", analyticsID)
+		rsp = httpwrapper.NewResponse(http.StatusNotImplemented, nil, bodyMessage)
+		logger.AniLog.Warnf(bodyMessage)
 	}
 
 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
@@ -115,13 +118,16 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, problemDetails)
 	} else {
-		fmt.Println("responseBody", responseBody)
 		c.Data(rsp.Status, "application/json", responseBody)
 	}
 }
 
 // isValidNfInstanceIdsOrNfTypes verifica si el NfInstanceIds o NfTypes
 func isValidNfInstanceIdsOrNfTypes(nfInstanceIds []string, nfTypes []models.NfType) (typePayload models.TypePayloadRequest, err error) {
+	if nfInstanceIds == nil && nfTypes== nil {
+		err = errors.New("please provide a valid NfInstanceIds or NfTypes")
+	}
+
 	if len(nfInstanceIds) == 0 && len(nfTypes) == 0 {
 		err = errors.New("please provide a valid NfInstanceIds or NfTypes")
 	}

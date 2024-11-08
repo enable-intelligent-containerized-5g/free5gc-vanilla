@@ -218,35 +218,110 @@ func insertData(db *gorm.DB) error {
 	// Crear modelos ML utilizando las claves foráneas
 	mlModels := []models.MlModelDataTable{
 		{
-			URI:          "http://example.com/model1", // URI
-			Size:         1024,                        // in Bytes
-			TargetPeriod: 60,                          // In seconds
-			AccuracyID:   accuracies[0].ID,            // ID from Accuracy
-			EventID:      events[0].ID,                // ID from EVent
-			NfTypeID:     nfTypes[0].ID,               // ID from NfType
-			Accuracy:     accuracies[0],               // Accuracy
-			Event:        events[0],                   // Event
-			NfType:       nfTypes[0],                  // NfType
+			URI:          "models/model.h1", // URI
+			Size:         1024,              // in Bytes
+			TargetPeriod: 60,                // In seconds
+			Confidence:   60,                // Confidence
+			AccuracyID:   accuracies[0].ID,  // ID from Accuracy
+			EventID:      events[0].ID,      // ID from EVent
+			NfTypeID:     nfTypes[0].ID,     // ID from NfType
+			Accuracy:     accuracies[0],     // Accuracy
+			Event:        events[0],         // Event
+			NfType:       nfTypes[0],        // NfType
 		},
 		{
-			URI:          "http://example.com/model2",
+			URI:          "models/model.h2",
 			Size:         3096,
-			TargetPeriod: 120,
+			TargetPeriod: 60,
+			Confidence:   60,
 			AccuracyID:   accuracies[1].ID,
-			EventID:      events[1].ID,
-			NfTypeID:     nfTypes[1].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
 			Accuracy:     accuracies[1],
-			Event:        events[1],
-			NfType:       nfTypes[1],
+			Event:        events[2],
+			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "http://example.com/model3",
+			URI:          "models/model.h3",
 			Size:         2048,
-			TargetPeriod: 120,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[1].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[1],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h4",
+			Size:         2048,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[1].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[1],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h5",
+			Size:         2048,
+			TargetPeriod: 60,
+			Confidence:   60,
 			AccuracyID:   accuracies[2].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
 			Accuracy:     accuracies[2],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h6",
+			Size:         2048,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[0].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[0],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h7",
+			Size:         2048,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[0].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[0],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h8",
+			Size:         3048,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[1].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[1],
+			Event:        events[2],
+			NfType:       nfTypes[2],
+		},
+		{
+			URI:          "models/model.h9",
+			Size:         3048,
+			TargetPeriod: 60,
+			Confidence:   60,
+			AccuracyID:   accuracies[1].ID,
+			EventID:      events[2].ID,
+			NfTypeID:     nfTypes[2].ID,
+			Accuracy:     accuracies[1],
 			Event:        events[2],
 			NfType:       nfTypes[2],
 		},
