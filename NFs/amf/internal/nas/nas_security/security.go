@@ -6,9 +6,9 @@ import (
 	"reflect"
 
 	"github.com/free5gc/amf/internal/context"
-	"github.com/free5gc/nas"
-	"github.com/free5gc/nas/security"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas"
+	"github.com/enable-intelligent-containerized-5g/nas/security"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 func Encode(ue *context.AmfUe, msg *nas.Message, accessType models.AccessType) ([]byte, error) {

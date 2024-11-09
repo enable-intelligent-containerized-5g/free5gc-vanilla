@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/pcf/internal/logger"
 	"github.com/free5gc/pcf/pkg/factory"
 	"github.com/free5gc/util/idgenerator"
@@ -41,6 +41,7 @@ type PCFContext struct {
 	PcfServiceUris  map[models.ServiceName]string
 	PcfSuppFeats    map[models.ServiceName]openapi.SupportedFeature
 	NrfUri          string
+	ContainerName   string
 	DefaultUdrURI   string
 	Locality        string
 	// UePool          map[string]*UeContext

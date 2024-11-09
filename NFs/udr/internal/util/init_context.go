@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	udr_context "github.com/free5gc/udr/internal/context"
 	"github.com/free5gc/udr/internal/logger"
 	"github.com/free5gc/udr/pkg/factory"
@@ -16,6 +16,7 @@ func InitUdrContext(context *udr_context.UDRContext) {
 	config := factory.UdrConfig
 	logger.UtilLog.Infof("udrconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
+	context.ContainerName = configuration.ContainerName
 	context.NfId = uuid.New().String()
 	context.RegisterIPv4 = factory.UDR_DEFAULT_IPV4 // default localhost
 	context.SBIPort = factory.UDR_DEFAULT_PORT_INT  // default port

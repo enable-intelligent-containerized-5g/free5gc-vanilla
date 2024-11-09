@@ -5,7 +5,7 @@
 package factory
 
 import (
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	logger_util "github.com/free5gc/util/logger"
 )
 
@@ -32,6 +32,7 @@ const (
 )
 
 type Configuration struct {
+	ContainerName            string                  `yaml:"containerName,omitempty"`
 	NssfName                 string                  `yaml:"nssfName,omitempty"`
 	Sbi                      *Sbi                    `yaml:"sbi"`
 	ServiceNameList          []models.ServiceName    `yaml:"serviceNameList"`

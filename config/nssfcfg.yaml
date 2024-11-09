@@ -3,11 +3,12 @@ info:
   description: NSSF initial local configuration
 
 configuration:
+  containerName: nssf
   nssfName: NSSF # the name of this NSSF
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
     registerIPv4: 127.0.0.31 # IP used to register to NRF
-    bindingIPv4: 127.0.0.31  # IP used to bind the service
+    bindingIPv4: 127.0.0.31 # IP used to bind the service
     port: 8000 # Port used to bind the service
     tls: # the local path of TLS key
       pem: config/TLS/nssf.pem # NSSF TLS Certificate

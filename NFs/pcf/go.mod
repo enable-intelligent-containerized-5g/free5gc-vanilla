@@ -7,7 +7,7 @@ require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/cydev/zero v0.0.0-20160322155811-4a4535dd56e7
-	github.com/free5gc/openapi v1.0.4
+	github.com/enable-intelligent-containerized-5g/openapi v1.0.4
 	github.com/free5gc/util v1.0.3
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.3
@@ -19,3 +19,5 @@ require (
 	go.mongodb.org/mongo-driver v1.8.4
 	gopkg.in/yaml.v2 v2.4.0
 )
+
+replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi

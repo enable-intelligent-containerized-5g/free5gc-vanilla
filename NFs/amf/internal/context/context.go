@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/pkg/factory"
-	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/idgenerator"
 )
 
@@ -61,6 +61,7 @@ type AMFContext struct {
 	SupportDnnLists                 []string
 	AMFStatusSubscriptions          sync.Map // map[subscriptionID]models.SubscriptionData
 	NrfUri                          string
+	ContainerName                   string
 	SecurityAlgorithm               SecurityAlgorithm
 	NetworkName                     factory.NetworkName
 	NgapIpList                      []string // NGAP Server IP

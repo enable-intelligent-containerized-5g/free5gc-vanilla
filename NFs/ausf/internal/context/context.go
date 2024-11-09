@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/free5gc/ausf/internal/logger"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 type AUSFContext struct {
@@ -19,6 +19,7 @@ type AUSFContext struct {
 	Url                  string
 	UriScheme            models.UriScheme
 	NrfUri               string
+	ContainerName        string
 	NfService            map[models.ServiceName]models.NfService
 	PlmnList             []models.PlmnId
 	UdmUeauUrl           string

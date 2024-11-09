@@ -14,8 +14,8 @@ import (
 	"github.com/free5gc/nas"
 	"github.com/free5gc/nas/nasMessage"
 	"github.com/free5gc/nas/nasType"
-	"github.com/free5gc/ngap"
-	"github.com/free5gc/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/ngap"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
 )
 
 type testEncodeData struct {

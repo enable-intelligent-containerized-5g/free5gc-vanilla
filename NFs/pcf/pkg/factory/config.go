@@ -63,6 +63,7 @@ func (i *Info) validate() (bool, error) {
 }
 
 type Configuration struct {
+	ContainerName   string    `yaml:"containerName,omitempty"`
 	PcfName         string    `yaml:"pcfName,omitempty" valid:"required, type(string)"`
 	Sbi             *Sbi      `yaml:"sbi,omitempty" valid:"required"`
 	TimeFormat      string    `yaml:"timeFormat,omitempty" valid:"required"`

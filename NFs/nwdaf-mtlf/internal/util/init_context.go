@@ -16,6 +16,7 @@ func InitNwdafContext(context *nwdaf_context.NWDAFContext) {
 	config := factory.NwdafConfig
 	logger.UtilLog.Infof("nwdafconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
+	context.ContainerName = configuration.ContainerName
 	context.NfId = uuid.New().String()
 	context.RegisterIPv4 = factory.NWDAF_DEFAULT_IPV4 // default localhost
 	context.SBIPort = factory.NWDAF_DEFAULT_PORT_INT  // default port
