@@ -67,7 +67,9 @@ type Configuration struct {
 	NwdafName       string   `yaml:"nwdafName,omitempty"`
 	Sbi             *Sbi     `yaml:"sbi" valid:"required"`
 	NrfUri          string   `yaml:"nrfUri" valid:"url,required"`
-	PcmUri          string   `yaml:"pcmUri" valid:"url,required"`
+	OamUri          string   `yaml:"oamUri" valid:"url,required"`
+	KsmInstance     string   `yaml:"ksmInstance" valid:"required"`
+	Namespace       string   `yaml:"namespace" valid:"required"`
 	ServiceNameList []string `yaml:"serviceNameList" valid:"required"`
 }
 

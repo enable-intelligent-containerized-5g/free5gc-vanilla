@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"math"
 	"net/http"
 	"time"
 
@@ -74,8 +75,23 @@ func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
 	return endTimeUnix - startTimeUnix
 }
 
+func findPodByContainer(pods []consumer.PrometheusResult, container string) *consumer.PrometheusResult {
+	for _, pod := range pods {
+		if pod.Container == container {
+			return &pod // Return Pod
+		}
+	}
+	return nil // Return nil
+}
+
 // Get ML by NfType, Size, Accuracy
 func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, accuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
+
+	if len(*mlmodels) == 0 || mlmodels == nil {
+		logger.AniLog.Error("No Found MlModels")
+        return nil
+    }
+
 	// Filter By NfType
 	var amfModels []models.MlModelData
 	for _, model := range *mlmodels {
@@ -83,6 +99,10 @@ func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, 
 			amfModels = append(amfModels, model)
 		}
 	}
+
+	if len(amfModels) == 0 || amfModels == nil {
+        return nil
+    }
 
 	// Select the smallest models
 	// find the smallestSize
@@ -99,6 +119,10 @@ func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, 
 			smallestModels = append(smallestModels, model)
 		}
 	}
+
+	if len(smallestModels) == 0 || smallestModels == nil {
+        return nil
+    }
 
 	// Filter by Accuracy
 	definedAccuracies := []models.NwdafMlModelAccuracy{
@@ -131,6 +155,10 @@ func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, 
 			break
 		}
 	}
+
+	if len(priorityModels) == 0 || priorityModels == nil {
+        return nil
+    }
 
 	return priorityModels
 }
@@ -204,13 +232,13 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 
 	// Filter NF instances by IP
 	nfInstancesFilteredByIP := filterNfInstancesWithIpDuplicate(&nfFilterdByTypePayload)
-	idsByIp := []string{}
-	ips := []string{}
-	for _, instance := range nfInstancesFilteredByIP {
-		idsByIp = append(idsByIp, instance.NfInstanceId) // Add Id
-		ips = append(ips, instance.Ipv4Addresses[0])     // Add Ip
-	}
-	logger.AniLog.Infof("Filtered NF Instances by IP(%d): %s, with IPs(%d): %s", len(idsByIp), idsByIp, len(ips), ips)
+	// idsByIp := []string{}
+	// ips := []string{}
+	// for _, instance := range nfInstancesFilteredByIP {
+	// 	idsByIp = append(idsByIp, instance.NfInstanceId) // Add Id
+	// 	ips = append(ips, instance.Ipv4Addresses[0])     // Add Ip
+	// }
+	// logger.AniLog.Infof("Filtered NF Instances by IP(%d): %s, with IPs(%d): %s", len(idsByIp), idsByIp, len(ips), ips)
 
 	if len(nfInstancesFilteredByIP) <= 0 {
 		logger.AniLog.Warn("NFs not found")
@@ -222,7 +250,7 @@ func HandleAnalyticsInfoNfLoadMetricsNew(request *httpwrapper.Request, typePaylo
 }
 
 func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *models.EventId, NrfUri *string, nfInstances *[]models.NfProfile) *httpwrapper.Response {
-	var responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{}
+	var responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{}
 	var analysisType models.AnalysisType
 
 	// Get StartTime and EndTime
@@ -236,12 +264,17 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 	// 	currentTime = time.Now().In(loc)
 	// }
 
-	var defaultValues = models.NwdaAnalyticsInfoNfLoad{
+	var DefaultNfLoad = models.ResourcesNfLoad{
+		CpuLoad: 0,
+		MemLoad: 0,
+	}
+
+	var defaultValues = models.NwdafAnalyticsInfoNfLoad{
 		CpuUsage: 0,
 		MemUsage: 0,
 		CpuLimit: 0,
 		MemLimit: 0,
-		NfLoad:   0,
+		NfLoad:   DefaultNfLoad,
 	}
 
 	// Convert time to seconds
@@ -259,6 +292,12 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 	if targetPeriod <= 0 {
 		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be smaller than CurrentTime")
 	}
+
+	namespace := factory.NwdafConfig.Configuration.Namespace
+	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
+
+	// Running Pods
+	runningPods := consumer.GetRunningPods(instancek8s, namespace, "")
 
 	// Predict metrics
 	switch {
@@ -282,13 +321,19 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 
 		var mlModelInfoList []models.MlModelData
 
+		// mtlfUri = "http://127.0.0.1:4201"
+
 		// Send GetMlModelInfoList
 		err = consumer.SendGetMlModelInfoList(&mlModelInfoList, mtlfUri)
 		if err != nil {
 			logger.AniLog.Error("Error getting Ml Model Info: ", err)
-			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
+			problemDetails := models.ProblemDetails{
+				Title:  "Error getting Ml Model Info",
+				Status: http.StatusInternalServerError,
+				Detail: err.Error(),
+			}
+			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, problemDetails)
 		}
-
 		if len(mlModelInfoList) <= 0 {
 			logger.AniLog.Warn("Ml Model not found")
 			return httpwrapper.NewResponse(http.StatusNotFound, nil, "Ml Model not found")
@@ -298,6 +343,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// logger.AniLog.Infof("ModelInfoList: %v", mlModelInfoList)
 		// logger.AniLog.Infof("filterMlModelInfo Params ->   eventID: %s, targetPeriod: %d", string(*eventID), targetPeriod)
 		mlModelInfoFiltered := filterMlModelInfo(&mlModelInfoList, eventID, targetPeriod)
+
 		if mlModelInfoFiltered == nil {
 			logger.AniLog.Info("No Found MlModels for predictions")
 			return httpwrapper.NewResponse(http.StatusNotFound, nil, "ML Model Info not found for predictions")
@@ -305,44 +351,44 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// logger.AniLog.Infof("Filtered ML Model Info(%d): %v", len(mlModelInfoFiltered), mlModelInfoFiltered)
 
 		// For each profile: get ml model, and get analitics
-		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
+			var NfLoad = models.NwdafAnalyticsInfoNfLoad(defaultValues)
 			nfType := profile.NfType
 
 			// Get ML by NfType, Size, Accuracy
 			selectedModels := getMlModelByProfile(&mlModelInfoFiltered, &nfType, &request.Accuracy)
 
-			if len(selectedModels) >= 0 {
-				logger.AniLog.Infof("Found the MlModel %v for NfType %s with nfInstanceId %s", selectedModels[0].URI, nfType, profile.NfInstanceId)
-
-				// Get CPU and RAM  from Prometheus
-
-				// Analize the CPU and RAM
-
-				NfLoad = models.NwdaAnalyticsInfoNfLoad{
-					NfInstanceId: profile.NfInstanceId,
-					Accuracy:     selectedModels[0].Accuracy,
-					NfType:       profile.NfType,
-					Pod:          "",
-					CpuUsage:     defaultValues.CpuUsage,
-					MemUsage:     defaultValues.MemUsage,
-					CpuLimit:     defaultValues.CpuLimit,
-					MemLimit:     defaultValues.MemLimit,
-					NfLoad:       defaultValues.NfLoad,
-					NfStatus:     profile.NfStatus,
-					Confidence:   selectedModels[0].Confidence,
-				}
-
-				NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
-
-			} else {
+			if len(selectedModels) <= 0 || selectedModels == nil {
 				logger.AniLog.Errorf("No Found a MlModel for NfType %s with nfInstanceId %s", nfType, profile.NfInstanceId)
+				continue
 			}
 
+			logger.AniLog.Infof("Found the MlModel %v for NfType %s with nfInstanceId %s", selectedModels[0].URI, nfType, profile.NfInstanceId)
+
+			// Get CPU and RAM  from Prometheus
+
+			// Analize the CPU and RAM
+
+			NfLoad = models.NwdafAnalyticsInfoNfLoad{
+				NfInstanceId: profile.NfInstanceId,
+				Accuracy:     selectedModels[0].Accuracy,
+				NfType:       profile.NfType,
+				Pod:          "",
+				Container:    "",
+				CpuUsage:     defaultValues.CpuUsage,
+				MemUsage:     defaultValues.MemUsage,
+				CpuLimit:     defaultValues.CpuLimit,
+				MemLimit:     defaultValues.MemLimit,
+				NfLoad:       defaultValues.NfLoad,
+				NfStatus:     profile.NfStatus,
+				Confidence:   selectedModels[0].Confidence,
+			}
+
+			NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
 		}
 
-		responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{
+		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
 			TargetPerid:     targetPeriod,
@@ -359,29 +405,51 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		analysisType = models.AnalysisType_STATISTICS
 
 		// For each profile: get data from Prometheus
-		NfLoadsAnalitics := []models.NwdaAnalyticsInfoNfLoad{}
+		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
 		for _, profile := range *nfInstances {
-			var NfLoad = models.NwdaAnalyticsInfoNfLoad(defaultValues)
-			pod := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
+			var NfLoad = models.NwdafAnalyticsInfoNfLoad(defaultValues)
+			var podName string
+			containerName := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 
-			cpuUsage := consumer.GetCpuUsage(pod, targetPeriod, offSet)[0]
+			foundPod := findPodByContainer(runningPods, containerName)
 
-			NfLoad = models.NwdaAnalyticsInfoNfLoad{
+			if foundPod != nil {
+				podName = foundPod.Pod
+			} else {
+				logger.AniLog.Infof("No pod found for the specified container: %s", containerName)
+				continue
+			}
+
+			// logger.AniLog.Infof("NAMESPACE: %s,POD: %s, CONTAINER: %s", namespace, podName, containerName)
+			cpuUsageAverage := consumer.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, offSet)[0]
+			memUsageAverage := consumer.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, offSet)[0]
+			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_CORE)[0]
+			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_BYTE)[0]
+
+			// logger.AniLog.Infof("Cpu Usage: %f, MenUsage: %f, CpuLimit: %f, MemLimit: %f", cpuUsageAverage.Value, memUsageAverage.Value, cpuLimit.Value, memLimit.Value)
+
+			var nfLoad = models.ResourcesNfLoad{
+				CpuLoad: getPercentil(cpuUsageAverage.Value, cpuLimit.Value),
+				MemLoad: getPercentil(memUsageAverage.Value, memLimit.Value),
+			}
+
+			NfLoad = models.NwdafAnalyticsInfoNfLoad{
 				NfInstanceId: profile.NfInstanceId,
+				Pod:          podName,
+				Container:    containerName,
 				NfType:       profile.NfType,
-				Pod:          pod,
-				CpuUsage:     cpuUsage.Value,
-				MemUsage:     defaultValues.MemUsage,
-				CpuLimit:     defaultValues.CpuLimit,
-				MemLimit:     defaultValues.MemLimit,
-				NfLoad:       defaultValues.NfLoad,
+				CpuUsage:     cpuUsageAverage.Value,
+				MemUsage:     memUsageAverage.Value,
+				CpuLimit:     cpuLimit.Value,
+				MemLimit:     memLimit.Value,
+				NfLoad:       nfLoad,
 				NfStatus:     profile.NfStatus,
 			}
 
 			NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
 		}
 
-		responseNfLoad = models.NwdaAnalyticsInfoNfLoadResponse{
+		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
 			TargetPerid:     targetPeriod,
@@ -396,4 +464,12 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		logger.AniLog.Error("Invalid time range")
 		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be greater than StartTime")
 	}
+}
+
+func getPercentil(value float64, limit float64) float64 {
+	load := value / limit
+	if math.IsNaN(value) || limit == 0 {
+		load = 0
+	}
+	return load
 }
