@@ -68,6 +68,7 @@ func (i *Info) validate() (bool, error) {
 }
 
 type Configuration struct {
+	ContainerName   string        `yaml:"containerName,omitempty"`
 	Sbi             *Sbi          `yaml:"sbi,omitempty" valid:"required"`
 	MongoDBName     string        `yaml:"MongoDBName" valid:"type(string),required"`
 	MongoDBUrl      string        `yaml:"MongoDBUrl" valid:"required"`

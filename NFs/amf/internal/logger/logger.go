@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 
 	aperLogger "github.com/free5gc/aper/logger"
-	nasLogger "github.com/free5gc/nas/logger"
-	ngapLogger "github.com/free5gc/ngap/logger"
+	nasLogger "github.com/enable-intelligent-containerized-5g/nas/logger"
+	ngapLogger "github.com/enable-intelligent-containerized-5g/ngap/logger"
 	fsmLogger "github.com/free5gc/util/fsm/logger"
 	logger_util "github.com/free5gc/util/logger"
 )

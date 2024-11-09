@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/pfcp"
 	"github.com/free5gc/pfcp/pfcpType"
 	smf_context "github.com/free5gc/smf/internal/context"

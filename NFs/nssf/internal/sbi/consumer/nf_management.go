@@ -13,14 +13,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFManagement"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	nssf_context "github.com/free5gc/nssf/internal/context"
 	"github.com/free5gc/nssf/internal/logger"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
 )
 
 func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile, err error) {
+	profile.ContainerName = context.ContainerName
+	logger.ConsumerLog.Infof("ContainerName: %s", profile.ContainerName)
 	profile.NfInstanceId = context.NfId
 	profile.NfType = models.NfType_NSSF
 	profile.NfStatus = models.NfStatus_REGISTERED
@@ -37,7 +39,8 @@ func BuildNFProfile(context *nssf_context.NSSFContext) (profile models.NfProfile
 }
 
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (
-	resourceNrfUri string, retrieveNfInstanceId string, err error) {
+	resourceNrfUri string, retrieveNfInstanceId string, err error,
+) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	apiClient := Nnrf_NFManagement.NewAPIClient(configuration)

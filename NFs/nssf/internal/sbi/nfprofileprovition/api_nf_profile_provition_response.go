@@ -5,7 +5,7 @@ import (
 
 	"github.com/free5gc/nssf/internal/context"
 	"github.com/free5gc/nssf/internal/logger"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/gin-gonic/gin"
 )

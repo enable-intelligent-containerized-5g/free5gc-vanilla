@@ -1,20 +1,21 @@
 package message
 
 import (
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/context"
 	gmm_common "github.com/free5gc/amf/internal/gmm/common"
 	"github.com/free5gc/amf/internal/logger"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
-	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/nas/nasType"
-	"github.com/free5gc/ngap/ngapType"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
+	"github.com/enable-intelligent-containerized-5g/nas/nasType"
 )
 
 // backOffTimerUint = 7 means backoffTimer is null
 func SendDLNASTransport(ue *context.RanUe, payloadContainerType uint8, nasPdu []byte,
-	pduSessionId int32, cause uint8, backOffTimerUint *uint8, backOffTimer uint8) {
+	pduSessionId int32, cause uint8, backOffTimerUint *uint8, backOffTimer uint8,
+) {
 	if ue == nil {
 		logger.GmmLog.Error("SendDLNASTransport: RanUe is nil")
 		return
@@ -138,7 +139,8 @@ func SendAuthenticationRequest(ue *context.RanUe) {
 }
 
 func SendServiceAccept(ue *context.RanUe, anType models.AccessType, pDUSessionStatus *[16]bool,
-	reactivationResult *[16]bool, errPduSessionId, errCause []uint8) {
+	reactivationResult *[16]bool, errPduSessionId, errCause []uint8,
+) {
 	if ue == nil {
 		logger.GmmLog.Error("SendServiceAccept: RanUe is nil")
 		return
@@ -160,7 +162,8 @@ func SendServiceAccept(ue *context.RanUe, anType models.AccessType, pDUSessionSt
 }
 
 func SendConfigurationUpdateCommand(amfUe *context.AmfUe, accessType models.AccessType,
-	networkSlicingIndication *nasType.NetworkSlicingIndication) {
+	networkSlicingIndication *nasType.NetworkSlicingIndication,
+) {
 	if amfUe == nil {
 		logger.GmmLog.Error("SendConfigurationUpdateCommand: AmfUe is nil")
 		return
@@ -364,7 +367,8 @@ func SendRegistrationAccept(
 	pDUSessionStatus *[16]bool,
 	reactivationResult *[16]bool,
 	errPduSessionId, errCause []uint8,
-	pduSessionResourceSetupList *ngapType.PDUSessionResourceSetupListCxtReq) {
+	pduSessionResourceSetupList *ngapType.PDUSessionResourceSetupListCxtReq,
+) {
 	if amfUe == nil {
 		logger.GmmLog.Error("SendRegistrationAccept: AmfUe is nil")
 		return

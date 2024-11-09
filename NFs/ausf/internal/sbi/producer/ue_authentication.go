@@ -17,7 +17,7 @@ import (
 
 	ausf_context "github.com/free5gc/ausf/internal/context"
 	"github.com/free5gc/ausf/internal/logger"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/free5gc/util/ueauth"
 )

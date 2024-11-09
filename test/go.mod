@@ -12,7 +12,7 @@ require (
 	github.com/free5gc/ausf v0.0.0-00010101000000-000000000000
 	github.com/free5gc/n3iwf v0.0.0-00010101000000-000000000000
 	github.com/free5gc/nas v1.0.7
-	github.com/free5gc/ngap v1.0.6
+	github.com/enable-intelligent-containerized-5g/ngap latest
 	github.com/free5gc/nrf v0.0.0-00010101000000-000000000000
 	github.com/free5gc/nssf v0.0.0-00010101000000-000000000000
 	github.com/free5gc/openapi v1.0.4

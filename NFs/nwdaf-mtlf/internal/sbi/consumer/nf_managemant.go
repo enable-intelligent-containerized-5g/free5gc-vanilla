@@ -18,6 +18,7 @@ import (
 func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 	var profile models.NfProfile
 	config := factory.NwdafConfig
+	profile.ContainerName = context.ContainerName
 	profile.NfInstanceId = context.NfId
 	profile.NfType = models.NfType_NWDAF
 	profile.NfStatus = models.NfStatus_REGISTERED
@@ -29,7 +30,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 	if context.RegisterIPv4 == "" {
 		logger.ConsumerLog.Error("NWDAF Address is empty")
 		return profile
-	} 
+	}
 	profile.Ipv4Addresses = append(profile.Ipv4Addresses, context.RegisterIPv4)
 	services := config.Configuration.ServiceNameList
 	nfName := config.Configuration.Name

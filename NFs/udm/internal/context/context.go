@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/udm/pkg/suci"
 	"github.com/free5gc/util/idgenerator"
 )
@@ -40,6 +40,7 @@ type UDMContext struct {
 	NFDiscoveryClient              *Nnrf_NFDiscovery.APIClient
 	UdmUePool                      sync.Map // map[supi]*UdmUeContext
 	NrfUri                         string
+	ContainerName                  string
 	GpsiSupiList                   models.IdentityData
 	SharedSubsDataMap              map[string]models.SharedData // sharedDataIds as key
 	SubscriptionOfSharedDataChange sync.Map                     // subscriptionID as key
@@ -86,7 +87,8 @@ type UdmNFContext struct {
 
 func (context *UDMContext) ManageSmData(smDatafromUDR []models.SessionManagementSubscriptionData, snssaiFromReq string,
 	dnnFromReq string) (mp map[string]models.SessionManagementSubscriptionData, ind string,
-	Dnns []models.DnnConfiguration, allDnns []map[string]models.DnnConfiguration) {
+	Dnns []models.DnnConfiguration, allDnns []map[string]models.DnnConfiguration,
+) {
 	smDataMap := make(map[string]models.SessionManagementSubscriptionData)
 	sNssaiList := make([]string, len(smDatafromUDR))
 	// to obtain all DNN configurations identified by "dnn" for all network slices where such DNN is available
@@ -256,7 +258,8 @@ func (context *UDMContext) UdmUeFindByGpsi(gpsi string) (*UdmUeContext, bool) {
 
 // Function to create the AccessAndMobilitySubscriptionData for Ue
 func (context *UDMContext) CreateAccessMobilitySubsDataForUe(supi string,
-	body models.AccessAndMobilitySubscriptionData) {
+	body models.AccessAndMobilitySubscriptionData,
+) {
 	ue, ok := context.UdmUeFindBySupi(supi)
 	if !ok {
 		ue = context.NewUdmUe(supi)

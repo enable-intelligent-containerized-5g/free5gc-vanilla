@@ -16,8 +16,8 @@ import (
 
 	"github.com/free5gc/nssf/internal/logger"
 	"github.com/free5gc/nssf/internal/sbi/producer"
-	"github.com/free5gc/openapi"
-	. "github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	. "github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/util/httpwrapper"
 )
 

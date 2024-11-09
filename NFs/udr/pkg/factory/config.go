@@ -62,9 +62,10 @@ const (
 )
 
 type Configuration struct {
-	Sbi     *Sbi     `yaml:"sbi" valid:"required"`
-	Mongodb *Mongodb `yaml:"mongodb" valid:"required"`
-	NrfUri  string   `yaml:"nrfUri" valid:"url,required"`
+	ContainerName string   `yaml:"containerName,omitempty"`
+	Sbi           *Sbi     `yaml:"sbi" valid:"required"`
+	Mongodb       *Mongodb `yaml:"mongodb" valid:"required"`
+	NrfUri        string   `yaml:"nrfUri" valid:"url,required"`
 }
 
 func (c *Configuration) validate() (bool, error) {

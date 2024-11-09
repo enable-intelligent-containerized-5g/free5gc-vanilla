@@ -15,9 +15,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nssf/internal/logger"
 	"github.com/free5gc/nssf/pkg/factory"
-	"github.com/free5gc/openapi/models"
 )
 
 var nssfContext = NSSFContext{}
@@ -51,6 +51,7 @@ type NSSFContext struct {
 	SBIPort           int
 	NfService         map[models.ServiceName]models.NfService
 	NrfUri            string
+	ContainerName     string
 	SupportedPlmnList []models.PlmnId
 }
 
@@ -62,6 +63,7 @@ func InitNssfContext() {
 	}
 	nssfConfig := factory.NssfConfig
 
+	nssfContext.ContainerName = nssfConfig.Configuration.ContainerName
 	if nssfConfig.Configuration.NssfName != "" {
 		nssfContext.Name = nssfConfig.Configuration.NssfName
 	}
@@ -93,7 +95,8 @@ func InitNssfContext() {
 }
 
 func initNfService(serviceName []models.ServiceName, version string) (
-	nfService map[models.ServiceName]models.NfService) {
+	nfService map[models.ServiceName]models.NfService,
+) {
 	versionUri := "v" + strings.Split(version, ".")[0]
 	nfService = make(map[models.ServiceName]models.NfService)
 	for idx, name := range serviceName {

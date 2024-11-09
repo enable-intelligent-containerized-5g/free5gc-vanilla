@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFManagement"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	ausf_context "github.com/free5gc/ausf/internal/context"
 	"github.com/free5gc/ausf/internal/logger"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
 )
 
 func BuildNFInstance(ausfContext *ausf_context.AUSFContext) (profile models.NfProfile, err error) {
+	profile.ContainerName = ausfContext.ContainerName
 	profile.NfInstanceId = ausfContext.NfId
 	profile.NfType = models.NfType_AUSF
 	profile.NfStatus = models.NfStatus_REGISTERED
@@ -34,7 +35,8 @@ func BuildNFInstance(ausfContext *ausf_context.AUSFContext) (profile models.NfPr
 }
 
 // func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (resouceNrfUri string,
-//    retrieveNfInstanceID string, err error) {
+//
+//	retrieveNfInstanceID string, err error) {
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (string, string, error) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)

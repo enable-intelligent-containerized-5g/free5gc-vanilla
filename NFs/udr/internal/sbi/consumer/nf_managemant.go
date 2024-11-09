@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFManagement"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	udr_context "github.com/free5gc/udr/internal/context"
 	"github.com/free5gc/udr/internal/logger"
 	"github.com/free5gc/udr/pkg/factory"
@@ -19,6 +19,7 @@ func BuildNFInstance(context *udr_context.UDRContext) models.NfProfile {
 	config := factory.UdrConfig
 
 	profile := models.NfProfile{
+		ContainerName: context.ContainerName,
 		NfInstanceId:  context.NfId,
 		NfType:        models.NfType_UDR,
 		NfStatus:      models.NfStatus_REGISTERED,

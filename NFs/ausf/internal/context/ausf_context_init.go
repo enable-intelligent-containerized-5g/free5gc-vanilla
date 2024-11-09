@@ -7,10 +7,10 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/ausf/internal/logger"
 	"github.com/free5gc/ausf/internal/util"
 	"github.com/free5gc/ausf/pkg/factory"
-	"github.com/free5gc/openapi/models"
 )
 
 func TestInit() {
@@ -28,6 +28,7 @@ func InitAusfContext(context *AUSFContext) {
 	configuration := config.Configuration
 	sbi := configuration.Sbi
 
+	context.ContainerName = configuration.ContainerName
 	context.NfId = uuid.New().String()
 	context.GroupID = configuration.GroupId
 	context.NrfUri = configuration.NrfUri

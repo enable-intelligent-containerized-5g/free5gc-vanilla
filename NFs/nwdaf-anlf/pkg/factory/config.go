@@ -62,6 +62,7 @@ const (
 )
 
 type Configuration struct {
+	ContainerName   string   `yaml:"containerName,omitempty"`
 	Name            string   `yaml:"name,omitempty"`
 	NwdafName       string   `yaml:"nwdafName,omitempty"`
 	Sbi             *Sbi     `yaml:"sbi" valid:"required"`

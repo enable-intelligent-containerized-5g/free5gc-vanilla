@@ -82,7 +82,6 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 }
 
 func validateNfActive(url string, nfInstanceId string) bool {
-  logger.DiscoveryLog.Infoln("URL: ", url)
 	// Realizar la solicitud HTTP GET
 	resp, err := http.Get(url)
 	if err != nil {
@@ -98,8 +97,6 @@ func validateNfActive(url string, nfInstanceId string) bool {
 		return false
 	}
 
-	logger.DiscoveryLog.Info("Body: ", body)
-
 	// Deserializar el cuerpo de la respuesta
 	var data httpwrapper.Response
 	err = openapi.Deserialize(&data, body, "application/json")
@@ -108,12 +105,7 @@ func validateNfActive(url string, nfInstanceId string) bool {
 		return false
 	}
 
-	logger.DiscoveryLog.Info("Data: ", data)
-
 	nfId := data.Body
-
-	// Imprimir el cuerpo de la respuesta
-	logger.DiscoveryLog.Info("nfId: ", nfId)
 
 	// Verificar si la respuesta coincide con el ID del NF
 	return nfId == nfInstanceId

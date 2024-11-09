@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFManagement"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	udm_context "github.com/free5gc/udm/internal/context"
 	"github.com/free5gc/udm/internal/logger"
 )
 
 func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfile, err error) {
+	profile.ContainerName = udmContext.ContainerName
 	profile.NfInstanceId = udmContext.NfId
 	profile.NfStatus = models.NfStatus_REGISTERED
 	profile.NfType = models.NfType_UDM
@@ -39,7 +40,8 @@ func BuildNFInstance(udmContext *udm_context.UDMContext) (profile models.NfProfi
 }
 
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (resouceNrfUri string,
-	retrieveNfInstanceId string, err error) {
+	retrieveNfInstanceId string, err error,
+) {
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	client := Nnrf_NFManagement.NewAPIClient(configuration)

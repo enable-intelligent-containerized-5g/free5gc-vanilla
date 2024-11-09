@@ -3,10 +3,10 @@ package context
 import (
 	"encoding/hex"
 
-	"github.com/free5gc/nas"
-	"github.com/free5gc/nas/nasConvert"
-	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/nas/nasType"
+	"github.com/enable-intelligent-containerized-5g/nas"
+	"github.com/enable-intelligent-containerized-5g/nas/nasConvert"
+	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
+	"github.com/enable-intelligent-containerized-5g/nas/nasType"
 	"github.com/free5gc/smf/internal/logger"
 )
 

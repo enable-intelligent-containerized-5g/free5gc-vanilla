@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/udm/internal/context"
 	"github.com/free5gc/udm/internal/logger"
 	"github.com/free5gc/udm/pkg/factory"
@@ -15,6 +15,7 @@ func InitUDMContext(udmContext *context.UDMContext) {
 	config := factory.UdmConfig
 	logger.UtilLog.Info("udmconfig Info: Version[", config.Info.Version, "] Description[", config.Info.Description, "]")
 	configuration := config.Configuration
+	udmContext.ContainerName = configuration.ContainerName
 	udmContext.NfId = uuid.New().String()
 	sbi := configuration.Sbi
 	udmContext.UriScheme = ""

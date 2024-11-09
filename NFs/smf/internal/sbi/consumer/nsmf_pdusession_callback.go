@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nsmf_PDUSession"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nsmf_PDUSession"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/smf/internal/logger"
 )
 
