@@ -80,6 +80,7 @@ func AddNfServices(serviceMap *map[models.ServiceName]models.NfService, config *
 	// nausf-auth
 	nfService.ServiceInstanceId = context.NfId
 	nfService.ServiceName = models.ServiceName_NAUSF_AUTH
+	nfService.ApiPrefix = context.Url
 
 	var ipEndPoint models.IpEndPoint
 	ipEndPoint.Ipv4Address = context.RegisterIPv4
