@@ -17,25 +17,26 @@ func sendGetMlModelInfoList(mtlfUri string) (models.MlModelDataResponse, error) 
 
 	var res *http.Response
 	result, res, err := client.MLModelInfoStoreApi.SearhMlModelInfoList(context.TODO())
-	if res != nil && res.StatusCode == http.StatusTemporaryRedirect {
-		err = fmt.Errorf("temporary redirect for Non MTLF consumer")
+
+	if res == nil {
+		return result, fmt.Errorf(err.Error())
 	}
+
 	defer func() {
 		if rspCloseErr := res.Body.Close(); rspCloseErr != nil {
 			logger.ConsumerLog.Errorf("SearchMlModelInfoList response body cannot close: %+v", rspCloseErr)
 		}
 	}()
-
-	return result, err
+	
+	return result, nil
 }
 
 func SendGetMlModelInfoList(mlModelInfoList *[]models.MlModelData, mtlfUri string) error {
 	resp, localErr := sendGetMlModelInfoList(mtlfUri)
+
 	if localErr != nil {
 		return localErr
 	}
-
-	// logger.ConsumerLog.Info("ML Model Info List response: ", resp)
 
 	*mlModelInfoList = resp.MlModels
 
