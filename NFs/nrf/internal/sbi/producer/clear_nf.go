@@ -98,14 +98,19 @@ func validateNfActive(url string, nfInstanceId string) bool {
 		return false
 	}
 
-  // Deserializar el cuerpo de la respuesta
-  var data httpwrapper.Response
-  err = openapi.Deserialize(&data, body, "application/json")
-  if err != nil {
-    logger.DiscoveryLog.Error("Error al deserializar el cuerpo de la respuesta:", err)
-    return false
-  }
-  nfId := data.Body
+	logger.DiscoveryLog.Info("Body: ", body)
+
+	// Deserializar el cuerpo de la respuesta
+	var data httpwrapper.Response
+	err = openapi.Deserialize(&data, body, "application/json")
+	if err != nil {
+		logger.DiscoveryLog.Error("Error al deserializar el cuerpo de la respuesta:", err)
+		return false
+	}
+
+	logger.DiscoveryLog.Info("Data: ", data)
+
+	nfId := data.Body
 
 	// Imprimir el cuerpo de la respuesta
 	logger.DiscoveryLog.Info("nfId: ", nfId)

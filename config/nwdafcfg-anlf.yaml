@@ -7,6 +7,13 @@ configuration:
   
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
+  #   registerIPv4: 127.0.0.1 # IP used to register to NRF
+  #   bindingIPv4: 0.0.0.0  # IP used to bind the service
+  #   port: 4200 # port used to bind the service
+  #
+  # nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+  # pcmUri: http://prometheus-service:9090 # a valid URI of PCM (Packet Capture Module)
+
     registerIPv4: anlf-nanlf # IP used to register to NRF
     bindingIPv4: 0.0.0.0  # IP used to bind the service
     port: 8000 # port used to bind the service

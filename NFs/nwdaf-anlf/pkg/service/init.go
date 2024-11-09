@@ -133,7 +133,6 @@ func (nwdaf *NWDAF) Start() {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := logger_util.NewGinWithLogrus(logger.GinLog)
-
 	router.Use(cors.New(cors.Config{
 		AllowMethods: []string{"GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"},
 		AllowHeaders: []string{
@@ -146,8 +145,8 @@ func (nwdaf *NWDAF) Start() {
 		MaxAge:           86400,
 	}))
 
-	analyticsinfo.AddService(router)
 	nfprofileprovition.AddService(router)
+	analyticsinfo.AddService(router)
 
 	pemPath := util.NwdafDefaultPemPath
 	keyPath := util.NwdafDefaultKeyPath
@@ -159,8 +158,6 @@ func (nwdaf *NWDAF) Start() {
 
 	self := context.NWDAF_Self()
 	util.InitNwdafContext(self)
-
-	context.GlobalNwdafContext = self
 
 	// Register to NRF
 	profile := consumer.BuildNFInstance(self)

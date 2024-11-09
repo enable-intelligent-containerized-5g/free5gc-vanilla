@@ -8,8 +8,6 @@ import (
 
 var nwdafContext = NWDAFContext{}
 
-var GlobalNwdafContext = &nwdafContext
-
 func init() {
 	nwdafContext.Name = "nwdaf"
 }
