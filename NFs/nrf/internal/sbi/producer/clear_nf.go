@@ -66,7 +66,7 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 		fullURL := fmt.Sprintf("%s/%s", baseUri, endpoint)
 
 		if !validateNfActive(fullURL, nfInstanceId) {
-			logger.DiscoveryLog.Infof("Delete NF #%d: %s", i, nfInstanceId)
+			logger.DiscoveryLog.Infof("Delete NF #%d: %s\n", i, nfInstanceId)
 			err := NFDeregisterProcedure(nfInstanceId)
 			if err != nil {
 				logger.DiscoveryLog.Errorf("Error deleting: %s", nfInstanceId)
@@ -82,11 +82,11 @@ func RemoveInactiveNfs() *models.ProblemDetails {
 }
 
 func validateNfActive(url string, nfInstanceId string) bool {
-  logger.DiscoveryLog.Infoln("URL: ", url)
+	// logger.DiscoveryLog.Infoln("URL: ", url)
 	// Realizar la solicitud HTTP GET
 	resp, err := http.Get(url)
 	if err != nil {
-		logger.DiscoveryLog.Error("Error al hacer la solicitud:", err)
+		logger.DiscoveryLog.Error("Error in the request: ", err)
 		return false
 	}
 	defer resp.Body.Close()
@@ -94,7 +94,7 @@ func validateNfActive(url string, nfInstanceId string) bool {
 	// Leer el cuerpo de la respuesta
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.DiscoveryLog.Error("Error al leer el cuerpo de la respuesta:", err)
+		logger.DiscoveryLog.Error("Error reading the respinse body: ", err)
 		return false
 	}
 
@@ -104,7 +104,7 @@ func validateNfActive(url string, nfInstanceId string) bool {
 	var data httpwrapper.Response
 	err = openapi.Deserialize(&data, body, "application/json")
 	if err != nil {
-		logger.DiscoveryLog.Error("Error al deserializar el cuerpo de la respuesta:", err)
+		logger.DiscoveryLog.Error("Error getting response body: ", err)
 		return false
 	}
 
