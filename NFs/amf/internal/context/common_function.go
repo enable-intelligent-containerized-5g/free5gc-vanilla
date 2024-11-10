@@ -5,8 +5,8 @@ import (
 
 	"github.com/mohae/deepcopy"
 
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/logger"
-	"github.com/free5gc/openapi/models"
 )
 
 func CompareUserLocation(loc1 models.UserLocation, loc2 models.UserLocation) bool {

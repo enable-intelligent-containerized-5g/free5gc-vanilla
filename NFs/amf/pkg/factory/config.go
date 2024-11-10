@@ -10,7 +10,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	logger_util "github.com/free5gc/util/logger"
 )
 
@@ -65,6 +65,7 @@ func (i *Info) validate() (bool, error) {
 }
 
 type Configuration struct {
+	ContainerName                   string                    `yaml:"containerName,omitempty"`
 	AmfName                         string                    `yaml:"amfName,omitempty" valid:"required, type(string)"`
 	NgapIpList                      []string                  `yaml:"ngapIpList,omitempty" valid:"required"`
 	Sbi                             *Sbi                      `yaml:"sbi,omitempty" valid:"required"`

@@ -59,6 +59,7 @@ func (i *Info) validate() (bool, error) {
 }
 
 type Configuration struct {
+	ContainerName   string             `yaml:"containerName,omitempty"`
 	Sbi             *Sbi               `yaml:"sbi,omitempty"  valid:"required"`
 	ServiceNameList []string           `yaml:"serviceNameList,omitempty"  valid:"required"`
 	NrfUri          string             `yaml:"nrfUri,omitempty"  valid:"required, url"`

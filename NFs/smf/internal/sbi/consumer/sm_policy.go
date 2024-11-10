@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/free5gc/nas/nasConvert"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas/nasConvert"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	smf_context "github.com/free5gc/smf/internal/context"
 )
 

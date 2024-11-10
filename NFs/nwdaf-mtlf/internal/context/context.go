@@ -22,6 +22,7 @@ type NWDAFContext struct {
 	HttpIPv6Address string
 	NfId            string
 	NrfUri          string
+	ContainerName   string
 }
 
 // Reset NWDAF Context

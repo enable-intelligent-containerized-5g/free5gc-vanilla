@@ -28,8 +28,8 @@ import (
 	"github.com/free5gc/nas/nasMessage"
 	"github.com/free5gc/nas/nasType"
 	"github.com/free5gc/nas/security"
-	"github.com/free5gc/ngap"
-	"github.com/free5gc/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/ngap"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
 	"github.com/free5gc/openapi/models"
 	"github.com/free5gc/util/milenage"
 )

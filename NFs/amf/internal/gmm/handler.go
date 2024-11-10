@@ -15,27 +15,28 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/mohae/deepcopy"
 
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapConvert"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/context"
 	gmm_message "github.com/free5gc/amf/internal/gmm/message"
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/consumer"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
 	"github.com/free5gc/amf/internal/util"
-	"github.com/free5gc/nas"
-	"github.com/free5gc/nas/nasConvert"
-	"github.com/free5gc/nas/nasMessage"
-	"github.com/free5gc/nas/nasType"
-	"github.com/free5gc/nas/security"
-	"github.com/free5gc/ngap/ngapConvert"
-	"github.com/free5gc/ngap/ngapType"
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFDiscovery"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas"
+	"github.com/enable-intelligent-containerized-5g/nas/nasConvert"
+	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
+	"github.com/enable-intelligent-containerized-5g/nas/nasType"
+	"github.com/enable-intelligent-containerized-5g/nas/security"
 	"github.com/free5gc/util/fsm"
 )
 
 func HandleULNASTransport(ue *context.AmfUe, anType models.AccessType,
-	ulNasTransport *nasMessage.ULNASTransport) error {
+	ulNasTransport *nasMessage.ULNASTransport,
+) error {
 	ue.GmmLog.Infoln("Handle UL NAS Transport")
 
 	if ue.MacFailed {
@@ -74,7 +75,8 @@ func HandleULNASTransport(ue *context.AmfUe, anType models.AccessType,
 }
 
 func transport5GSMMessage(ue *context.AmfUe, anType models.AccessType,
-	ulNasTransport *nasMessage.ULNASTransport) error {
+	ulNasTransport *nasMessage.ULNASTransport,
+) error {
 	var pduSessionID int32
 
 	ue.GmmLog.Info("Transport 5GSM Message to SMF")
@@ -218,8 +220,7 @@ func transport5GSMMessage(ue *context.AmfUe, anType models.AccessType,
 				} else {
 					ue.Lock.Lock()
 					defer ue.Lock.Unlock()
-					_, smContextRef, errResponse, problemDetail, err :=
-						consumer.SendCreateSmContextRequest(ue, newSmContext, nil, smMessage)
+					_, smContextRef, errResponse, problemDetail, err := consumer.SendCreateSmContextRequest(ue, newSmContext, nil, smMessage)
 					if err != nil {
 						ue.GmmLog.Errorf("CreateSmContextRequest Error: %+v", err)
 						return nil
@@ -277,7 +278,8 @@ func forward5GSMMessageToSMF(
 	accessType models.AccessType,
 	pduSessionID int32,
 	smContext *context.SmContext,
-	smMessage []byte) error {
+	smMessage []byte,
+) error {
 	smContextUpdateData := models.SmContextUpdateData{
 		N1SmMsg: &models.RefToBinaryData{
 			ContentId: "N1SmMsg",
@@ -354,7 +356,8 @@ func forward5GSMMessageToSMF(
 
 // Handle cleartext IEs of Registration Request, which cleattext IEs defined in TS 24.501 4.4.6
 func HandleRegistrationRequest(ue *context.AmfUe, anType models.AccessType, procedureCode int64,
-	registrationRequest *nasMessage.RegistrationRequest) error {
+	registrationRequest *nasMessage.RegistrationRequest,
+) error {
 	var guamiFromUeGuti models.Guami
 	amfSelf := context.AMF_Self()
 
@@ -1256,10 +1259,8 @@ func handleRequestedNssai(ue *context.AmfUe, anType models.AccessType) error {
 					}
 
 					if !reflect.DeepEqual(*guami.PlmnId, targetAmfPlmnId) {
-						searchTargetAmfQueryParam.TargetPlmnList =
-							optional.NewInterface(openapi.MarshToJsonString([]models.PlmnId{targetAmfPlmnId}))
-						searchTargetAmfQueryParam.RequesterPlmnList =
-							optional.NewInterface(openapi.MarshToJsonString([]models.PlmnId{*guami.PlmnId}))
+						searchTargetAmfQueryParam.TargetPlmnList = optional.NewInterface(openapi.MarshToJsonString([]models.PlmnId{targetAmfPlmnId}))
+						searchTargetAmfQueryParam.RequesterPlmnList = optional.NewInterface(openapi.MarshToJsonString([]models.PlmnId{*guami.PlmnId}))
 					}
 
 					searchTargetAmfQueryParam.AmfRegionId = optional.NewString(targetAmfSetToken[2])
@@ -1473,7 +1474,8 @@ func HandleNotificationResponse(ue *context.AmfUe, notificationResponse *nasMess
 }
 
 func HandleConfigurationUpdateComplete(ue *context.AmfUe,
-	configurationUpdateComplete *nasMessage.ConfigurationUpdateComplete) error {
+	configurationUpdateComplete *nasMessage.ConfigurationUpdateComplete,
+) error {
 	ue.GmmLog.Info("Handle Configuration Update Complete")
 
 	if ue.MacFailed {
@@ -1482,7 +1484,7 @@ func HandleConfigurationUpdateComplete(ue *context.AmfUe,
 
 	// TODO: Stop timer T3555 in TS 24.501 Figure 5.4.4.1.1 in handler
 	// TODO: Send acknowledgment by Nudm_SMD_Info_Service to UDM in handler
-	//		import "github.com/free5gc/openapi/Nudm_SubscriberDataManagement" client.Info
+	//		import "github.com/enable-intelligent-containerized-5g/openapi/Nudm_SubscriberDataManagement" client.Info
 
 	return nil
 }
@@ -1547,7 +1549,8 @@ func AuthenticationProcedure(ue *context.AmfUe, accessType models.AccessType) (b
 
 // TS 24501 5.6.1
 func HandleServiceRequest(ue *context.AmfUe, anType models.AccessType,
-	serviceRequest *nasMessage.ServiceRequest) error {
+	serviceRequest *nasMessage.ServiceRequest,
+) error {
 	if ue == nil {
 		return fmt.Errorf("AmfUe is nil")
 	}
@@ -1874,7 +1877,8 @@ func HandleServiceRequest(ue *context.AmfUe, anType models.AccessType,
 
 func sendServiceAccept(ue *context.AmfUe, anType models.AccessType, ctxList ngapType.PDUSessionResourceSetupListCxtReq,
 	suList ngapType.PDUSessionResourceSetupListSUReq, pDUSessionStatus *[16]bool,
-	reactivationResult *[16]bool, errPduSessionId, errCause []uint8) error {
+	reactivationResult *[16]bool, errPduSessionId, errCause []uint8,
+) error {
 	if ue.RanUe[anType].UeContextRequest {
 		// update Kgnb/Kn3iwf
 		ue.UpdateSecurityContext(anType)
@@ -1905,7 +1909,8 @@ func sendServiceAccept(ue *context.AmfUe, anType models.AccessType, ctxList ngap
 
 // TS 24.501 5.4.1
 func HandleAuthenticationResponse(ue *context.AmfUe, accessType models.AccessType,
-	authenticationResponse *nasMessage.AuthenticationResponse) error {
+	authenticationResponse *nasMessage.AuthenticationResponse,
+) error {
 	ue.GmmLog.Info("Handle Authentication Response")
 
 	if ue.T3560 != nil {
@@ -2042,7 +2047,8 @@ func HandleAuthenticationError(ue *context.AmfUe, anType models.AccessType) erro
 }
 
 func HandleAuthenticationFailure(ue *context.AmfUe, anType models.AccessType,
-	authenticationFailure *nasMessage.AuthenticationFailure) error {
+	authenticationFailure *nasMessage.AuthenticationFailure,
+) error {
 	ue.GmmLog.Info("Handle Authentication Failure")
 
 	if ue.T3560 != nil {
@@ -2124,7 +2130,8 @@ func HandleAuthenticationFailure(ue *context.AmfUe, anType models.AccessType,
 }
 
 func HandleRegistrationComplete(ue *context.AmfUe, accessType models.AccessType,
-	registrationComplete *nasMessage.RegistrationComplete) error {
+	registrationComplete *nasMessage.RegistrationComplete,
+) error {
 	ue.GmmLog.Info("Handle Registration Complete")
 
 	if ue.T3550 != nil {
@@ -2155,7 +2162,8 @@ func HandleRegistrationComplete(ue *context.AmfUe, accessType models.AccessType,
 
 // TS 33.501 6.7.2
 func HandleSecurityModeComplete(ue *context.AmfUe, anType models.AccessType, procedureCode int64,
-	securityModeComplete *nasMessage.SecurityModeComplete) error {
+	securityModeComplete *nasMessage.SecurityModeComplete,
+) error {
 	ue.GmmLog.Info("Handle Security Mode Complete")
 
 	if ue.MacFailed {
@@ -2207,7 +2215,8 @@ func HandleSecurityModeComplete(ue *context.AmfUe, anType models.AccessType, pro
 }
 
 func HandleSecurityModeReject(ue *context.AmfUe, anType models.AccessType,
-	securityModeReject *nasMessage.SecurityModeReject) error {
+	securityModeReject *nasMessage.SecurityModeReject,
+) error {
 	ue.GmmLog.Info("Handle Security Mode Reject")
 
 	if ue.T3560 != nil {
@@ -2223,7 +2232,8 @@ func HandleSecurityModeReject(ue *context.AmfUe, anType models.AccessType,
 
 // TS 23.502 4.2.2.3
 func HandleDeregistrationRequest(ue *context.AmfUe, anType models.AccessType,
-	deregistrationRequest *nasMessage.DeregistrationRequestUEOriginatingDeregistration) error {
+	deregistrationRequest *nasMessage.DeregistrationRequestUEOriginatingDeregistration,
+) error {
 	ue.GmmLog.Info("Handle Deregistration Request(UE Originating)")
 
 	targetDeregistrationAccessType := deregistrationRequest.GetAccessType()
@@ -2314,7 +2324,8 @@ func HandleDeregistrationRequest(ue *context.AmfUe, anType models.AccessType,
 
 // TS 23.502 4.2.2.3
 func HandleDeregistrationAccept(ue *context.AmfUe, anType models.AccessType,
-	deregistrationAccept *nasMessage.DeregistrationAcceptUETerminatedDeregistration) error {
+	deregistrationAccept *nasMessage.DeregistrationAcceptUETerminatedDeregistration,
+) error {
 	ue.GmmLog.Info("Handle Deregistration Accept(UE Terminated)")
 
 	if ue.T3522 != nil {

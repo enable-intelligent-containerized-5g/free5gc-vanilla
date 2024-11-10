@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/free5gc/openapi"
-	"github.com/free5gc/openapi/Nnrf_NFManagement"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi"
+	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFManagement"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	pcf_context "github.com/free5gc/pcf/internal/context"
 	"github.com/free5gc/pcf/internal/logger"
 )
 
 func BuildNFInstance(context *pcf_context.PCFContext) (profile models.NfProfile, err error) {
+	profile.ContainerName = context.ContainerName
 	profile.NfInstanceId = context.NfId
 	profile.NfType = models.NfType_PCF
 	profile.NfStatus = models.NfStatus_REGISTERED
@@ -46,7 +47,8 @@ func BuildNFInstance(context *pcf_context.PCFContext) (profile models.NfProfile,
 }
 
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (
-	resouceNrfUri string, retrieveNfInstanceID string, err error) {
+	resouceNrfUri string, retrieveNfInstanceID string, err error,
+) {
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)

@@ -163,6 +163,7 @@ func (nwdaf *NWDAF) Start() {
 	profile := consumer.BuildNFInstance(self)
 	var newNrfUri string
 	var err error
+	logger.ConsumerLog.Infof("NfProfile", profile)
 
 	newNrfUri, self.NfId, err = consumer.SendRegisterNFInstance(self.NrfUri, profile.NfInstanceId, profile)
 	if err == nil {

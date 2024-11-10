@@ -3,7 +3,7 @@ package nfprofileprovition
 import (
 	"net/http"
 
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/smf/internal/context"
 	"github.com/free5gc/smf/internal/logger"
 	"github.com/free5gc/util/httpwrapper"

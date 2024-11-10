@@ -5,17 +5,18 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/enable-intelligent-containerized-5g/nas/security"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/pkg/factory"
-	"github.com/free5gc/nas/security"
-	"github.com/free5gc/openapi/models"
 )
 
 func InitAmfContext(context *context.AMFContext) {
 	config := factory.AmfConfig
 	logger.UtilLog.Infof("amfconfig Info: Version[%s] Description[%s]", config.Info.Version, config.Info.Description)
 	configuration := config.Configuration
+	context.ContainerName = configuration.ContainerName
 	context.NfId = uuid.New().String()
 	if configuration.AmfName != "" {
 		context.Name = configuration.AmfName

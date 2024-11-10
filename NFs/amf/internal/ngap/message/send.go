@@ -5,8 +5,8 @@ import (
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/internal/sbi/producer/callback"
 	"github.com/free5gc/aper"
-	"github.com/free5gc/ngap/ngapType"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 func SendToRan(ran *context.AmfRan, packet []byte) {

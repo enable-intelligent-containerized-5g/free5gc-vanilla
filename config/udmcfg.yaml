@@ -3,6 +3,7 @@ info:
   description: UDM initial local configuration
 
 configuration:
+  containerName: udm
   serviceNameList: # the SBI services provided by this UDM, refer to TS 29.503
     - nudm-sdm # Nudm_SubscriberDataManagement service
     - nudm-uecm # Nudm_UEContextManagement service
@@ -12,7 +13,7 @@ configuration:
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
     registerIPv4: 127.0.0.3 # IP used to register to NRF
-    bindingIPv4: 127.0.0.3  # IP used to bind the service
+    bindingIPv4: 127.0.0.3 # IP used to bind the service
     port: 8000 # Port used to bind the service
     tls: # the local path of TLS key
       pem: config/TLS/udm.pem # UDM TLS Certificate

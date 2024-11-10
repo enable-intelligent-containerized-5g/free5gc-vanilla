@@ -20,6 +20,12 @@ import (
 const NRF_NFINST_RES_URI_PREFIX = factory.NrfNfmResUriPrefix + "/nf-instances/"
 
 func NnrfNFManagementDataModel(nf *models.NfProfile, nfprofile models.NfProfile) error {
+	if nfprofile.ContainerName != "" {
+		nf.ContainerName = nfprofile.ContainerName
+	} else {
+		return fmt.Errorf("ContainerName field is required\n")
+	}
+
 	if nfprofile.NfInstanceId != "" {
 		nf.NfInstanceId = nfprofile.NfInstanceId
 	} else {

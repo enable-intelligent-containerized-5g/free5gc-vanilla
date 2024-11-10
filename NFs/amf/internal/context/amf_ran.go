@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapConvert"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/sirupsen/logrus"
 
 	"github.com/free5gc/amf/internal/logger"
-	"github.com/free5gc/ngap/ngapConvert"
-	"github.com/free5gc/ngap/ngapType"
-	"github.com/free5gc/openapi/models"
 )
 
 const (

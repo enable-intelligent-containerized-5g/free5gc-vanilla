@@ -12,9 +12,9 @@ import (
 	"github.com/urfave/cli"
 
 	aperLogger "github.com/free5gc/aper/logger"
-	nasLogger "github.com/free5gc/nas/logger"
-	ngapLogger "github.com/free5gc/ngap/logger"
-	"github.com/free5gc/openapi/models"
+	nasLogger "github.com/enable-intelligent-containerized-5g/nas/logger"
+	ngapLogger "github.com/enable-intelligent-containerized-5g/ngap/logger"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	pfcpLogger "github.com/free5gc/pfcp/logger"
 	"github.com/free5gc/pfcp/pfcpType"
 	"github.com/free5gc/smf/internal/context"

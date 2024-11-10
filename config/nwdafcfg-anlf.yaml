@@ -3,17 +3,24 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
+  containerName: nwdaf-anf
   nwdafName: NWDAF-ANLF # the name of this AMF
-  
+
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
-    registerIPv4: 127.0.0.1 # IP used to register to NRF
-    bindingIPv4: 127.0.0.1  # IP used to bind the service
-    port: 4200 # port used to bind the service
+    #   registerIPv4: 127.0.0.1 # IP used to register to NRF
+    #   bindingIPv4: 0.0.0.0 # IP used to bind the service
+    #   port: 4200 # port used to bind the service
+    #
+    # nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+    # oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
 
-  nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+    registerIPv4: anlf-nanlf # IP used to register to NRF
+    bindingIPv4: 0.0.0.0 # IP used to bind the service
+    port: 8000 # port used to bind the service
 
-  oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
+  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
+  oamUri: http://prometheus-service:9090 # a valid URI of PCM (Packet Capture Module)
   ksmInstance: "kube-state-metrics.kube-system.svc.cluster.local:8080" # a valid kube-state-metrics instance
   namespace: "free5gc" # namespace of 5GC
 
@@ -22,8 +29,7 @@ configuration:
     - nnwdaf-eventssubscription # Nnwdaf_EventsSubscription service
     - nnwdaf-datamanagement # Nnwdaf_DataManagement service
 
- 
-  networkName:  # the name of this core network
+  networkName: # the name of this core network
     full: free5GC
     short: free
   networkFeatureSupport5GS: # 5gs Network Feature Support IE, refer to TS 24.501

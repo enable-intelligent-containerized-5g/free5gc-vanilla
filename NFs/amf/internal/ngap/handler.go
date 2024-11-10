@@ -12,11 +12,11 @@ import (
 	ngap_message "github.com/free5gc/amf/internal/ngap/message"
 	"github.com/free5gc/amf/internal/sbi/consumer"
 	"github.com/free5gc/aper"
-	"github.com/free5gc/nas/nasMessage"
-	libngap "github.com/free5gc/ngap"
-	"github.com/free5gc/ngap/ngapConvert"
-	"github.com/free5gc/ngap/ngapType"
-	"github.com/free5gc/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
+	libngap "github.com/enable-intelligent-containerized-5g/ngap"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapConvert"
+	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 func HandleNGSetupRequest(ran *context.AmfRan, message *ngapType.NGAPPDU) {

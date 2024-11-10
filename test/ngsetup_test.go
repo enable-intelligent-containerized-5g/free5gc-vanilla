@@ -19,7 +19,7 @@ import (
 	ausf_factory "github.com/free5gc/ausf/pkg/factory"
 	ausf_service "github.com/free5gc/ausf/pkg/service"
 	"github.com/free5gc/nas/security"
-	"github.com/free5gc/ngap"
+	"github.com/enable-intelligent-containerized-5g/ngap"
 	nrf_factory "github.com/free5gc/nrf/pkg/factory"
 	nrf_service "github.com/free5gc/nrf/pkg/service"
 	nssf_factory "github.com/free5gc/nssf/pkg/factory"

@@ -3,6 +3,7 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
+  containerName: nwdaf-mtlf
   # SqlLiteTableName: ml_model_info # database name in MongoDB
   SqlLiteDB: ml_model_info.db # a valid PATH of the SqlLite
   name: nwdaf-mtlf
@@ -10,10 +11,19 @@ configuration:
 
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
-    registerIPv4: 127.0.0.1 # IP used to register to NRF
-    bindingIPv4: 127.0.0.1  # IP used to bind the service
-    port: 4201 # port used to bind the service
+    #   registerIPv4: 127.0.0.1 # IP used to register to NRF
+    #   bindingIPv4: 0.0.0.0 # IP used to bind the service
+    #   port: 4201 # port used to bind the service
+    #
+    # nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+    # oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
 
+    registerIPv4: mtlf-nmtlf # IP used to register to NRF
+    bindingIPv4: 0.0.0.0 # IP used to bind the service
+    port: 8000 # port used to bind the service
+
+  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
+  oamUri: http://prometheus-service:9090 # a valid URI of PCM (Packet Capture Module)
 
   serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
     - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service

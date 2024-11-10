@@ -62,6 +62,7 @@ const (
 )
 
 type Configuration struct {
+	ContainerName string `yaml:"containerName,omitempty"`
 	// SqlLiteTableName string   `yaml:"SqlLiteTableName" valid:"type(string),required"`
 	SqlLiteDB       string   `yaml:"SqlLiteDB" valid:"type(string),required"`
 	Name            string   `yaml:"name,omitempty"`
