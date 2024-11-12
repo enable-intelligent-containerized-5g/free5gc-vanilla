@@ -29,9 +29,6 @@ configuration:
     - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service
     - nnwdaf-mlmodelinfo # Nnwdaf_MLModelInfo service
 
-  nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
-  oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
-
   networkName: # the name of this core network
     full: free5GC
     short: free
