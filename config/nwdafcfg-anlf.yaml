@@ -3,7 +3,7 @@ info:
   description: NWDAF initial local configuration
 
 configuration:
-  containerName: nwdaf-anf
+  containerName: nwdaf-anlf
   nwdafName: NWDAF-ANLF # the name of this AMF
 
   sbi: # Service-based interface information
