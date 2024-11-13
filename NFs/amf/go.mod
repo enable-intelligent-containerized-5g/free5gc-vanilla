@@ -2,8 +2,6 @@ module github.com/free5gc/amf
 
 go 1.21
 
-toolchain go1.22.4
-
 require (
 	git.cs.nctu.edu.tw/calee/sctp v1.1.0
 	github.com/antihax/optional v1.0.0
