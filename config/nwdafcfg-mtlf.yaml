@@ -23,7 +23,9 @@ configuration:
     port: 8000 # port used to bind the service
 
   nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
-  oamUri: http://prometheus-service:9090 # a valid URI of PCM (Packet Capture Module)
+  oamUri: http://prometheus-service.monitoring:8080 # a valid URI of PCM (Packet Capture Module)
+  ksmInstance: "kube-state-metrics.kube-system.svc.cluster.local:8080" # a valid kube-state-metrics instance
+  namespace: "free5gc" # namespace of 5GC
 
   serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
     - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service
