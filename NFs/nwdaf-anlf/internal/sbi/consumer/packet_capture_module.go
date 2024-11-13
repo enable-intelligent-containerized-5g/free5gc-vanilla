@@ -152,36 +152,37 @@ func BuildPodsByStatusQuery(p *PrometheusQueryParams) string {
 		p.Instance, p.Namespace, phaseQuery)
 }
 
-func CreateClient() (client api.Client, err error) {
+func CreateClient() (apiClient v1.API, err error) {
 	// Get PcmUri
 	pcmUri := factory.NwdafConfig.Configuration.OamUri
 
 	// Create the Prometheus Client
-	client, err = api.NewClient(api.Config{
+	client, err := api.NewClient(api.Config{
 		Address: pcmUri,
 	})
 	if err != nil {
-		return client, fmt.Errorf(" Error creating Prometheus client: %s", err)
+		return apiClient, fmt.Errorf(" Error creating Prometheus client: %s", err)
 	}
 
-	return client, err
+	apiClient = v1.NewAPI(client)
+
+	return apiClient, err
 }
 
-func ExecutePrometheusQuery(query string, metric MetricType) []PrometheusResult {
+func ExecutePrometheusQuery(query string, metric MetricType, timeReq time.Time) (metrics []PrometheusResult) {
 	// Get PcmUri
-	client, errClient := CreateClient()
+	apiClient, errClient := CreateClient()
 	if errClient != nil {
 		logger.PcmLog.Error(errClient)
+		return metrics
 	}
-
-	apiClient := v1.NewAPI(client)
 
 	// Definir el contexto y el timeout para la consulta
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Realizar una consulta para obtener el uso de CPU en tiempo real
-	result, warnings, err := apiClient.Query(ctx, string(query), time.Now())
+	// Realizar una consulta para obtener el uso de CPU en tiempo real UTC
+	result, warnings, err := apiClient.Query(ctx, string(query), timeReq)
 	if err != nil {
 		logger.PcmLog.Errorf("Error in the Request: %v", err)
 	}
@@ -189,7 +190,7 @@ func ExecutePrometheusQuery(query string, metric MetricType) []PrometheusResult 
 		logger.PcmLog.Warnf("Warnings: %v", warnings)
 	}
 
-	metrics := ProcessPrometheusMetricResult(result, metric)
+	metrics = ProcessPrometheusMetricResult(result, metric)
 
 	if metrics == nil {
 		var value PrometheusResult
@@ -199,7 +200,38 @@ func ExecutePrometheusQuery(query string, metric MetricType) []PrometheusResult 
 	return metrics
 }
 
-func GetPodsByPhase(instance string, ns string, phase KubernetesPhase) []PrometheusResult {
+func ExecutePrometheusQueryRange(query string, metric MetricType, startTime time.Time, endTime time.Time, step time.Duration) (metrics []PrometheusResult) {
+	// Get PcmUri
+	apiClient, errClient := CreateClient()
+	if errClient != nil {
+		logger.PcmLog.Error(errClient)
+		return metrics
+	}
+
+	// Definir el contexto y el timeout para la consulta
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Realizar una consulta para obtener el uso de CPU en tiempo real UTC
+	result, warnings, err := apiClient.QueryRange(ctx, query, v1.Range{Start: startTime, End: endTime, Step: step * time.Second})
+	if err != nil {
+		logger.PcmLog.Errorf("Error in the Request: %v", err)
+	}
+	if len(warnings) > 0 {
+		logger.PcmLog.Warnf("Warnings: %v", warnings)
+	}
+
+	metrics = ProcessPrometheusMetricResult(result, metric)
+
+	if metrics == nil {
+		var value PrometheusResult
+		metrics = append(metrics, value)
+	}
+
+	return metrics
+}
+
+func GetPodsByPhase(instance string, ns string, phase KubernetesPhase, timeReq time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Instance:  instance,
 		Namespace: ns,
@@ -209,40 +241,55 @@ func GetPodsByPhase(instance string, ns string, phase KubernetesPhase) []Prometh
 	query := BuildPodsByStatusQuery(&params)
 	metric := MetricType_RUNNING_POD
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
-func GetCpuUsageAverage(ns string, pod string, ctnr string, tp int64, offSet int64) []PrometheusResult {
+func GetCpuUsageAverage(ns string, pod string, ctnr string, tp int64, offSet int64, timeReq time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Namespace:    ns,
 		Pod:          pod,
 		Container:    ctnr,
 		TargetPeriod: BuiildTargetPeriod(tp),
-		Offset:       BuiildTargetPeriod(offSet),
+		// Offset:       BuiildTargetPeriod(offSet),
 	}
 
 	query := BuildCpuUsageAverageQuery(&params)
 	metric := MetricType_CPU_USAGE_AVERAGE
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
-func GetMemUsageAverage(ns string, pod string, ctnr string, tp int64, offSet int64) []PrometheusResult {
+func GetCpuUsageAverageRange(ns string, pod string, ctnr string, tp int64, offSet int64, startTime time.Time, endTime time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Namespace:    ns,
 		Pod:          pod,
 		Container:    ctnr,
 		TargetPeriod: BuiildTargetPeriod(tp),
-		Offset:       BuiildTargetPeriod(offSet),
+		// Offset:       BuiildTargetPeriod(offSet),
+	}
+
+	query := BuildCpuUsageAverageQuery(&params)
+	metric := MetricType_CPU_USAGE_AVERAGE
+
+	return ExecutePrometheusQueryRange(query, metric, startTime, endTime, time.Duration(tp))
+}
+
+func GetMemUsageAverage(ns string, pod string, ctnr string, tp int64, offSet int64, timeReq time.Time) []PrometheusResult {
+	var params = PrometheusQueryParams{
+		Namespace:    ns,
+		Pod:          pod,
+		Container:    ctnr,
+		TargetPeriod: BuiildTargetPeriod(tp),
+		// Offset:       BuiildTargetPeriod(offSet),
 	}
 
 	query := BuildMemUsageAverageQuery(&params)
 	metric := MetricType_MEMORY_USAGE_AVERAGE
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
-func GetResourceLimit(ns string, pod string, ctnr string, unit PrometheusUnit) []PrometheusResult {
+func GetResourceLimit(ns string, pod string, ctnr string, unit PrometheusUnit, timeReq time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Namespace: ns,
 		Pod:       pod,
@@ -258,10 +305,10 @@ func GetResourceLimit(ns string, pod string, ctnr string, unit PrometheusUnit) [
 		metric = MetricType_MEMORY_LIMIT
 	}
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
-func GetResourceRequest(ns string, pod string, ctnr string, unit PrometheusUnit) []PrometheusResult {
+func GetResourceRequest(ns string, pod string, ctnr string, unit PrometheusUnit, timeReq time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Namespace: ns,
 		Pod:       pod,
@@ -277,10 +324,10 @@ func GetResourceRequest(ns string, pod string, ctnr string, unit PrometheusUnit)
 		metric = MetricType_MEMORY_REQUEST
 	}
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
-func GetRunningPods(instance string, ns string, ctnr string) []PrometheusResult {
+func GetRunningPods(instance string, ns string, ctnr string, timeReq time.Time) []PrometheusResult {
 	var params = PrometheusQueryParams{
 		Instance:  instance,
 		Namespace: ns,
@@ -290,7 +337,7 @@ func GetRunningPods(instance string, ns string, ctnr string) []PrometheusResult 
 	query := BuildRunningPodsQuery(&params)
 	metric := MetricType_RUNNING_POD
 
-	return ExecutePrometheusQuery(query, metric)
+	return ExecutePrometheusQuery(query, metric, timeReq)
 }
 
 func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []PrometheusResult {
@@ -299,7 +346,7 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 
 	switch v := result.(type) {
 	case model.Vector:
-		logger.AniLog.Infof("Result type %T", v)
+		logger.AniLog.Infof("Result type %T\n", v)
 		// Vector
 		if len(v) == 0 {
 			err = fmt.Errorf("no data found in Prometheus response")
@@ -307,7 +354,7 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 
 		for _, sample := range v {
 			// Extraer el valor del metric map
-			logger.AniLog.Infof("Sample: %s, %s", sample, sample.Value)
+			// logger.AniLog.Infof("Sample: %s, %s", sample, sample.Value)
 			metricMap := sample.Metric
 			namespace := string(metricMap["namespace"])
 			pod := string(metricMap["pod"])
@@ -342,7 +389,7 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 
 	// Verify errors
 	if err != nil {
-		logger.PcmLog.Errorf("Error processing Prometheus data: %v", err)
+		logger.PcmLog.Errorf("Error processing Prometheus data (%s): %v", metric, err)
 	} else {
 		// Convertir el resultado a JSON para imprimirlo
 		_, err := json.MarshalIndent(output, "", "  ")

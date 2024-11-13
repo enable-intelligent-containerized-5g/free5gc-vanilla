@@ -101,7 +101,7 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 
 	if analyticsID == string(models.EventId_NF_LOAD) {
 		// Execute the NF Load event
-		rsp = producer.HandleAnalyticsInfoNfLoadMetricsNew(req, typePayload)
+		rsp = producer.HandleAnalyticsInfoNfLoadMetrics(req, typePayload)
 	} else {
 		bodyMessage := fmt.Sprintf("The eventId %s is not implemented", analyticsID)
 		rsp = httpwrapper.NewResponse(http.StatusNotImplemented, nil, bodyMessage)

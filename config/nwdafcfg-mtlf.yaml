@@ -4,10 +4,9 @@ info:
 
 configuration:
   containerName: nwdaf-mtlf
-  # SqlLiteTableName: ml_model_info # database name in MongoDB
-  SqlLiteDB: ml_model_info.db # a valid PATH of the SqlLite
+  sqlLiteDB: ml_model_info.db # a valid PATH of the SqlLite
   name: nwdaf-mtlf
-  nwdafName: NWDAF-MTLF # the name of this AMF
+  nwdafName: NWDAF-MTLF # the name of this NWDAF
 
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
