@@ -2,8 +2,6 @@ module github.com/free5gc/smf
 
 go 1.21
 
-toolchain go1.22.4
-
 require (
 	github.com/antihax/optional v1.0.0
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
