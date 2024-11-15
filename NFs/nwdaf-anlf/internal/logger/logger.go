@@ -11,20 +11,21 @@ import (
 )
 
 var (
-	log         *logrus.Logger
-	AppLog      *logrus.Entry
-	InitLog     *logrus.Entry
-	CfgLog      *logrus.Entry
-	ProducerLog *logrus.Entry
-	AniLog      *logrus.Entry
-	NfPer       *logrus.Entry
-	HandlerLog  *logrus.Entry
-	DataRepoLog *logrus.Entry
-	UtilLog     *logrus.Entry
-	HttpLog     *logrus.Entry
-	ConsumerLog *logrus.Entry
-	GinLog      *logrus.Entry
-	PcmLog      *logrus.Entry
+	log           *logrus.Logger
+	AppLog        *logrus.Entry
+	InitLog       *logrus.Entry
+	CfgLog        *logrus.Entry
+	ProducerLog   *logrus.Entry
+	AniLog        *logrus.Entry
+	NfPer         *logrus.Entry
+	HandlerLog    *logrus.Entry
+	DataRepoLog   *logrus.Entry
+	UtilLog       *logrus.Entry
+	HttpLog       *logrus.Entry
+	ConsumerLog   *logrus.Entry
+	GinLog        *logrus.Entry
+	PcmLog        *logrus.Entry
+	MlModelTrainingLog *logrus.Entry
 )
 
 func init() {
@@ -52,6 +53,7 @@ func init() {
 	HttpLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "HTTP"})
 	ConsumerLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "Consumer"})
 	GinLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "GIN"})
+	MlModelTrainingLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MMTraining"})
 }
 
 func LogFileHook(logNfPath string, log5gcPath string) error {

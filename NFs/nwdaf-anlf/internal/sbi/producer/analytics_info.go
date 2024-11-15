@@ -83,6 +83,12 @@ func findPodByContainer(pods []consumer.PrometheusResult, container string) *con
 	return nil // Return nil
 }
 
+// SubtractSeconds subtracts seconds from a given date
+func SubtractSeconds(date time.Time, seconds int64) time.Time {
+    return date.Add(-time.Duration(seconds) * time.Second)
+}
+
+
 // Get ML by NfType, Size, Accuracy
 func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, accuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
 
@@ -129,6 +135,8 @@ func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, 
 		models.NwdafMlModelAccuracy_MEDIUM,
 		models.NwdafMlModelAccuracy_HIGH,
 	}
+	// definedAccuracies := models.NewNwdafMlModelAccuracyPriority()
+
 	if accuracy != nil && *accuracy != "" {
 		// logger.AniLog.Info("Custom Acuracy: ", *accuracy)
 		requestAccuracy := *accuracy
@@ -244,11 +252,11 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 		return httpwrapper.NewResponse(http.StatusNotFound, nil, "NFs not found")
 	}
 
-	// Get analisys (Predict or stadistics)
-	return GetAnaliticsMetrics(&analyticsInfoDataRequest, &eventID, &NrfUri, &nfInstancesFilteredByIP)
+	// Get analisys (Predict or statistics)
+	return GetAnaliticsNfLoadProcedure(&analyticsInfoDataRequest, &eventID, &NrfUri, &nfInstancesFilteredByIP)
 }
 
-func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *models.EventId, NrfUri *string, nfInstances *[]models.NfProfile) *httpwrapper.Response {
+func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, eventID *models.EventId, NrfUri *string, nfInstances *[]models.NfProfile) *httpwrapper.Response {
 	var responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{}
 	var analysisType models.AnalysisType
 
@@ -357,7 +365,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 			selectedModels := getMlModelByProfile(&mlModelInfoFiltered, &nfType, &request.Accuracy)
 
 			if len(selectedModels) <= 0 || selectedModels == nil {
-				logger.AniLog.Errorf("No Found a MlModel for NfType %s with nfInstanceId %s", nfType, profile.NfInstanceId)
+				logger.AniLog.Errorf("No Found a MlModel for the NfType %s with nfInstanceId %s", nfType, profile.NfInstanceId)
 				continue
 			}
 
@@ -377,9 +385,22 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 			}
 
 			// Get CPU and RAM  from Prometheus
-			cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, endTime)
+			var numSamples int64 = 3
+			newStartTime := SubtractSeconds(currentTime, targetPeriod*(numSamples-1))
+			logger.AniLog.Warnf("numSamples: %d, currentTime: %s, newStartTime: %s", numSamples, currentTime, newStartTime)
 
-			logger.AniLog.Warn("cpuUsageAverageRange: ", cpuUsageAverageRange)
+			cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
+
+			for _, mt := range cpuUsageAverageRange {
+				// Convertir el timestamp a segundos
+				// seconds := int64(ts.Timestamp / 1000)
+				// Crear un objeto time.Time
+				// t := time.Unix(seconds, 0)
+				// Imprimir la fecha y hora en formato UTC
+				// logger.AniLog.Warn("Time: ", ts.Timestamp, " -> ", t.UTC())
+				logger.AniLog.Warn("Metric: ", mt)
+			}
+			// logger.AniLog.Warn("cpuUsageAverageRange: ", cpuUsageAverageRange)
 
 			// Analize the CPU and RAM
 
@@ -404,7 +425,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
-			TargetPerid:     targetPeriod,
+			TargetPeriod:     targetPeriod,
 			OffSet:          offSet,
 			AnaliticsNfLoad: NfLoadsAnalitics,
 		}
@@ -412,9 +433,9 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		// Return results
 		return httpwrapper.NewResponse(http.StatusOK, nil, responseNfLoad)
 
-	// Stadistics metrics
+	// Statistics metrics
 	case startTime.Before(currentTime) && endTime.Before(currentTime):
-		logger.AniLog.Info("Stadistics metrics: EndTime is less than now")
+		logger.AniLog.Info("Statistics metrics: EndTime is less than now")
 		analysisType = models.AnalysisType_STATISTICS
 
 		// Running Pods
@@ -469,7 +490,7 @@ func GetAnaliticsMetrics(request *models.NwdafAnalyticsInfoRequest, eventID *mod
 		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
-			TargetPerid:     targetPeriod,
+			TargetPeriod:     targetPeriod,
 			OffSet:          offSet,
 			AnaliticsNfLoad: NfLoadsAnalitics,
 		}

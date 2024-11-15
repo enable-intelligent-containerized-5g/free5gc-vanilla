@@ -53,7 +53,8 @@ const (
 	MetricType_MEMORY_LIMIT         MetricType = "men-limit"
 	MetricType_CPU_REQUEST          MetricType = "cpu-request"
 	MetricType_MEMORY_REQUEST       MetricType = "men-request"
-	MetricType_RUNNING_POD          MetricType = "pod-status"
+	MetricType_POD_STATUS           MetricType = "pod-status"
+	MetricType_RUNNING_POD          MetricType = "running-pod"
 )
 
 type KubernetesPhase string
@@ -86,13 +87,13 @@ type PrometheusQueryParams struct {
 
 // Memory rate (OK)
 func BuildMemRateQuery(p *PrometheusQueryParams) string {
-	return fmt.Sprintf(`sum(rate(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~".*wait-.*"}[%s] offset %s)) by (pod, container)`,
+	return fmt.Sprintf(`sum(rate(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~".*wait-.*"}[%s] offset %s)) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container, p.TargetPeriod, p.Offset)
 }
 
 // Memory Usage (OK)
 func BuildMemUsageQuery(p *PrometheusQueryParams) string {
-	return fmt.Sprintf(`avg(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~"wait-.*"}) by (pod, container)`,
+	return fmt.Sprintf(`avg(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~"wait-.*"}) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container)
 }
 
@@ -103,7 +104,7 @@ func BuildCpuUsageAverageQuery(p *PrometheusQueryParams) string {
 	if strings.TrimSpace(offSet) != "" {
 		offsetQuery = fmt.Sprintf(` offset %s`, p.Offset)
 	}
-	return fmt.Sprintf(`avg(rate(container_cpu_usage_seconds_total{namespace="%s", pod="%s", container="%s", container!~".*wait-.*"}[%s]%s)) by (pod, container)`,
+	return fmt.Sprintf(`avg(rate(container_cpu_usage_seconds_total{namespace="%s", pod="%s", container="%s", container!~".*wait-.*"}[%s]%s)) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container, p.TargetPeriod, offsetQuery)
 }
 
@@ -114,19 +115,19 @@ func BuildMemUsageAverageQuery(p *PrometheusQueryParams) string {
 	if strings.TrimSpace(offSet) != "" {
 		offsetQuery = fmt.Sprintf(` offset %s`, p.Offset)
 	}
-	return fmt.Sprintf(`avg(avg_over_time(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~"wait-.*"}[%s]%s)) by (pod, container)`,
+	return fmt.Sprintf(`avg(avg_over_time(container_memory_usage_bytes{namespace="%s", pod="%s", container="%s", container!~"wait-.*"}[%s]%s)) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container, p.TargetPeriod, offsetQuery)
 }
 
 // CPU and Memory resources request (OK)
 func BuildResourceRequestQuery(p *PrometheusQueryParams) string {
-	return fmt.Sprintf(`avg(kube_pod_container_resource_requests{namespace="%s", pod="%s", container="%s",container!~"wait-.*", unit="%s"}) by (pod, container)`,
+	return fmt.Sprintf(`avg(kube_pod_container_resource_requests{namespace="%s", pod="%s", container="%s",container!~"wait-.*", unit="%s"}) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container, p.Unit)
 }
 
 // CPU and Momory resources limit (OK)
 func BuildResourceLimitQuery(p *PrometheusQueryParams) string {
-	return fmt.Sprintf(`avg(kube_pod_container_resource_limits{namespace="%s", pod="%s", container="%s",container!~"wait-.*", unit="%s"}) by (pod, container)`,
+	return fmt.Sprintf(`avg(kube_pod_container_resource_limits{namespace="%s", pod="%s", container="%s",container!~"wait-.*", unit="%s"}) by (pod, container, namespace)`,
 		p.Namespace, p.Pod, p.Container, p.Unit)
 }
 
@@ -239,7 +240,7 @@ func GetPodsByPhase(instance string, ns string, phase KubernetesPhase, timeReq t
 	}
 
 	query := BuildPodsByStatusQuery(&params)
-	metric := MetricType_RUNNING_POD
+	metric := MetricType_POD_STATUS
 
 	return ExecutePrometheusQuery(query, metric, timeReq)
 }
@@ -270,6 +271,21 @@ func GetCpuUsageAverageRange(ns string, pod string, ctnr string, tp int64, offSe
 
 	query := BuildCpuUsageAverageQuery(&params)
 	metric := MetricType_CPU_USAGE_AVERAGE
+
+	return ExecutePrometheusQueryRange(query, metric, startTime, endTime, time.Duration(tp))
+}
+
+func GetMemUsageAverageRange(ns string, pod string, ctnr string, tp int64, offSet int64, startTime time.Time, endTime time.Time) []PrometheusResult {
+	var params = PrometheusQueryParams{
+		Namespace:    ns,
+		Pod:          pod,
+		Container:    ctnr,
+		TargetPeriod: BuiildTargetPeriod(tp),
+		// Offset:       BuiildTargetPeriod(offSet),
+	}
+
+	query := BuildMemUsageAverageQuery(&params)
+	metric := MetricType_MEMORY_USAGE_AVERAGE
 
 	return ExecutePrometheusQueryRange(query, metric, startTime, endTime, time.Duration(tp))
 }
@@ -376,6 +392,51 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 
 			// Agregar la estructura al slice de resultados
 			output = append(output, prometheusData)
+		}
+
+	case model.Matrix:
+		logger.AniLog.Infof("Result type %T\n", v)
+		// Iterar a través de cada serie temporal
+		for _, stream := range v {
+			metricMap := stream.Metric
+			namespace := string(metricMap["namespace"])
+			pod := string(metricMap["pod"])
+			container := string(metricMap["container"])
+			phase := string(metricMap["phase"])
+			uid := string(metricMap["uid"])
+			for _, sample := range stream.Values {
+				// logger.AniLog.Warn("Sample: ", sample)
+				// Aquí procesas cada muestra con su timestamp y valor
+				// metrics = append(metrics, PrometheusResult{
+				//     Timestamp: sample.Timestamp.Time(),
+				//     Value:     float64(sample.Value),
+				//     Metric:    query,
+				// })
+
+				// Extraer el valor del metric map
+				// logger.AniLog.Infof("Sample: %s, %s", sample, sample.Value)
+				// metricMap := sample.Metric
+				// namespace := string(metricMap["namespace"])
+				// pod := string(metricMap["pod"])
+				// container := string(metricMap["container"])
+				// phase := string(metricMap["phase"])
+				// uid := string(metricMap["uid"])
+
+				// Crear una instancia de la estructura con los datos extraídos
+				prometheusData := PrometheusResult{
+					Timestamp:  float64(sample.Timestamp),
+					Value:      float64(sample.Value),
+					MetricType: metric,
+					Namespace:  namespace,
+					Pod:        pod,
+					Container:  container,
+					Phase:      phase,
+					Uid:        uid,
+				}
+
+				// Agregar la estructura al slice de resultados
+				output = append(output, prometheusData)
+			}
 		}
 
 	case *model.Scalar:

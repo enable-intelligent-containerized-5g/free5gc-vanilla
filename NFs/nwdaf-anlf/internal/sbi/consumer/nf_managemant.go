@@ -64,6 +64,7 @@ func BuildNFInstance(context *nwdaf_context.NWDAFContext) models.NfProfile {
 
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (string, string, error) {
 	// Set client and set url
+	logger.InitLog.Infof("Sending Register NFInstance")
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
 	client := Nnrf_NFManagement.NewAPIClient(configuration)
