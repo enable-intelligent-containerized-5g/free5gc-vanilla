@@ -29,6 +29,7 @@ configuration:
   serviceNameList: # the SBI services provided by this MTLF, refer to TS 29.518
     - nnwdaf-mlmodelprovision # Nnwdaf_MLModelProvision service
     - nnwdaf-mlmodelinfo # Nnwdaf_MLModelInfo service
+    - nnwdaf-mlmodeltraining # Nnwdaf_MLModelTraining service
 
   networkName: # the name of this core network
     full: free5GC

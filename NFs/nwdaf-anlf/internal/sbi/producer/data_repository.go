@@ -691,7 +691,7 @@ func filterDataBySnssais(snssaiValue string,
 // 	return httpwrapper.NewResponse(status, headers, response)
 // }
 
-func postApplicationDataInfluenceDataSubsToNotifyToDB(subscID string,
+func PostApplicationDataInfluenceDataSubsToNotifyToDB(subscID string,
 	trInfluSub *models.TrafficInfluSub) (bson.M, int) {
 	filter := bson.M{"subscriptionId": subscID}
 	data := util.ToBsonM(*trInfluSub)
