@@ -101,6 +101,8 @@ func MlModelTrainingProcedure(mlTrainingReq sbi.NwdafMlModelTrainingRequest) (mo
 	var podName string
 	containerName := profile.ContainerName
 
+	// Getting data from Prometheus
+	logger.MlModelTrainingLog.Info("Getting data from Prometheus")
 	foundPod := findPodByContainer(runningPods, containerName)
 	if foundPod != nil {
 		podName = foundPod.Pod
@@ -118,6 +120,7 @@ func MlModelTrainingProcedure(mlTrainingReq sbi.NwdafMlModelTrainingRequest) (mo
 	cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_CORE, currentTime)[0]
 	memLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_BYTE, currentTime)[0]
 
+	logger.MlModelTrainingLog.Info("Saving data")
 	divideValues(&cpuUsageAverageRange, cpuLimit.Value)
 	divideValues(&memUsageAverageRange, memLimit.Value)
 
@@ -129,21 +132,22 @@ func MlModelTrainingProcedure(mlTrainingReq sbi.NwdafMlModelTrainingRequest) (mo
 	pathCpuUsage := basePath+cpuUsageFile
 	errToCsvCpu := saveToJson(pathCpuUsage, cpuUsageAverageRange)
 	if errToCsvCpu != nil {
-		logger.AniLog.Error("Error: ", errToCsvCpu)
+		logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
 	} else {
-		logger.AniLog.Infof("CpuUsage saved in %s (%d rows)",pathCpuUsage, len(cpuUsageAverageRange))
+		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)",pathCpuUsage, len(cpuUsageAverageRange))
 	}
 
 	// Llamar a la función para escribir el CSV
 	pathMemUsage := basePath+menUsageFile
 	errToCsvMem := saveToJson(pathMemUsage, memUsageAverageRange)
 	if errToCsvMem != nil {
-		logger.AniLog.Error("Error: ", errToCsvMem)
+		logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
 	} else {
-		logger.AniLog.Infof("MemUsage saved in %s (%d rows)",pathMemUsage, len(memUsageAverageRange))
+		logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)",pathMemUsage, len(memUsageAverageRange))
 	}
 
-	pathProcesingData := "internal/sbi/producer/ml_model_training_scripts/convert_to_csv.py"
+	logger.MlModelTrainingLog.Info("Processing data")
+	pathProcesingData := "internal/sbi/producer/ml_model_training_scripts/process_data.py"
 	cmd := exec.Command("python3", pathProcesingData, basePath, cpuUsageFile, menUsageFile)
 	// Obtener la salida y el error
 	output, err := cmd.CombinedOutput()
@@ -157,10 +161,9 @@ func MlModelTrainingProcedure(mlTrainingReq sbi.NwdafMlModelTrainingRequest) (mo
 	}
 
 	// Imprimir la salida del script de Python
-	logger.AniLog.Info("Salida del script de Python:")
-	logger.AniLog.Info(string(output))
+	logger.MlModelTrainingLog.Info(string(output))
 	// El modelo ha sido entrenado y evaluado
-	logger.AniLog.Info("Procesamiento completado.")
+	logger.MlModelTrainingLog.Info("Data processing completed ")
 
 	// pathTrainModel := "internal/sbi/producer/ml_model_training_scripts/train_model.py"
 	// cmd := exec.Command("python3", pathTrainModel)
@@ -168,15 +171,15 @@ func MlModelTrainingProcedure(mlTrainingReq sbi.NwdafMlModelTrainingRequest) (mo
 	// Obtener la salida y el error
 	// output, err := cmd.CombinedOutput()
 	// if err != nil {
-	// 	logger.AniLog.Errorf("Error al ejecutar el script de Python: %v", err)
+	// 	logger.MlModelTrainingLog.Errorf("Error al ejecutar el script de Python: %v", err)
 	// }
 
 	// // Imprimir la salida del script de Python
-	// logger.AniLog.Info("Salida del script de Python:")
-	// logger.AniLog.Info(string(output))
+	// logger.MlModelTrainingLog.Info("Salida del script de Python:")
+	// logger.MlModelTrainingLog.Info(string(output))
 
 	// // El modelo ha sido entrenado y evaluado
-	// logger.AniLog.Info("Entrenamiento completado.")
+	// logger.MlModelTrainingLog.Info("Entrenamiento completado.")
 
 	problemDetails := &models.ProblemDetails{
 		Status: http.StatusOK,

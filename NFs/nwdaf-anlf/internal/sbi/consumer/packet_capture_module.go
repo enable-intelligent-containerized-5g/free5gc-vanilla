@@ -172,6 +172,7 @@ func CreateClient() (apiClient v1.API, err error) {
 
 func ExecutePrometheusQuery(query string, metric MetricType, timeReq time.Time) (metrics []PrometheusResult) {
 	// Get PcmUri
+	logger.PcmLog.Infof("Getting %s value from Prometheus", metric)
 	apiClient, errClient := CreateClient()
 	if errClient != nil {
 		logger.PcmLog.Error(errClient)
@@ -203,6 +204,7 @@ func ExecutePrometheusQuery(query string, metric MetricType, timeReq time.Time) 
 
 func ExecutePrometheusQueryRange(query string, metric MetricType, startTime time.Time, endTime time.Time, step time.Duration) (metrics []PrometheusResult) {
 	// Get PcmUri
+	logger.PcmLog.Infof("Getting %s range from Prometheus", metric)
 	apiClient, errClient := CreateClient()
 	if errClient != nil {
 		logger.PcmLog.Error(errClient)
@@ -362,7 +364,8 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 
 	switch v := result.(type) {
 	case model.Vector:
-		logger.AniLog.Infof("Result type %T\n", v)
+		// Vector
+		// logger.AniLog.Infof("Result type %T\n", v)
 		// Vector
 		if len(v) == 0 {
 			err = fmt.Errorf("no data found in Prometheus response")
@@ -395,7 +398,8 @@ func ProcessPrometheusMetricResult(result model.Value, metric MetricType) []Prom
 		}
 
 	case model.Matrix:
-		logger.AniLog.Infof("Result type %T\n", v)
+		// Matrix
+		// logger.AniLog.Infof("Result type %T\n", v)
 		// Iterar a través de cada serie temporal
 		for _, stream := range v {
 			metricMap := stream.Metric
