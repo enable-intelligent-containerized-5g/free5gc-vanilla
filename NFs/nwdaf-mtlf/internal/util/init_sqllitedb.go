@@ -218,22 +218,36 @@ func insertData(db *gorm.DB) error {
 	// Crear modelos ML utilizando las claves foráneas
 	mlModels := []models.MlModelDataTable{
 		{
-			URI:          "models/model.h1", // URI
-			Size:         1024,              // in Bytes
-			TargetPeriod: 60,                // In seconds
-			Confidence:   60,                // Confidence
-			AccuracyID:   accuracies[0].ID,  // ID from Accuracy
-			EventID:      events[0].ID,      // ID from EVent
-			NfTypeID:     nfTypes[0].ID,     // ID from NfType
-			Accuracy:     accuracies[0],     // Accuracy
-			Event:        events[0],         // Event
-			NfType:       nfTypes[0],        // NfType
+			Name:         "RFR_2024-11-16_16-09-17_820566",                // Name
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566", // figure URI
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",     // URI
+			Size:         1024,                                            // in Bytes
+			TargetPeriod: 60,                                              // In seconds
+			R2:           -0.4728247842753558,                             // R2
+			MSE:          0.0012533946616273815,                           // MSE
+			R2Cpu:        -0.48400333562381537,                            // R2 cpu
+			R2Mem:        -0.4616462329268962,                             // R2 memory
+			MSECpu:       0.001124055571933576,                            // MSE cpu
+			MSEMem:       0.001382733751321187,                            // MSE memory
+			AccuracyID:   accuracies[0].ID,                                // ID from Accuracy
+			EventID:      events[0].ID,                                    // ID from EVent
+			NfTypeID:     nfTypes[0].ID,                                   // ID from NfType
+			Accuracy:     accuracies[0],                                   // Accuracy
+			Event:        events[0],                                       // Event
+			NfType:       nfTypes[0],                                      // NfType
 		},
 		{
-			URI:          "models/model.h2",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         3096,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[1].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -242,10 +256,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h3",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         2048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[1].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -254,10 +275,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h4",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         2048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[1].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -266,10 +294,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h5",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         2048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[2].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -278,10 +313,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h6",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         2048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[0].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -290,10 +332,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h7",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         2048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[0].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -302,10 +351,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h8",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         3048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[1].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,
@@ -314,10 +370,17 @@ func insertData(db *gorm.DB) error {
 			NfType:       nfTypes[2],
 		},
 		{
-			URI:          "models/model.h9",
+			Name:         "RFR_2024-11-16_16-09-17_820566",
+			FigureURI:    "models/figures/RFR_2024-11-16_16-09-17_820566",
+			URI:          "models/RFR_2024-11-16_16-09-17_820566.pkl",
 			Size:         3048,
 			TargetPeriod: 60,
-			Confidence:   60,
+			R2:           -0.4728247842753558,
+			MSE:          0.0012533946616273815,
+			R2Cpu:        -0.48400333562381537,
+			R2Mem:        -0.4616462329268962,
+			MSECpu:       0.001124055571933576,
+			MSEMem:       0.001382733751321187,
 			AccuracyID:   accuracies[1].ID,
 			EventID:      events[2].ID,
 			NfTypeID:     nfTypes[2].ID,

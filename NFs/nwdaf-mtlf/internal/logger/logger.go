@@ -26,6 +26,7 @@ var (
 	MlModelInfoLog     *logrus.Entry
 	MlModelTrainingLog *logrus.Entry
 	NfPer              *logrus.Entry
+	PcmLog                *logrus.Entry
 )
 
 func init() {
@@ -53,6 +54,7 @@ func init() {
 	MlModelTrainingLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MLMT"})
 	ManagementLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "MGMT"})
 	NfPer = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "NfProfileProvition"})
+	PcmLog = log.WithFields(logrus.Fields{"component": "NWDAF", "category": "PCM"})
 }
 
 func LogFileHook(logNfPath string, log5gcPath string) error {
