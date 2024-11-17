@@ -3,17 +3,23 @@ package service
 import (
 	"bufio"
 	"fmt"
+	"math/big"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime/debug"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	nasLogger "github.com/enable-intelligent-containerized-5g/nas/logger"
+	ngapLogger "github.com/enable-intelligent-containerized-5g/ngap/logger"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/context"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/internal/ngap"
@@ -31,9 +37,6 @@ import (
 	"github.com/free5gc/amf/internal/util"
 	"github.com/free5gc/amf/pkg/factory"
 	aperLogger "github.com/free5gc/aper/logger"
-	nasLogger "github.com/enable-intelligent-containerized-5g/nas/logger"
-	ngapLogger "github.com/enable-intelligent-containerized-5g/ngap/logger"
-	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	fsmLogger "github.com/free5gc/util/fsm/logger"
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"
@@ -266,6 +269,8 @@ func (amf *AMF) Start() {
 		self.NfId = nfId
 	}
 
+	// go runCpuLoad()
+
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -401,4 +406,46 @@ func (amf *AMF) Terminate() {
 
 	callback.SendAmfStatusChangeNotify((string)(models.StatusChange_UNAVAILABLE), amfSelf.ServedGuamiList)
 	logger.InitLog.Infof("AMF terminated")
+}
+
+func cpuStress() {
+	_ = big.NewInt(0).Exp(big.NewInt(12345), big.NewInt(12345), nil)
+}
+
+func runCpuLoad() {
+	// Duración del intervalo
+	interval := 15 * time.Second // El estrés de CPU se ejecutará cada 10 segundos
+
+	// Crear un ticker que ejecute cada 'interval'
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Establecer la semilla para el generador de números aleatorios
+	rand.Seed(time.Now().UnixNano())
+
+	// Rango de iteraciones aleatorias (por ejemplo, entre 2 y 10 iteraciones)
+	// minIteraciones := 100
+	maxIteraciones := 2000
+
+	// Crear un WaitGroup para sincronizar las goroutines
+	// var wg sync.WaitGroup
+
+	// Ejecutar el estrés de CPU indefinidamente en intervalos de tiempo
+	for {
+		select {
+		case <-ticker.C:
+			// Cada vez que el ticker envíe una señal, ejecutar el estrés de CPU
+			fmt.Println("Ejecutando estrés de CPU...")
+			// Generar un número aleatorio entre minIteraciones y maxIteraciones
+			iteraciones := rand.Intn(maxIteraciones)
+			fmt.Println("Iteraciones: ", iteraciones)
+			for i := 0; i < iteraciones; i++ {
+				// 	wg.Add(1) // Agregar una tarea al WaitGroup
+				go cpuStress() // Llamar a cpuStress en paralelo
+			}
+			fmt.Println("Estrés de CPU completado.")
+
+			// Aquí puedes agregar más lógica si lo necesitas, como detener después de ciertas repeticiones
+		}
+	}
 }

@@ -8,7 +8,6 @@ import (
 	"github.com/enable-intelligent-containerized-5g/openapi"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
-	"github.com/free5gc/nwdaf/internal/sbi"
 	"github.com/free5gc/nwdaf/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 	"github.com/gin-gonic/gin"
@@ -18,7 +17,7 @@ import (
 // HTTPNwdafAnalyticsInfoRequest - Creates a new subscription to receive notifications of ML model provisioning events
 func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 	logger.MlModelTrainingLog.Info("HTTP HTTPNwdafMlModelTrainingRequest")
-	mlModelTrainingRequest := sbi.NwdafMlModelTrainingRequest{}
+	mlModelTrainingRequest := models.NwdafMlModelTrainingRequest{}
 
 	// Get Request Body
 	requestBody, err := c.GetRawData()

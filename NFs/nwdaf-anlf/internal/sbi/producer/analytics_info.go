@@ -74,7 +74,7 @@ func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
 	return endTimeUnix - startTimeUnix
 }
 
-func findPodByContainer(pods []consumer.PrometheusResult, container string) *consumer.PrometheusResult {
+func findPodByContainer(pods []models.PrometheusResult, container string) *models.PrometheusResult {
 	for _, pod := range pods {
 		if pod.Container == container {
 			return &pod // Return Pod
@@ -416,7 +416,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				MemLimit:     defaultValues.MemLimit,
 				NfLoad:       defaultValues.NfLoad,
 				NfStatus:     profile.NfStatus,
-				Confidence:   selectedModels[0].Confidence,
+				Confidence:   selectedModels[0].Confidence.R2,
 			}
 
 			NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
@@ -461,8 +461,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			// logger.AniLog.Infof("NAMESPACE: %s,POD: %s, CONTAINER: %s", namespace, podName, containerName)
 			cpuUsageAverage := consumer.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
 			memUsageAverage := consumer.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
-			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_CORE, endTime)[0]
-			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, consumer.PrometheusUnit_BYTE, endTime)[0]
+			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, endTime)[0]
+			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime)[0]
 
 			// logger.AniLog.Infof("Cpu Usage: %f, MenUsage: %f, CpuLimit: %f, MemLimit: %f", cpuUsageAverage.Value, memUsageAverage.Value, cpuLimit.Value, memLimit.Value)
 

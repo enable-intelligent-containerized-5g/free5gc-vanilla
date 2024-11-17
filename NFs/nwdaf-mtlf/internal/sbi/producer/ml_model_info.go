@@ -53,11 +53,22 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 
 	var mlModelList []models.MlModelData
 	for _, model := range mlModels {
+		modelConfidence := models.MlModelDataConfidence{
+			R2:     model.R2,
+			R2Cpu:  model.R2Cpu,
+			R2Mem:  model.R2Mem,
+			MSE:    model.MSE,
+			MSECpu: model.MSECpu,
+			MSEMem: model.MSEMem,
+		}
+
 		mlModelData := models.MlModelData{
+			Name:         model.Name,
+			FigureURI:    model.FigureURI,
 			URI:          model.URI,
 			Size:         model.Size,
 			TargetPeriod: model.TargetPeriod,
-			Confidence:   model.Confidence,
+			Confidence:   modelConfidence,
 			NfType:       model.NfType.NfType,
 			EventId:      model.Event.Event,
 			Accuracy:     model.Accuracy.Accuracy,

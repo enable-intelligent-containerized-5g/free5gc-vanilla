@@ -72,4 +72,11 @@ var routes = Routes{
 		"mlmodeltraining/save",
 		HTTPSaveMlModel,
 	},
+
+	{
+		"NwdafAnalyticsInfoRequest",
+		strings.ToUpper("Post"),
+		"mlmodeltraining/request",
+		HTTPNwdafMlModelTrainingRequest,
+	},
 }
