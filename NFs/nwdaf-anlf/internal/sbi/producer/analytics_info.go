@@ -74,15 +74,6 @@ func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
 	return endTimeUnix - startTimeUnix
 }
 
-func findPodByContainer(pods []models.PrometheusResult, container string) *models.PrometheusResult {
-	for _, pod := range pods {
-		if pod.Container == container {
-			return &pod // Return Pod
-		}
-	}
-	return nil // Return nil
-}
-
 // SubtractSeconds subtracts seconds from a given date
 func SubtractSeconds(date time.Time, seconds int64) time.Time {
     return date.Add(-time.Duration(seconds) * time.Second)
@@ -375,7 +366,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			// containerName := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 			containerName := profile.ContainerName
 
-			foundPod := findPodByContainer(runningPods, containerName)
+			foundPod := models.FindPodByContainer(runningPods, containerName)
 
 			if foundPod != nil {
 				podName = foundPod.Pod
@@ -449,7 +440,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			// containerName := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 			containerName := profile.ContainerName
 
-			foundPod := findPodByContainer(runningPods, containerName)
+			foundPod := models.FindPodByContainer(runningPods, containerName)
 
 			if foundPod != nil {
 				podName = foundPod.Pod

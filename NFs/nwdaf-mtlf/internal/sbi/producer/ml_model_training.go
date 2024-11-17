@@ -23,6 +23,32 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type MlModelTrainingModelInfo struct {
+	Name      string  `json:"name"`
+	URI       string  `json:"uri"`
+	Size      int64   `json:"size"`
+	FigureURI string  `json:"figureUri"`
+	MSE       float64 `json:"mse"`
+	R2        float64 `json:"r2"`
+	MSECPU    float64 `json:"mseCpu"`
+	R2CPU     float64 `json:"r2Cpu"`
+	MSEMem    float64 `json:"mseMem"`
+	R2Mem     float64 `json:"r2Mem"`
+}
+
+type MlModelTrainingResponse struct {
+	EventId      models.EventId               `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId" db:"eventId" validate:"required"`
+	Name         string                       `json:"name,omitempty" yaml:"name" bson:"eventId" mapstructure:"name" db:"name" validate:"required"`
+	Size         int64                        `json:"size,omitempty" yaml:"size" bson:"size" mapstructure:"size" db:"size" validate:"required"`
+	FigureURI    string                       `json:"figureUri,omitempty" yaml:"figureUri" bson:"figureUri" mapstructure:"figureUri" db:"figureUri" validate:"required"`
+	TargetPeriod int64                        `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod" db:"targetPeriod" validate:"required"`
+	Confidence   models.MlModelDataConfidence `json:"confidence,omitempty" yaml:"confidence" bson:"confidence" mapstructure:"confidence" db:"confidence" validate:"required"`
+	URI          string                       `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri" db:"uri" validate:"required"`
+	Accuracy     models.NwdafMlModelAccuracy  `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy" db:"accuracy" validate:"required"`
+	NfType       models.NfType                `json:"nfType,omitempty" yaml:"nfType" bson:"nfType" mapstructure:"nfType" db:"nfType" validate:"required"`
+	Figure       []byte                       `json:"figure,omitempty" yaml:"figure" bson:"figure" mapstructure:"figure" db:"figure" validate:"required"`
+}
+
 func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *httpwrapper.Response) {
 	logger.MlModelTrainingLog.Info("Handle MlModelTrainingNfLoadMetricRequest")
 
@@ -49,7 +75,7 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (models.MlModelDataResponse, bool, *models.ProblemDetails) {
+func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (MlModelTrainingResponse, bool, *models.ProblemDetails) {
 	logger.MlModelTrainingLog.Info("Procedure MlModelTrainingProcedure")
 
 	currentTime := time.Now()
@@ -75,7 +101,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Status: http.StatusInternalServerError,
 			Cause:  "NrfUri is not set",
 		}
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Running Pods
@@ -95,7 +121,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	if len(nfInstances) <= 0 {
@@ -104,7 +130,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("No %s type Nfs found", nfType),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Select the firts profile
@@ -123,7 +149,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("No pod found for the specified container: %s", containerName),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Get CPU and RAM  from Ml Model Training
@@ -203,7 +229,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
 
@@ -229,18 +255,58 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return models.MlModelDataResponse{}, false, problemDetails
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infoln("Ml Model Training completed")
 
 	// Save the model
+	var mlModelCreated MlModelTrainingModelInfo
 
-	problemDetails := &models.ProblemDetails{
-		Status: http.StatusOK,
-		Cause:  "Working feature: " + podName,
+	errLoadModel := loadMlmodelInfoFromJson(&mlModelCreated, dataPath+util.NwdafDefaultModelInfoFile)
+	if errLoadModel != nil {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusOK,
+			Cause:  "Error getting saved model information: " + errLoadModel.Error(),
+		}
+		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		return MlModelTrainingResponse{}, false, problemDetails
 	}
 
-	return models.MlModelDataResponse{}, false, problemDetails
+	modelConfidence := models.MlModelDataConfidence{
+		R2:     mlModelCreated.R2,
+		MSE:    mlModelCreated.MSE,
+		R2Cpu:  mlModelCreated.R2CPU,
+		R2Mem:  mlModelCreated.R2Mem,
+		MSECpu: mlModelCreated.MSECPU,
+		MSEMem: mlModelCreated.MSEMem,
+	}
+
+	figureSaved := []byte{72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33}
+
+	var modelInfoResponse MlModelTrainingResponse = MlModelTrainingResponse{
+		EventId:      eventID,
+		Name:         mlModelCreated.Name,
+		Size:         mlModelCreated.Size,
+		FigureURI:    mlModelCreated.FigureURI,
+		TargetPeriod: targetPeriod,
+		Confidence:   modelConfidence,
+		URI:          mlModelCreated.URI,
+		Accuracy:     setAcuracy(modelConfidence.R2),
+		NfType:       nfType,
+		Figure:       figureSaved,
+	}
+
+	return modelInfoResponse, true, nil
+}
+
+func setAcuracy(r2 float64) models.NwdafMlModelAccuracy {
+	if r2 > 0.8 {
+		return models.NwdafMlModelAccuracy_HIGH
+	} else if r2 > 0.5 {
+		return models.NwdafMlModelAccuracy_MEDIUM
+	} else {
+		return models.NwdafMlModelAccuracy_LOW
+	}
 }
 
 func selecDataset(dirPath string, start int64, baseName string) (newID string, err error) {
@@ -365,6 +431,34 @@ func loadCsvFiles(dirPath string) (files []string, err error) {
 	}
 
 	return files, nil
+}
+
+func loadMlmodelInfoFromJson(modelInfo *MlModelTrainingModelInfo, filePath string) (err error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("could not read the saved model Info")
+	}
+
+	// Verify if the file is empty
+	if len(data) == 0 {
+		return fmt.Errorf("the model info is empty")
+	}
+
+	// Try parse the JSON file
+	err = json.Unmarshal(data, &modelInfo)
+	if err != nil {
+		return fmt.Errorf("failed to parse the model info")
+	}
+
+	// Verificar si el contenido tiene datos válidos
+	if modelInfo.Size <= 0 || modelInfo.URI == "" || math.IsNaN(modelInfo.MSE) ||
+		math.IsNaN(modelInfo.R2) || math.IsNaN(modelInfo.MSECPU) ||
+		math.IsNaN(modelInfo.MSEMem) || math.IsNaN(modelInfo.R2CPU) ||
+		math.IsNaN(modelInfo.R2Mem) {
+		return fmt.Errorf("model info is missing required fields")
+	}
+
+	return nil
 }
 
 // func loadFromFile(filename string, data interface{}) error {
