@@ -674,40 +674,6 @@ func filterDataBySnssais(snssaiValue string,
 	return matchedDatas
 }
 
-// func HandleApplicationDataInfluenceDataSubsToNotifyPost(trInfluSub *models.TrafficInfluSub) *httpwrapper.Response {
-// 	logger.DataRepoLog.Infof("Handle ApplicationDataInfluenceDataSubsToNotifyPost")
-// 	nwdafSelf := udr_context.NWDAF_Self()
-
-// 	newSubscID := strconv.FormatUint(nwdafSelf.NewAppDataInfluDataSubscriptionID(), 10)
-// 	response, status := postApplicationDataInfluenceDataSubsToNotifyToDB(newSubscID, trInfluSub)
-
-// 	/* Contains the URI of the newly created resource, according
-// 	   to the structure: {apiRoot}/application-data/influenceData/subs-to-notify/{subscID} */
-// 	locationHeader := fmt.Sprintf("%s/application-data/influenceData/subs-to-notify/%s",
-// 		nwdafSelf.GetIPv4GroupUri(udr_context.NUDR_DR), newSubscID)
-// 	logger.DataRepoLog.Infof("locationHeader:%q", locationHeader)
-// 	headers := http.Header{}
-// 	headers.Set("Location", locationHeader)
-// 	return httpwrapper.NewResponse(status, headers, response)
-// }
-
-func PostApplicationDataInfluenceDataSubsToNotifyToDB(subscID string,
-	trInfluSub *models.TrafficInfluSub) (bson.M, int) {
-	filter := bson.M{"subscriptionId": subscID}
-	data := util.ToBsonM(*trInfluSub)
-
-	// Add "subscriptionId" entry to DB
-	data["subscriptionId"] = subscID
-	_, err := mongoapi.RestfulAPIPutOne(APPDATA_INFLUDATA_SUBSC_DB_COLLECTION_NAME, filter, data)
-	if err != nil {
-		logger.DataRepoLog.Errorf("postApplicationDataInfluenceDataSubsToNotifyToDB err: %+v", err)
-		return nil, http.StatusInternalServerError
-	}
-	// Revert back to origin data before return
-	delete(data, "subscriptionId")
-	return data, http.StatusCreated
-}
-
 func HandleApplicationDataInfluenceDataSubsToNotifySubscriptionIdDelete(subscID string) *httpwrapper.Response {
 	logger.DataRepoLog.Infof(
 		"Handle ApplicationDataInfluenceDataSubsToNotifySubscriptionIdDelete: subscID=%q", subscID)
