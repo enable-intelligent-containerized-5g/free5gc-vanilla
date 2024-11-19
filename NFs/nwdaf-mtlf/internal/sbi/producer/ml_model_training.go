@@ -1,6 +1,7 @@
 package producer
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -14,13 +15,20 @@ import (
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
+
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
-	"gorm.io/gorm"
 
 	_ "github.com/mattn/go-sqlite3"
+)
+
+type NwdafMlModelAccuracyRange float64
+
+const (
+	NwdafMlModelAccuracyRange_HIGH NwdafMlModelAccuracyRange = 0.8
+	NwdafMlModelAccuracyRange_MEDIUM  NwdafMlModelAccuracyRange = 0.5
 )
 
 type MlModelTrainingModelInfo struct {
@@ -46,7 +54,7 @@ type MlModelTrainingResponse struct {
 	URI          string                       `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri" db:"uri" validate:"required"`
 	Accuracy     models.NwdafMlModelAccuracy  `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy" db:"accuracy" validate:"required"`
 	NfType       models.NfType                `json:"nfType,omitempty" yaml:"nfType" bson:"nfType" mapstructure:"nfType" db:"nfType" validate:"required"`
-	Figure       []byte                       `json:"figure,omitempty" yaml:"figure" bson:"figure" mapstructure:"figure" db:"figure" validate:"required"`
+	Figure       string                       `json:"figure,omitempty" yaml:"figure" bson:"figure" mapstructure:"figure" db:"figure" validate:"required"`
 }
 
 func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *httpwrapper.Response) {
@@ -59,10 +67,8 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 
 	putData, created, problemDetails := MlModelTrainingNfLoadProcedure(nwdafMlTrainingReq)
 	if created {
-		// logger.MlModelTrainingLog.Info("SaveMlModel success")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
 	} else if problemDetails != nil {
-		// logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Cause)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
@@ -127,7 +133,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if len(nfInstances) <= 0 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("No %s type Nfs found", nfType),
+			Cause:  fmt.Sprintf("Nf type %s not found", nfType),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
 		return MlModelTrainingResponse{}, false, problemDetails
@@ -162,7 +168,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	divideValues(&cpuUsageAverageRange, cpuLimit.Value)
 	divideValues(&memUsageAverageRange, memLimit.Value)
 
-	// Data paths
+	// // Data paths
 	dataPath := util.NwdafDefaultDataPath
 	dataRawPath := util.NwdafDefaultDataRawPath
 	menUsageFile := util.NwdafDefaultMenUsageFile
@@ -200,6 +206,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	nameID := fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
 	baseNameDataset := fmt.Sprintf("dataset_%s", baseName)
 	datasetFile := fmt.Sprintf("%s_%s.csv", baseNameDataset, nameID)
+	// datasetFile = "dataset_NF_LOAD_AMF_60s_1731787200_1731825367.csv"
 
 	// Select a suitable dataset
 	selectedDatasetFile := datasetFile
@@ -236,6 +243,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	// Training Model
 	logger.MlModelTrainingLog.Info("Training Ml Model")
 	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameID)
+	// fullBaseName = "NF_LOAD_AMF_60s_1731787200_1731825367"
 	modelTrainingScriptPath := util.NwdafDefaultModelTrainingScriptPath
 	modelsPath := util.NwdafDefaultModelsPath
 	figuresPath := util.NwdafDefaultFiguresPath
@@ -257,6 +265,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
 		return MlModelTrainingResponse{}, false, problemDetails
 	}
+	if strings.TrimSpace(string(outputTraining)) != "" {
+		logger.MlModelTrainingLog.Warn(string(outputTraining))
+	}
 	logger.MlModelTrainingLog.Infoln("Ml Model Training completed")
 
 	// Save the model
@@ -265,12 +276,25 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	errLoadModel := loadMlmodelInfoFromJson(&mlModelCreated, dataPath+util.NwdafDefaultModelInfoFile)
 	if errLoadModel != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusOK,
+			Status: http.StatusInternalServerError,
 			Cause:  "Error getting saved model information: " + errLoadModel.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
 		return MlModelTrainingResponse{}, false, problemDetails
 	}
+
+	// Get the figure
+	imageBytes, errGettingFigure := os.ReadFile(mlModelCreated.FigureURI)
+	if errGettingFigure != nil {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Cause:  "Error getting the saved figure: " + errGettingFigure.Error(),
+		}
+		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		return MlModelTrainingResponse{}, false, problemDetails
+	}
+	// Encode the figure
+	figureSavedBase64 := base64.StdEncoding.EncodeToString(imageBytes)
 
 	modelConfidence := models.MlModelDataConfidence{
 		R2:     mlModelCreated.R2,
@@ -281,9 +305,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		MSEMem: mlModelCreated.MSEMem,
 	}
 
-	figureSaved := []byte{72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100, 33}
-
-	var modelInfoResponse MlModelTrainingResponse = MlModelTrainingResponse{
+	mlModelInfo := models.MlModelData{
 		EventId:      eventID,
 		Name:         mlModelCreated.Name,
 		Size:         mlModelCreated.Size,
@@ -293,16 +315,40 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		URI:          mlModelCreated.URI,
 		Accuracy:     setAcuracy(modelConfidence.R2),
 		NfType:       nfType,
-		Figure:       figureSaved,
+	}
+
+	mlModelSaveResponse, saved, errSave := util.SaveMlModelProcedure(mlModelInfo)
+	if !saved || len(mlModelSaveResponse.MlModels) <= 0 {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Cause:  "Error saving the Ml Model in  the DB: " + errSave.Detail,
+		}
+		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		return MlModelTrainingResponse{}, false, problemDetails
+	}
+
+	mlModelSaved := mlModelSaveResponse.MlModels[0]
+
+	var modelInfoResponse MlModelTrainingResponse = MlModelTrainingResponse{
+		EventId:      mlModelSaved.EventId,
+		Name:         mlModelSaved.Name,
+		Size:         mlModelSaved.Size,
+		FigureURI:    mlModelSaved.FigureURI,
+		TargetPeriod: mlModelSaved.TargetPeriod,
+		Confidence:   mlModelSaved.Confidence,
+		URI:          mlModelSaved.URI,
+		Accuracy:     mlModelSaved.Accuracy,
+		NfType:       mlModelSaved.NfType,
+		Figure:       figureSavedBase64,
 	}
 
 	return modelInfoResponse, true, nil
 }
 
 func setAcuracy(r2 float64) models.NwdafMlModelAccuracy {
-	if r2 > 0.8 {
+	if r2 > float64(NwdafMlModelAccuracyRange_HIGH) {
 		return models.NwdafMlModelAccuracy_HIGH
-	} else if r2 > 0.5 {
+	} else if r2 > float64(NwdafMlModelAccuracyRange_MEDIUM) {
 		return models.NwdafMlModelAccuracy_MEDIUM
 	} else {
 		return models.NwdafMlModelAccuracy_LOW
@@ -580,7 +626,7 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 		return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelData")
 	}
 
-	putData, created, problemDetails := SaveMlModelProcedure(mlmodeldata)
+	putData, created, problemDetails := util.SaveMlModelProcedure(mlmodeldata)
 	if created {
 		// logger.MlModelTrainingLog.Info("SaveMlModel success")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
@@ -597,191 +643,3 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse, bool, *models.ProblemDetails) {
-	logger.MlModelTrainingLog.Info("Procedure SaveMlModel")
-
-	// Conect to database
-	sqldb := factory.NwdafConfig.Configuration.SqlLiteDB
-	db, errCon := util.OpenDatabase(sqldb)
-	if errCon != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  errCon.Error(),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
-	}
-
-	// Validate Size
-	if mldata.Size <= 0 {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusBadRequest,
-			Cause:  fmt.Sprintf("The Size must be greater than 0, but got %d", mldata.Size),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
-	}
-
-	// Validate TargetPeriod
-	if mldata.TargetPeriod <= 0 {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusBadRequest,
-			Cause:  fmt.Sprintf("The TargetPeriod must be greater than 0, but got %d", mldata.TargetPeriod),
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
-	}
-
-	// Validate URI
-	if strings.TrimSpace(mldata.URI) == "" {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusBadRequest,
-			Cause:  "The URI cannot be empty",
-		}
-		return models.MlModelDataResponse{}, false, problemDetails
-	}
-
-	// Validate EventId
-	eventFound := models.EventTable{Event: mldata.EventId}
-	errGetEvent := GetEventByName(&eventFound, db)
-	if errGetEvent != nil {
-		// logger.MlModelTrainingLog.Errorf("Event %s not found: %s", mldata.EventId, errGetEvent)
-		return models.MlModelDataResponse{}, false, errGetEvent
-
-	}
-
-	// Validate Accuracy
-	accuFound := models.AccuracyTable{Accuracy: mldata.Accuracy}
-	errGetAccu := GetAccuracyByName(&accuFound, db)
-	if errGetAccu != nil {
-		// logger.MlModelTrainingLog.Errorf("Accuracy %s not found: %s", mldata.Accuracy, errGetAccu)
-		return models.MlModelDataResponse{}, false, errGetAccu
-	}
-
-	// Validate NfType
-	nfTypeFound := models.NFTypeTable{NfType: mldata.NfType}
-	errGetNfType := GetNfTypeByName(&nfTypeFound, db)
-	if errGetNfType != nil {
-		// logger.MlModelTrainingLog.Errorf("NfType %s not found: %s", mldata.NfType, errGetNfType)
-		return models.MlModelDataResponse{}, false, errGetNfType
-	}
-
-	// Create the struct
-	mlModelTableRequest := models.MlModelDataTable{
-		URI:          mldata.URI,
-		Name:         mldata.Name,
-		FigureURI:    mldata.FigureURI,
-		Size:         mldata.Size,
-		TargetPeriod: mldata.TargetPeriod,
-		MSE:          mldata.Confidence.MSE,
-		MSECpu:       mldata.Confidence.MSECpu,
-		MSEMem:       mldata.Confidence.MSEMem,
-		R2:           mldata.Confidence.R2,
-		R2Cpu:        mldata.Confidence.R2Cpu,
-		R2Mem:        mldata.Confidence.R2Mem,
-		AccuracyID:   accuFound.ID,
-		EventID:      eventFound.ID,
-		NfTypeID:     nfTypeFound.ID,
-		Accuracy:     accuFound,
-		Event:        eventFound,
-		NfType:       nfTypeFound,
-	}
-	errSaving := SaveMlmodel(&mlModelTableRequest, db)
-	if errSaving != nil {
-		// logger.MlModelTrainingLog.Errorf("MlModel not saved: %s", errSaves)
-		return models.MlModelDataResponse{}, false, errSaving
-	}
-
-	var model2 models.MlModelDataTable
-	errGetMlModel := GetMlModelById(&model2, db, mlModelTableRequest.ID)
-	if errGetMlModel != nil {
-		// logger.MlModelTrainingLog.Errorf("MlModel not found: %s", errSaves)
-		return models.MlModelDataResponse{}, false, errGetMlModel
-	}
-
-	modelConfidence := models.MlModelDataConfidence{
-		R2:     mlModelTableRequest.R2,
-		R2Cpu:  mlModelTableRequest.R2Cpu,
-		R2Mem:  mlModelTableRequest.R2Mem,
-		MSE:    mlModelTableRequest.MSE,
-		MSECpu: mlModelTableRequest.MSECpu,
-		MSEMem: mlModelTableRequest.MSEMem,
-	}
-
-	mlmodelSaved := models.MlModelData{
-		URI:          mlModelTableRequest.URI,
-		Name:         mlModelTableRequest.Name,
-		FigureURI:    mlModelTableRequest.FigureURI,
-		Size:         mlModelTableRequest.Size,
-		TargetPeriod: mlModelTableRequest.TargetPeriod,
-		Confidence:   modelConfidence,
-		Accuracy:     mlModelTableRequest.Accuracy.Accuracy,
-		NfType:       mlModelTableRequest.NfType.NfType,
-		EventId:      mlModelTableRequest.Event.Event,
-	}
-
-	return models.MlModelDataResponse{MlModels: append([]models.MlModelData{}, mlmodelSaved)}, true, nil
-}
-
-// Get MlModel by ID
-func GetMlModelById(mlModel *models.MlModelDataTable, db *gorm.DB, id int64) *models.ProblemDetails {
-	result := db.First(&mlModel, id) // Search by ID = 1
-	if result.Error != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("MlModel with id %d not found", id),
-		}
-		return problemDetails
-	}
-
-	return nil
-}
-
-func GetEventByName(event *models.EventTable, db *gorm.DB) *models.ProblemDetails {
-	err := db.Where(&event).First(&event).Error
-	if err != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("EventId %s not found", event.Event),
-		}
-		return problemDetails
-	}
-
-	return nil
-}
-
-func GetAccuracyByName(accuracy *models.AccuracyTable, db *gorm.DB) *models.ProblemDetails {
-	err := db.Where(&accuracy).First(&accuracy).Error
-	if err != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("Accuracy %s not found", accuracy.Accuracy),
-		}
-		return problemDetails
-	}
-
-	return nil
-}
-
-func GetNfTypeByName(nf *models.NFTypeTable, db *gorm.DB) *models.ProblemDetails {
-	err := db.Where(&nf).First(&nf).Error
-	if err != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("NfType %s not found", nf.NfType),
-		}
-		return problemDetails
-	}
-
-	return nil
-}
-
-func SaveMlmodel(mlModel *models.MlModelDataTable, db *gorm.DB) *models.ProblemDetails {
-	result := db.Create(&mlModel)
-	if result.Error != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Cause:  "Could not save the model to the database",
-		}
-		return problemDetails
-	}
-
-	return nil
-}

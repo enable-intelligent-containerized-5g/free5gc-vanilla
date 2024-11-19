@@ -167,7 +167,7 @@ func (nwdaf *NWDAF) Start() {
 	// Path to SQLite DB in the host
 	dbPath := config.Configuration.SqlLiteDB
 	if err := util.InitSqlLiteDB(); err != nil {
-		logger.InitLog.Infof("Failed to initialize database: %s", dbPath)
+		logger.InitLog.Errorf("Failed to initialize database %s. %s", dbPath, err.Error())
 	}
 
 	// Register to NRF

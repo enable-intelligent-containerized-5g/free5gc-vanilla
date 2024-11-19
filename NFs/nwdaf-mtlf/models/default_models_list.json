@@ -1,0 +1,46 @@
+[
+    {
+        "name": "model_RFR_NF_LOAD_AMF_60s",
+        "uri": "models/model_1.pkl",
+        "figureUri": "models/figures/model_1.png",
+        "size": 3312880,
+        "targetPeriod": 1731787200,
+        "r2": 0.517,
+        "mse": 0.004,
+        "r2Cpu": 0.509,
+        "r2Mem": 0.525,
+        "mseCpu": 0.005,
+        "mseMem": 0.002,
+        "nfType": {
+            "nfType": "AMF"
+        },
+        "accuracy": {
+            "accuracy": "LOW"
+        },
+        "event": {
+            "eventId": "NF_LOAD"
+        }
+    },
+    {
+        "name": "model_RFR_NF_LOAD_AMF_60s",
+        "uri": "models/model_2.pkl",
+        "figureUri": "models/figures/model_2.png",
+        "size": 3312880,
+        "targetPeriod": 1731787200,
+        "r2": 0.517,
+        "mse": 0.004,
+        "r2Cpu": 0.509,
+        "r2Mem": 0.525,
+        "mseCpu": 0.005,
+        "mseMem": 0.002,
+        "nfType": {
+            "nfType": "AMF"
+        },
+        "accuracy": {
+            "accuracy": "LOW"
+        },
+        "event": {
+            "eventId": "NF_LOAD"
+        }
+    }
+]
