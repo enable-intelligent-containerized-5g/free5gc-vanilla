@@ -18,4 +18,5 @@ var (
 	NwdafDefaultFiguresPath              = "models/figures/"
 	NwdafDefaultModelInfoFile            = "model_info.json"
 	NwdafDefaultModelInfoListFile        = "model_info_list.json"
+	NwdafDefaultInitModelInfoListFile    = "default_models_list.json"
 )

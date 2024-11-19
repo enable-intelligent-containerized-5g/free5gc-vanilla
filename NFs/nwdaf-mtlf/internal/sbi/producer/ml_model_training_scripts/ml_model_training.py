@@ -28,6 +28,10 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_scaled = scaler.fit_transform(data_values) # Comun Dataset
     time_steps = 4 # Steps
+    test_size = 0.3
+    
+    if (len(data_scaled)-time_steps)*test_size < 1:
+        sys.exit(f"The dataset does not have the required number of rows, provides a larger dataset")
     
     # Función para crear las secuencias
     def create_sequences_multivariate(data, time_steps):
@@ -44,7 +48,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     ###        Random Forest Regressor model configuration         ###
     ##################################################################
 
-    X_train, X_test, y_train, y_test = train_test_split(X.reshape(X.shape[0], -1), y, test_size=0.3, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X.reshape(X.shape[0], -1), y, test_size=test_size, random_state=42)
 
     # Create the model
     rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
@@ -152,16 +156,22 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
         
     # Add model_info to list of model_info_list
     model_info_list_path = data_path + model_info_list
+    models_info = []
     try:
         with open(model_info_list_path, 'r') as json_file:
-            models_info = []
             content = json_file.read()
-            if content.strip(): 
-                if isinstance(content, list):
-                    models_info = json.loads(content)     
+            models_info = json.loads(content)
+            if content.strip(): # No empty
+                if isinstance(models_info, list):
+                    models_info = json.loads(content)
+                       
                
     except FileNotFoundError:
-        models_info = [] 
+        models_info = []
+        print("No found the models info list. Creating a new list")
+    except json.JSONDecodeError as e:
+        models_info = []
+        print("Error decoding the models info file. Creating a new list")
 
     models_info.append(model_info)
 

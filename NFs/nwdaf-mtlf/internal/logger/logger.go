@@ -26,7 +26,7 @@ var (
 	MlModelInfoLog     *logrus.Entry
 	MlModelTrainingLog *logrus.Entry
 	NfPer              *logrus.Entry
-	PcmLog                *logrus.Entry
+	PcmLog             *logrus.Entry
 )
 
 func init() {
