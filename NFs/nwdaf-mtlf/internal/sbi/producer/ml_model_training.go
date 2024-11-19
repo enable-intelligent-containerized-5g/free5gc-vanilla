@@ -24,39 +24,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type NwdafMlModelAccuracyRange float64
-
-const (
-	NwdafMlModelAccuracyRange_HIGH NwdafMlModelAccuracyRange = 0.8
-	NwdafMlModelAccuracyRange_MEDIUM  NwdafMlModelAccuracyRange = 0.5
-)
-
-type MlModelTrainingModelInfo struct {
-	Name      string  `json:"name"`
-	URI       string  `json:"uri"`
-	Size      int64   `json:"size"`
-	FigureURI string  `json:"figureUri"`
-	MSE       float64 `json:"mse"`
-	R2        float64 `json:"r2"`
-	MSECPU    float64 `json:"mseCpu"`
-	R2CPU     float64 `json:"r2Cpu"`
-	MSEMem    float64 `json:"mseMem"`
-	R2Mem     float64 `json:"r2Mem"`
-}
-
-type MlModelTrainingResponse struct {
-	EventId      models.EventId               `json:"eventId,omitempty" yaml:"eventId" bson:"eventId" mapstructure:"eventId" db:"eventId" validate:"required"`
-	Name         string                       `json:"name,omitempty" yaml:"name" bson:"eventId" mapstructure:"name" db:"name" validate:"required"`
-	Size         int64                        `json:"size,omitempty" yaml:"size" bson:"size" mapstructure:"size" db:"size" validate:"required"`
-	FigureURI    string                       `json:"figureUri,omitempty" yaml:"figureUri" bson:"figureUri" mapstructure:"figureUri" db:"figureUri" validate:"required"`
-	TargetPeriod int64                        `json:"targetPeriod,omitempty" yaml:"targetPeriod" bson:"targetPeriod" mapstructure:"targetPeriod" db:"targetPeriod" validate:"required"`
-	Confidence   models.MlModelDataConfidence `json:"confidence,omitempty" yaml:"confidence" bson:"confidence" mapstructure:"confidence" db:"confidence" validate:"required"`
-	URI          string                       `json:"uri,omitempty" yaml:"uri" bson:"uri" mapstructure:"uri" db:"uri" validate:"required"`
-	Accuracy     models.NwdafMlModelAccuracy  `json:"accuracy,omitempty" yaml:"accuracy" bson:"accuracy" mapstructure:"accuracy" db:"accuracy" validate:"required"`
-	NfType       models.NfType                `json:"nfType,omitempty" yaml:"nfType" bson:"nfType" mapstructure:"nfType" db:"nfType" validate:"required"`
-	Figure       string                       `json:"figure,omitempty" yaml:"figure" bson:"figure" mapstructure:"figure" db:"figure" validate:"required"`
-}
-
 func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *httpwrapper.Response) {
 	logger.MlModelTrainingLog.Info("Handle MlModelTrainingNfLoadMetricRequest")
 
@@ -81,7 +48,7 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
-func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (MlModelTrainingResponse, bool, *models.ProblemDetails) {
+func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (models.MlModelTrainingResponse, bool, *models.ProblemDetails) {
 	logger.MlModelTrainingLog.Info("Procedure MlModelTrainingProcedure")
 
 	currentTime := time.Now()
@@ -96,6 +63,15 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	startTimeSeconds := mlTrainingReq.StartTime.Unix()
 	currentTimeSeconds := currentTime.Unix()
 
+	// Check the TargetPeriod
+	if targetPeriod < 60 {
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusBadRequest,
+			Cause:  "The difference between the start date and the end date must be greater than 60 seconds",
+		}
+		return models.MlModelTrainingResponse{}, false, problemDetails
+	}
+
 	// formattedStartTime := mlTrainingReq.StartTime.Format("2006-01-02_15-04-05")
 	// formattedCurrentTime := currentTime.Format("2006-01-02_15-04-05.000000000")
 
@@ -107,7 +83,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Status: http.StatusInternalServerError,
 			Cause:  "NrfUri is not set",
 		}
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Running Pods
@@ -127,7 +103,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	if len(nfInstances) <= 0 {
@@ -136,7 +112,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Nf type %s not found", nfType),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Select the firts profile
@@ -155,7 +131,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("No pod found for the specified container: %s", containerName),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Get CPU and RAM  from Ml Model Training
@@ -165,8 +141,8 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime)[0]
 
 	logger.MlModelTrainingLog.Info("Saving data")
-	divideValues(&cpuUsageAverageRange, cpuLimit.Value)
-	divideValues(&memUsageAverageRange, memLimit.Value)
+	models.DivideValues(&cpuUsageAverageRange, cpuLimit.Value)
+	models.DivideValues(&memUsageAverageRange, memLimit.Value)
 
 	// // Data paths
 	dataPath := util.NwdafDefaultDataPath
@@ -176,7 +152,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Llamar a la función para escribir el JSON
 	pathCpuUsage := dataRawPath + cpuUsageFile
-	errToCsvCpu := saveToJson(pathCpuUsage, cpuUsageAverageRange)
+	errToCsvCpu := models.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
 	if errToCsvCpu != nil {
 		logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
 	} else {
@@ -185,7 +161,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Llamar a la función para escribir el JSON
 	pathMemUsage := dataRawPath + menUsageFile
-	errToCsvMem := saveToJson(pathMemUsage, memUsageAverageRange)
+	errToCsvMem := models.SaveToJson(pathMemUsage, memUsageAverageRange)
 	if errToCsvMem != nil {
 		logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
 	} else {
@@ -228,7 +204,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		cpuUsageFile, menUsageFile, datasetFile,
 		cpuColumn, memColumn)
 
-	// Get teh output and error
+	// Get the output and error
 	outputProcess, errProcess := cmd.CombinedOutput()
 	if errProcess != nil {
 		problemDetails := &models.ProblemDetails{
@@ -236,12 +212,13 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
 
 	// Training Model
 	logger.MlModelTrainingLog.Info("Training Ml Model")
+	timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
 	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameID)
 	// fullBaseName = "NF_LOAD_AMF_60s_1731787200_1731825367"
 	modelTrainingScriptPath := util.NwdafDefaultModelTrainingScriptPath
@@ -254,7 +231,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		modelsPath, dataPath, dataLabeledPath,
 		figuresPath, datasetFile, modelInfo,
 		modelInfoList, cpuColumn, memColumn,
-		fullBaseName)
+		fullBaseName, strconv.FormatInt(timeSteps, 10))
 	// Get the output and error
 	outputTraining, errTraining := cmdTraining.CombinedOutput()
 	if errTraining != nil {
@@ -263,7 +240,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	if strings.TrimSpace(string(outputTraining)) != "" {
 		logger.MlModelTrainingLog.Warn(string(outputTraining))
@@ -271,7 +248,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	logger.MlModelTrainingLog.Infoln("Ml Model Training completed")
 
 	// Save the model
-	var mlModelCreated MlModelTrainingModelInfo
+	var mlModelCreated models.MlModelTrainingModelInfo
 
 	errLoadModel := loadMlmodelInfoFromJson(&mlModelCreated, dataPath+util.NwdafDefaultModelInfoFile)
 	if errLoadModel != nil {
@@ -280,7 +257,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  "Error getting saved model information: " + errLoadModel.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Get the figure
@@ -291,7 +268,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  "Error getting the saved figure: " + errGettingFigure.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	// Encode the figure
 	figureSavedBase64 := base64.StdEncoding.EncodeToString(imageBytes)
@@ -313,7 +290,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		TargetPeriod: targetPeriod,
 		Confidence:   modelConfidence,
 		URI:          mlModelCreated.URI,
-		Accuracy:     setAcuracy(modelConfidence.R2),
+		Accuracy:     models.SetAcuracy(modelConfidence.R2),
 		NfType:       nfType,
 	}
 
@@ -324,12 +301,12 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Cause:  "Error saving the Ml Model in  the DB: " + errSave.Detail,
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Cause)
-		return MlModelTrainingResponse{}, false, problemDetails
+		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	mlModelSaved := mlModelSaveResponse.MlModels[0]
 
-	var modelInfoResponse MlModelTrainingResponse = MlModelTrainingResponse{
+	var modelInfoResponse models.MlModelTrainingResponse = models.MlModelTrainingResponse{
 		EventId:      mlModelSaved.EventId,
 		Name:         mlModelSaved.Name,
 		Size:         mlModelSaved.Size,
@@ -345,22 +322,12 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	return modelInfoResponse, true, nil
 }
 
-func setAcuracy(r2 float64) models.NwdafMlModelAccuracy {
-	if r2 > float64(NwdafMlModelAccuracyRange_HIGH) {
-		return models.NwdafMlModelAccuracy_HIGH
-	} else if r2 > float64(NwdafMlModelAccuracyRange_MEDIUM) {
-		return models.NwdafMlModelAccuracy_MEDIUM
-	} else {
-		return models.NwdafMlModelAccuracy_LOW
-	}
-}
-
 func selecDataset(dirPath string, start int64, baseName string) (newID string, err error) {
 	type PairNum struct {
 		Start int64
 		End   int64
 	}
-	filesCsv, errLoadFiles := loadCsvFiles(dirPath)
+	filesCsv, errLoadFiles := models.LoadCsvFiles(dirPath)
 	var listNum []PairNum
 
 	if errLoadFiles == nil {
@@ -435,51 +402,7 @@ func selecDataset(dirPath string, start int64, baseName string) (newID string, e
 	return newID, fmt.Errorf(" No foun a dataset for: %s", baseName)
 }
 
-func divideValues(results *[]models.PrometheusResult, divisor float64) {
-	if math.IsNaN(divisor) || divisor == 0 {
-		divisor = 1
-	}
-	for i := range *results {
-		(*results)[i].Value /= divisor
-	}
-}
-
-// Función para guardar una estructura en un archivo JSON
-func saveToJson(filename string, data interface{}) error {
-	// Crear el archivo
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Convertir los datos a JSON con indentación
-	indentedData, err := json.MarshalIndent(data, "", "    ") // Usa 4 espacios como indentación
-	if err != nil {
-		return err
-	}
-
-	// Escribir los datos con indentación al archivo
-	_, err = file.Write(indentedData)
-	return err
-}
-
-func loadCsvFiles(dirPath string) (files []string, err error) {
-	filesDir, err := os.ReadDir(dirPath)
-	if err != nil {
-		return files, err
-	}
-
-	for _, file := range filesDir {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".csv") {
-			files = append(files, file.Name())
-		}
-	}
-
-	return files, nil
-}
-
-func loadMlmodelInfoFromJson(modelInfo *MlModelTrainingModelInfo, filePath string) (err error) {
+func loadMlmodelInfoFromJson(modelInfo *models.MlModelTrainingModelInfo, filePath string) (err error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("could not read the saved model Info")
@@ -507,117 +430,6 @@ func loadMlmodelInfoFromJson(modelInfo *MlModelTrainingModelInfo, filePath strin
 	return nil
 }
 
-// func loadFromFile(filename string, data interface{}) error {
-// 	file, err := os.Open(filename)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
-
-// 	decoder := json.NewDecoder(file)
-// 	return decoder.Decode(data)
-// }
-
-// func writeCSV(filename string, metrics []consumer.PrometheusResult) error {
-// 	file, err := os.Create(filename)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer file.Close()
-
-// 	writer := csv.NewWriter(file)
-// 	defer writer.Flush()
-
-// 	// Escribir el encabezado en el archivo CSV
-// 	header := []string{
-// 		"Pod", "Container",
-// 		"Timestamp1", "CpuUsage1",
-// 		"Timestamp2", "CpuUsage2",
-// 		"Timestamp3", "CpuUsage3",
-// 		"Timestamp4", "CpuUsage4",
-// 	}
-// 	if err := writer.Write(header); err != nil {
-// 		return err
-// 	}
-
-// 	// Iterar sobre los datos en bloques de 4
-// 	for i := 0; i < len(metrics); i += 4 {
-// 		if i+3 < len(metrics) {
-// 			// Usar el pod y container del primer elemento del bloque como referencia
-// 			pod := metrics[i].Pod
-// 			container := metrics[i].Container
-
-// 			// Crear una fila con Pod, Container y los siguientes 4 valores de CpuUsage
-// 			row := []string{pod, container}
-
-// 			// Agregar los valores de CpuUsage
-// 			for j := i; j < i+4; j++ {
-// 				row = append(row,
-// 					strconv.FormatInt(int64(metrics[j].Timestamp), 10), // Convertir Timestamp a string
-// 					fmt.Sprintf("%f", metrics[j].Value),                // Convertir el valor de CpuUsage en formato flotante
-// 				)
-// 			}
-
-// 			// Escribir la fila en el archivo CSV
-// 			if err := writer.Write(row); err != nil {
-// 				return err
-// 			}
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// func writeModelToCSV(filename string, results []consumer.PrometheusResult) error {
-// 	// Crear el archivo CSV
-// 	file, err := os.Create(filename)
-// 	if err != nil {
-// 		return fmt.Errorf("error creating file: %v", err)
-// 	}
-// 	defer file.Close()
-
-// 	// Crear un escritor CSV
-// 	writer := csv.NewWriter(file)
-// 	defer writer.Flush()
-
-// 	// Escribir los encabezados del CSV
-// 	err = writer.Write([]string{"Timestamp", "Namespace", "Pod", "Container", "Value"})
-// 	if err != nil {
-// 		return fmt.Errorf("error writing header: %v", err)
-// 	}
-
-// 	// Escribir los datos de los resultados
-// 	for _, result := range results {
-// 		record := []string{
-// 			fmt.Sprintf("%f", result.Timestamp),
-// 			fmt.Sprintf("%f", result.Value),
-// 			string(result.MetricType),
-// 			result.Namespace,
-// 			result.Pod,
-// 			result.Container,
-// 			result.Phase,
-// 			result.Uid,
-// 		}
-// 		err := writer.Write(record)
-// 		if err != nil {
-// 			return fmt.Errorf("error writing record: %v", err)
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// func prepareData(data []consumer.PrometheusResult) ([][]float64, []float64) {
-// 	features := make([][]float64, len(data))
-// 	labels := make([]float64, len(data))
-
-// 	for i, d := range data {
-// 		features[i] = []float64{d.CpuUsage1, d.CpuUsage2, d.CpuUsage3}
-// 		labels[i] = d.CpuUsage4
-// 	}
-// 	return features, labels
-// }
-
 func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.MlModelTrainingLog.Info("Handle SaveMlModel")
 
@@ -642,4 +454,3 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.MlModelTrainingLog.Error("SaveMlModel failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
-

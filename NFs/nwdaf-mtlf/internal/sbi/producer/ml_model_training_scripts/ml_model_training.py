@@ -1,4 +1,4 @@
-import sys, csv, datetime, joblib, os, json
+import sys, csv, joblib, os, json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
 
-def ml_model_training(models_path, data_path, figures_path, dataset_path, model_info_file, model_info_list, cpu_column, mem_column, base_name):
+def ml_model_training(models_path, data_path, figures_path, dataset_path, model_info_file, model_info_list, cpu_column, mem_column, base_name, time_steps):
     
     ##################################################################
     ###                 Get and Process the data                   ###
@@ -24,14 +24,16 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     
     # We select the columns that we are going to use for the prediction
     data_values = df[[cpu_column, mem_column]].values
+    
+    # Validate the dataset size
+    # time_steps = 4 # Steps
+    test_size = 0.3 # testing part
+    if (len(data_values)-time_steps)*test_size < 1:
+        sys.exit(f"The dataset does not have the required number of rows, provides a larger dataset")
+        
     # Scale the data between 0 and 1
     scaler = MinMaxScaler(feature_range=(0, 1))
     data_scaled = scaler.fit_transform(data_values) # Comun Dataset
-    time_steps = 4 # Steps
-    test_size = 0.3
-    
-    if (len(data_scaled)-time_steps)*test_size < 1:
-        sys.exit(f"The dataset does not have the required number of rows, provides a larger dataset")
     
     # Función para crear las secuencias
     def create_sequences_multivariate(data, time_steps):
@@ -192,7 +194,7 @@ def isFolder(folder_paths):
 
 def main():
     # Verify the params
-    if len(sys.argv) < 11:
+    if len(sys.argv) < 12:
         sys.exit(1)
 
     # Get the params
@@ -207,6 +209,7 @@ def main():
     cpu_column = sys.argv[8]
     mem_column = sys.argv[9]
     base_name = sys.argv[10]
+    time_steps = sys.argv[11]
     
     # Validate folders
     isFolder([models_path, data_path, data_labeled_path, figures_path])
@@ -215,6 +218,12 @@ def main():
     
     # Validate dataset_path
     isFile([dataset_path])
+    
+    # Validate time_steps
+    try:
+        int_time_steps = int(time_steps.strip())
+    except ValueError:
+        sys.exit(f"Invalid input: not a valid timeSteps value")
 
     # Try load the data 
     try:
@@ -229,7 +238,7 @@ def main():
     except Exception as e:
         sys.exit(f"Error opening the dataset {dataset_file}")
         
-    ml_model_training(models_path, data_path, figures_path, dataset_path, model_info, model_info_list, cpu_column, mem_column, base_name)
+    ml_model_training(models_path, data_path, figures_path, dataset_path, model_info, model_info_list, cpu_column, mem_column, base_name, int_time_steps)
 
 if __name__ == "__main__":
     main()

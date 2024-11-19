@@ -1,25 +1,25 @@
 package producer
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
+	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 )
 
-type DefaultNfLoad struct {
-	CpuUsage float64 `json:"cpu_usage,omitempty" yaml:"cpu_usage,omitempty" bson:"cpu_usage,omitempty" `
-	MemUsage float64 `json:"mem_usage,omitempty" yaml:"mem_usage,omitempty" bson:"mem_usage,omitempty" `
-	CpuLimit float64 `json:"cpu_limit,omitempty" yaml:"cpu_limit,omitempty" bson:"cpu_limit,omitempty" `
-	MemLimit float64 `json:"mem_limit,omitempty" yaml:"mem_limit,omitempty" bson:"mem_limit,omitempty" `
-	NfLoad   float64 `json:"nf_load,omitempty" yaml:"nf_load,omitempty" bson:"nf_load,omitempty" `
-}
 
 func filterNfInstanceById(nfIntances *[]models.NfProfile, nfInstanceIds []string) (nfInstancesFiltered []models.NfProfile) {
 	for _, nfInstance := range *nfIntances {
@@ -66,17 +66,6 @@ func filterNfInstancesWithIpDuplicate(nfInstances *[]models.NfProfile) (mlNfProf
 	}
 
 	return mlNfProfileFiltered
-}
-
-func parseTimeToSeconds(startTime *time.Time, endTime *time.Time) int64 {
-	startTimeUnix := startTime.Unix()
-	endTimeUnix := endTime.Unix()
-	return endTimeUnix - startTimeUnix
-}
-
-// SubtractSeconds subtracts seconds from a given date
-func SubtractSeconds(date time.Time, seconds int64) time.Time {
-    return date.Add(-time.Duration(seconds) * time.Second)
 }
 
 
@@ -174,7 +163,13 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 	// Check if NRF URI is set
 	if NrfUri == "" {
-		return httpwrapper.NewResponse(http.StatusInternalServerError, nil, "NrfUri is not set")
+		problemDetails := models.ProblemDetails{
+			Title:  "NrfUri is not set",
+			Status: http.StatusInternalServerError,
+			Detail: "NrfUri is not set",
+		}
+		logger.AniLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
@@ -185,7 +180,13 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 	// Search all NF instances
 	err := consumer.SearchAllNfInstance(&nfInstances, NrfUri, "", models.NfType_NWDAF, param)
 	if err != nil {
-		return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
+		problemDetails := models.ProblemDetails{
+			Title:  "Error geting NfProfiles",
+			Status: http.StatusInternalServerError,
+			Detail: err.Error(),
+		}
+		logger.AniLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	// check the type of payload request
@@ -199,11 +200,6 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 		// Filter NF instances by ID
 		nfFilterdByTypePayload = filterNfInstanceById(&nfInstances, nfInstancesIds)
-		// idsById := []string{}
-		// for _, instance := range nfFilterdByTypePayload {
-		// 	idsById = append(idsById, instance.NfInstanceId) // Add the Id
-		// }
-		// logger.AniLog.Infof("Filtered NF Instances by ID(%d): %s\n", len(idsById), idsById)
 
 	case models.TypePayloadRequest_NF_TYPES:
 		logger.AniLog.Infof("typePayload: %s", models.TypePayloadRequest_NF_TYPES)
@@ -214,33 +210,28 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 		// Filter NF instances by NfType
 		nfFilterdByTypePayload = filterNfInstanceByNfType(&nfInstances, nfTypes)
-		// idsByNfType := []string{}
-		// for _, instance := range nfFilterdByTypePayload {
-		// 	idsByNfType = append(idsByNfType, instance.NfInstanceId) // Add the Id
-		// }
-		// logger.AniLog.Infof("Filtered NF Instances by NfType(%d): %s", len(idsByNfType), idsByNfType)
-
-		// return the response
-		// return httpwrapper.NewResponse(http.StatusAccepted, nil, fmt.Sprintf("EventId: %s,  NfIds: %s", eventID, idsByNfType))
 
 	default:
-		logger.AniLog.Warn("Unknown type payload")
-		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "Unknown payload type")
+		problemDetails := models.ProblemDetails{
+			Title:  "Unknown payload type",
+			Status: http.StatusBadRequest,
+			Detail: fmt.Sprintf("The %s is not a valid payload", typePayload),
+		}
+		logger.AniLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	// Filter NF instances by IP
 	nfInstancesFilteredByIP := filterNfInstancesWithIpDuplicate(&nfFilterdByTypePayload)
-	// idsByIp := []string{}
-	// ips := []string{}
-	// for _, instance := range nfInstancesFilteredByIP {
-	// 	idsByIp = append(idsByIp, instance.NfInstanceId) // Add Id
-	// 	ips = append(ips, instance.Ipv4Addresses[0])     // Add Ip
-	// }
-	// logger.AniLog.Infof("Filtered NF Instances by IP(%d): %s, with IPs(%d): %s", len(idsByIp), idsByIp, len(ips), ips)
 
 	if len(nfInstancesFilteredByIP) <= 0 {
-		logger.AniLog.Warn("NFs not found")
-		return httpwrapper.NewResponse(http.StatusNotFound, nil, "NFs not found")
+		problemDetails := models.ProblemDetails{
+			Title:  "Error filtering NFs",
+			Status: http.StatusNotFound,
+			Detail: "NFs not found",
+		}
+		logger.AniLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	// Get analisys (Predict or statistics)
@@ -274,20 +265,20 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	}
 
 	// Convert time to seconds
-	targetPeriod := parseTimeToSeconds(&startTime, &endTime)
-
-	logger.AniLog.Infof("targetPeriod: %d", targetPeriod)
-	if targetPeriod <= 0 {
-		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be greater than StartTime")
+	targetPeriod := models.ParseTimeToSeconds(&startTime, &endTime)
+	// Check the TargetPeriod
+	if targetPeriod < 60 || targetPeriod <= 0 {
+		problemDetails := models.ProblemDetails{
+			Title:  "Error TargetPeriod value",
+			Status: http.StatusBadRequest,
+			Detail: "The difference between the start date and the end date must be greater than 60 seconds",
+		}
+		logger.AniLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	// Convert time to seconds
-	offSet := parseTimeToSeconds(&endTime, &currentTime)
-
-	logger.AniLog.Infof("offSet: %d", offSet)
-	if targetPeriod <= 0 {
-		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be smaller than CurrentTime")
-	}
+	offSet := models.ParseTimeToSeconds(&endTime, &currentTime)
 
 	namespace := factory.NwdafConfig.Configuration.Namespace
 	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
@@ -309,42 +300,49 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		}
 		err := consumer.SearchMlModelInfoInstance(&mtlfUri, *NrfUri, models.NfType_NWDAF, models.NfType_NWDAF, param)
 		if err != nil {
-			logger.AniLog.Error("MTLF URI not found: ", err)
-			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, err)
+			problemDetails := models.ProblemDetails{
+				Title:  "Error getting Ml Model Info",
+				Status: http.StatusInternalServerError,
+				Detail: fmt.Sprintf("MTLF URI not found: %s", err),
+			}
+			logger.AniLog.Errorf(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 		}
 
 		logger.AniLog.Info("MTLF URI: ", mtlfUri)
 
 		var mlModelInfoList []models.MlModelData
 
-		// mtlfUri = "http://127.0.0.1:4201"
-
 		// Send GetMlModelInfoList
 		err = consumer.SendGetMlModelInfoList(&mlModelInfoList, mtlfUri)
 		if err != nil {
-			logger.AniLog.Error("Error getting Ml Model Info: ", err)
 			problemDetails := models.ProblemDetails{
 				Title:  "Error getting Ml Model Info",
 				Status: http.StatusInternalServerError,
-				Detail: err.Error(),
+				Detail: fmt.Sprintf("Error getting Ml Model Info: %s", err.Error()),
 			}
-			return httpwrapper.NewResponse(http.StatusInternalServerError, nil, problemDetails)
+			logger.AniLog.Error(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 		}
 		if len(mlModelInfoList) <= 0 {
-			logger.AniLog.Warn("Ml Model not found")
-			return httpwrapper.NewResponse(http.StatusNotFound, nil, "Ml Model not found")
+			problemDetails := models.ProblemDetails{
+				Status: http.StatusNotFound,
+				Detail: "Ml Model not found",
+			}
+			logger.AniLog.Error(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 		}
 
-		// Filter ML Model Info
-		// logger.AniLog.Infof("ModelInfoList: %v", mlModelInfoList)
-		// logger.AniLog.Infof("filterMlModelInfo Params ->   eventID: %s, targetPeriod: %d", string(*eventID), targetPeriod)
 		mlModelInfoFiltered := filterMlModelInfo(&mlModelInfoList, eventID, targetPeriod)
 
 		if mlModelInfoFiltered == nil {
-			logger.AniLog.Info("No Found MlModels for predictions")
-			return httpwrapper.NewResponse(http.StatusNotFound, nil, "ML Model Info not found for predictions")
+			problemDetails := models.ProblemDetails{
+				Status: http.StatusNotFound,
+				Detail: "No Found MlModels for predictions",
+			}
+			logger.AniLog.Error(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 		}
-		// logger.AniLog.Infof("Filtered ML Model Info(%d): %v", len(mlModelInfoFiltered), mlModelInfoFiltered)
 
 		// For each profile: get ml model, and get analitics
 		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
@@ -363,7 +361,6 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			logger.AniLog.Infof("Found the MlModel %v for the NfType %s with nfInstanceId %s", selectedModels[0].URI, nfType, profile.NfInstanceId)
 
 			var podName string
-			// containerName := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 			containerName := profile.ContainerName
 
 			foundPod := models.FindPodByContainer(runningPods, containerName)
@@ -377,37 +374,138 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			// Get CPU and RAM  from Prometheus
 			var numSamples int64 = 4
-			newStartTime := SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
+			newStartTime := models.SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
 			logger.AniLog.Warnf("numSamples: %d, newStartTime: %s, currentTime: %s", numSamples, newStartTime, currentTime)
 
 			cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
+			memUsageAverageRange := consumer.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
+			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime)[0]
+			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime)[0]
 
-			for _, mt := range cpuUsageAverageRange {
-				// Convertir el timestamp a segundos
-				// seconds := int64(ts.Timestamp / 1000)
-				// Crear un objeto time.Time
-				// t := time.Unix(seconds, 0)
-				// Imprimir la fecha y hora en formato UTC
-				// logger.AniLog.Warn("Time: ", ts.Timestamp, " -> ", t.UTC())
-				logger.AniLog.Warn("Metric: ", mt)
+			logger.MlModelTrainingLog.Info("Saving data")
+			models.DivideValues(&cpuUsageAverageRange, cpuLimit.Value)
+			models.DivideValues(&memUsageAverageRange, memLimit.Value)
+
+			// Data paths
+			dataPath := util.NwdafDefaultDataPath
+			dataRawPath := util.NwdafDefaultDataRawPath
+			menUsageFile := util.NwdafDefaultMenUsageFile
+			cpuUsageFile := util.NwdafDefaultCpuUsageFile
+
+			// Save Cpu usaje in a JSON file
+			pathCpuUsage := dataRawPath + cpuUsageFile
+			errToCsvCpu := models.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
+			if errToCsvCpu != nil {
+				logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
+			} else {
+				logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
 			}
-			// logger.AniLog.Warn("cpuUsageAverageRange: ", cpuUsageAverageRange)
+
+			// Save Memory usage in a JSON file
+			pathMemUsage := dataRawPath + menUsageFile
+			errToCsvMem := models.SaveToJson(pathMemUsage, memUsageAverageRange)
+			if errToCsvMem != nil {
+				logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
+			} else {
+				logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
+			}
+
+			// Processing data
+			logger.MlModelTrainingLog.Info("Processing data")
+			cpuColumn := string(models.MetricType_CPU_USAGE_AVERAGE)
+			memColumn := string(models.MetricType_MEMORY_USAGE_AVERAGE)
+			pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
+			dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
+			dataProcessedPath := util.NwdafDefaultDataProcessedPath
+			dataLabeledPath := util.NwdafDefaultDataLabeledPath
+
+			// Build the datasetName
+			baseName := fmt.Sprintf("%s_%s_%ds", *eventID, nfType, targetPeriod)
+			datasetFile := fmt.Sprintf("dataset_%s", baseName)
+
+			// Run processing data script
+			cmd := exec.Command("python3", pathDataProcessingScript, dataPath,
+				dataRawPath, dataPreprocessedPath,
+				dataProcessedPath, dataLabeledPath,
+				cpuUsageFile, menUsageFile, datasetFile,
+				cpuColumn, memColumn)
+
+			// Get the output and error
+			outputProcess, errProcess := cmd.CombinedOutput()
+			if errProcess != nil {
+				problemDetails := &models.ProblemDetails{
+					Status: http.StatusInternalServerError,
+					Cause:  fmt.Sprintf("Error in processing data %s. %s", *eventID, string(outputProcess)),
+				}
+				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+			}
+			logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %v", dataLabeledPath+datasetFile)
 
 			// Analize the CPU and RAM
+
+			logger.MlModelTrainingLog.Infof("predicting %s", *eventID)
+			timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
+			selectedModel := selectedModels[0]
+			selectedModelUri := selectedModel.URI
+			modelPredictionScriptPath := util.NwdafDefaultModelPredictionScriptPath
+			modelsPath := util.NwdafDefaultModelsPath
+			predictionsFile := util.NwdafDefaultModelPredictionFile
+			// Run prediction script
+			cmdPredicting := exec.Command("python3", modelPredictionScriptPath,
+				modelsPath, dataPath, dataLabeledPath, datasetFile,
+				predictionsFile, cpuColumn, memColumn, selectedModelUri, strconv.FormatInt(timeSteps, 10))
+			// Get the output and error
+			outputPrediction, errTraining := cmdPredicting.CombinedOutput()
+			if errTraining != nil {
+				problemDetails := &models.ProblemDetails{
+					Status: http.StatusInternalServerError,
+					Cause:  fmt.Sprintf("Error in predicting %s. %s", *eventID, string(outputPrediction)),
+				}
+				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+
+			}
+			if strings.TrimSpace(string(outputPrediction)) != "" {
+				logger.MlModelTrainingLog.Warn(string(outputPrediction))
+			}
+			logger.MlModelTrainingLog.Infof("%s prediction completed and saved in %s", *eventID, dataPath+predictionsFile)
+
+			// Load the predictions
+			var nfLoadPred models.PredictionResult
+
+			errLoadPrediction := loadPredictionInfoFromJson(&nfLoadPred, dataPath+util.NwdafDefaultModelPredictionFile)
+			if errLoadPrediction != nil {
+				problemDetails := &models.ProblemDetails{
+					Status: http.StatusInternalServerError,
+					Cause:  "Error getting saved prediction information: " + errLoadPrediction.Error(),
+				}
+				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+			}
+
+			// Calculate de real values of cpu and memory average
+			realCpuAverage := cpuLimit.Value * nfLoadPred.CpuAverage
+			realMemAverage := memLimit.Value * nfLoadPred.MemAverage
+
+			nfLoadValues := models.ResourcesNfLoad{
+				CpuLoad: nfLoadPred.CpuAverage,
+				MemLoad: nfLoadPred.MemAverage,
+			}
 
 			NfLoad = models.NwdafAnalyticsInfoNfLoad{
 				NfInstanceId: profile.NfInstanceId,
 				Accuracy:     selectedModels[0].Accuracy,
 				NfType:       profile.NfType,
-				Pod:          "",
-				Container:    "",
-				CpuUsage:     defaultValues.CpuUsage,
-				MemUsage:     defaultValues.MemUsage,
-				CpuLimit:     defaultValues.CpuLimit,
-				MemLimit:     defaultValues.MemLimit,
-				NfLoad:       defaultValues.NfLoad,
+				Pod:          podName,
+				Container:    containerName,
+				CpuUsage:     realCpuAverage,
+				MemUsage:     realMemAverage,
+				CpuLimit:     cpuLimit.Value,
+				MemLimit:     memLimit.Value,
+				NfLoad:       nfLoadValues,
 				NfStatus:     profile.NfStatus,
-				Confidence:   selectedModels[0].Confidence.R2,
+				Confidence:   selectedModels[0].Confidence,
 			}
 
 			NfLoadsAnalitics = append(NfLoadsAnalitics, NfLoad)
@@ -416,7 +514,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
-			TargetPeriod:     targetPeriod,
+			TargetPeriod:    targetPeriod,
 			OffSet:          offSet,
 			AnaliticsNfLoad: NfLoadsAnalitics,
 		}
@@ -424,19 +522,13 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		// Return results
 		return httpwrapper.NewResponse(http.StatusOK, nil, responseNfLoad)
 
-
-
-
 	// Statistics metrics
 	case startTime.Before(currentTime) && endTime.Before(currentTime):
 		logger.AniLog.Info("Statistics metrics: EndTime is less than now")
 		analysisType = models.AnalysisType_STATISTICS
 
 		// Running Pods
-		// logger.AniLog.Warn("Start time: ", startTime)
 		runningPods := consumer.GetRunningPods(instancek8s, namespace, "", endTime)
-		// logger.UtilLog.Warn("Running pods: ", runningPods)
-
 
 		// For each profile: get data from Prometheus
 		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
@@ -455,20 +547,15 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				continue
 			}
 
-			logger.AniLog.Warn("End time: ", endTime)
 			// logger.AniLog.Infof("NAMESPACE: %s,POD: %s, CONTAINER: %s", namespace, podName, containerName)
 			cpuUsageAverage := consumer.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
 			memUsageAverage := consumer.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
 			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, endTime)[0]
 			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime)[0]
 
-			// logger.AniLog.Infof("Cpu Usage: %f, MenUsage: %f, CpuLimit: %f, MemLimit: %f", cpuUsageAverage.Value, memUsageAverage.Value, cpuLimit.Value, memLimit.Value)
-
-			logger.AniLog.Warn("Timestamp: ", cpuUsageAverage)
-
 			var nfLoad = models.ResourcesNfLoad{
-				CpuLoad: getPercentil(cpuUsageAverage.Value, cpuLimit.Value),
-				MemLoad: getPercentil(memUsageAverage.Value, memLimit.Value),
+				CpuLoad: models.GetPercentil(cpuUsageAverage.Value, cpuLimit.Value),
+				MemLoad: models.GetPercentil(memUsageAverage.Value, memLimit.Value),
 			}
 
 			NfLoad = models.NwdafAnalyticsInfoNfLoad{
@@ -490,7 +577,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		responseNfLoad = models.NwdafAnalyticsInfoNfLoadResponse{
 			EventId:         *eventID,
 			AnalysisType:    analysisType,
-			TargetPeriod:     targetPeriod,
+			TargetPeriod:    targetPeriod,
 			OffSet:          offSet,
 			AnaliticsNfLoad: NfLoadsAnalitics,
 		}
@@ -500,14 +587,36 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 	default:
 		logger.AniLog.Error("Invalid time range")
-		return httpwrapper.NewResponse(http.StatusBadRequest, nil, "EndTime must be greater than StartTime")
+		problemDetails := &models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Cause:  "EndTime must be greater than StartTime",
+		}
+		return httpwrapper.NewResponse(http.StatusBadRequest, nil, problemDetails)
 	}
 }
 
-func getPercentil(value float64, limit float64) float64 {
-	load := value / limit
-	if math.IsNaN(value) || limit == 0 {
-		load = 0
+
+func loadPredictionInfoFromJson(nfLoadPred *models.PredictionResult, filePath string) (err error) {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("could not read the saved prediction Info")
 	}
-	return load
+
+	// Verify if the file is empty
+	if len(data) == 0 {
+		return fmt.Errorf("the prediction info is empty")
+	}
+
+	// Try parse the JSON file
+	err = json.Unmarshal(data, &nfLoadPred)
+	if err != nil {
+		return fmt.Errorf("failed to parse the prediction info")
+	}
+
+	// Verificar si el contenido tiene datos válidos
+	if math.IsNaN(nfLoadPred.CpuAverage) || math.IsNaN(nfLoadPred.MemAverage) {
+		return fmt.Errorf("prediction info is missing required fields")
+	}
+
+	return nil
 }
