@@ -10,19 +10,12 @@ configuration:
 
   sbi: # Service-based interface information
     scheme: http # the protocol for sbi (http or https)
-    #   registerIPv4: 127.0.0.1 # IP used to register to NRF
-    #   bindingIPv4: 0.0.0.0 # IP used to bind the service
-    #   port: 4201 # port used to bind the service
-    #
-    # nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
-    # oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
+    registerIPv4: 127.0.0.1 # IP used to register to NRF
+    bindingIPv4: 127.0.0.1 # IP used to bind the service
+    port: 4202 # port used to bind the service
 
-    registerIPv4: mtlf-nmtlf # IP used to register to NRF
-    bindingIPv4: 0.0.0.0 # IP used to bind the service
-    port: 8000 # port used to bind the service
-
-  nrfUri: http://nrf-nnrf:8000 # a valid URI of NRF
-  oamUri: http://prometheus-service.monitoring:8080 # a valid URI of PCM (Packet Capture Module)
+  nrfUri: http://127.0.0.1:30050 # a valid URI of NRF
+  oamUri: http://127.0.0.1:30090 # a valid URI of PCM (Packet Capture Module)
   ksmInstance: "kube-state-metrics.kube-system.svc.cluster.local:8080" # a valid kube-state-metrics instance
   namespace: "free5gc" # namespace of 5GC
 

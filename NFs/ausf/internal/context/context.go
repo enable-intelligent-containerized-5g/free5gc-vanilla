@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/free5gc/ausf/internal/logger"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	"github.com/free5gc/ausf/internal/logger"
 )
 
 type AUSFContext struct {

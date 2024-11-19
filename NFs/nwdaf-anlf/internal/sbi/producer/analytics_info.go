@@ -376,9 +376,9 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			}
 
 			// Get CPU and RAM  from Prometheus
-			var numSamples int64 = 3
-			newStartTime := SubtractSeconds(currentTime, targetPeriod*(numSamples-1))
-			logger.AniLog.Warnf("numSamples: %d, currentTime: %s, newStartTime: %s", numSamples, currentTime, newStartTime)
+			var numSamples int64 = 4
+			newStartTime := SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
+			logger.AniLog.Warnf("numSamples: %d, newStartTime: %s, currentTime: %s", numSamples, newStartTime, currentTime)
 
 			cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
 
@@ -424,13 +424,19 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		// Return results
 		return httpwrapper.NewResponse(http.StatusOK, nil, responseNfLoad)
 
+
+
+
 	// Statistics metrics
 	case startTime.Before(currentTime) && endTime.Before(currentTime):
 		logger.AniLog.Info("Statistics metrics: EndTime is less than now")
 		analysisType = models.AnalysisType_STATISTICS
 
 		// Running Pods
-		runningPods := consumer.GetRunningPods(instancek8s, namespace, "", startTime)
+		// logger.AniLog.Warn("Start time: ", startTime)
+		runningPods := consumer.GetRunningPods(instancek8s, namespace, "", endTime)
+		// logger.UtilLog.Warn("Running pods: ", runningPods)
+
 
 		// For each profile: get data from Prometheus
 		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
@@ -449,6 +455,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				continue
 			}
 
+			logger.AniLog.Warn("End time: ", endTime)
 			// logger.AniLog.Infof("NAMESPACE: %s,POD: %s, CONTAINER: %s", namespace, podName, containerName)
 			cpuUsageAverage := consumer.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
 			memUsageAverage := consumer.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
@@ -456,6 +463,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime)[0]
 
 			// logger.AniLog.Infof("Cpu Usage: %f, MenUsage: %f, CpuLimit: %f, MemLimit: %f", cpuUsageAverage.Value, memUsageAverage.Value, cpuLimit.Value, memLimit.Value)
+
+			logger.AniLog.Warn("Timestamp: ", cpuUsageAverage)
 
 			var nfLoad = models.ResourcesNfLoad{
 				CpuLoad: getPercentil(cpuUsageAverage.Value, cpuLimit.Value),
