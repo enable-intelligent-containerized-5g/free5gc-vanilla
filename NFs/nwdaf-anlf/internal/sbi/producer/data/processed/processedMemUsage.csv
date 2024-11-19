@@ -1,0 +1,5 @@
+namespace,pod,container,timestamp,mem-average
+free5gc,free5gc-amf-8745675cb-g6fc7,amf,1732007817633,0.056703125
+free5gc,free5gc-amf-8745675cb-g6fc7,amf,1732007877633,0.05665625
+free5gc,free5gc-amf-8745675cb-g6fc7,amf,1732007937633,0.0565885416666666
+free5gc,free5gc-amf-8745675cb-g6fc7,amf,1732007997633,0.056609375

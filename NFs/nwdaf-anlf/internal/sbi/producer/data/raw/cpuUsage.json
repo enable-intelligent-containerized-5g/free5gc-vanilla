@@ -1,0 +1,42 @@
+[
+    {
+        "timestamp": 1732007817633,
+        "value": 0.00021448715032991602,
+        "metric": "cpu-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-amf-8745675cb-g6fc7",
+        "container": "amf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1732007877633,
+        "value": 0.0003170382894475168,
+        "metric": "cpu-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-amf-8745675cb-g6fc7",
+        "container": "amf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1732007937633,
+        "value": 0.0001771549279656048,
+        "metric": "cpu-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-amf-8745675cb-g6fc7",
+        "container": "amf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1732007997633,
+        "value": 0.00037633998434999486,
+        "metric": "cpu-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-amf-8745675cb-g6fc7",
+        "container": "amf",
+        "phase": "",
+        "uid": ""
+    }
+]

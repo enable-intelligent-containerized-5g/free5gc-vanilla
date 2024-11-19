@@ -64,15 +64,16 @@ const (
 type Configuration struct {
 	ContainerName string `yaml:"containerName,omitempty"`
 	// SqlLiteTableName string   `yaml:"SqlLiteTableName" valid:"type(string),required"`
-	SqlLiteDB       string   `yaml:"sqlLiteDB" valid:"type(string),required"`
-	Name            string   `yaml:"name,omitempty"`
-	NwdafName       string   `yaml:"nwdafName,omitempty"`
-	Sbi             *Sbi     `yaml:"sbi" valid:"required"`
-	NrfUri          string   `yaml:"nrfUri" valid:"url,required"`
-	OamUri          string   `yaml:"oamUri" valid:"url,required"`
-	KsmInstance     string   `yaml:"ksmInstance" valid:"required"`
-	Namespace       string   `yaml:"namespace" valid:"required"`
-	ServiceNameList []string `yaml:"serviceNameList" valid:"required"`
+	SqlLiteDB           string               `yaml:"sqlLiteDB" valid:"type(string),required"`
+	Name                string               `yaml:"name,omitempty"`
+	NwdafName           string               `yaml:"nwdafName,omitempty"`
+	Sbi                 *Sbi                 `yaml:"sbi" valid:"required"`
+	NrfUri              string               `yaml:"nrfUri" valid:"url,required"`
+	OamUri              string               `yaml:"oamUri" valid:"url,required"`
+	KsmInstance         string               `yaml:"ksmInstance" valid:"required"`
+	Namespace           string               `yaml:"namespace" valid:"required"`
+	ServiceNameList     []string             `yaml:"serviceNameList" valid:"required"`
+	MlModelTrainingInfo *MlModelTrainingInfo `yaml:"mlModelTrainingInfo" valid:"required"`
 }
 
 func (c *Configuration) validate() (bool, error) {
@@ -95,6 +96,10 @@ type Sbi struct {
 type Tls struct {
 	Pem string `yaml:"pem,omitempty" valid:"type(string),minstringlength(1),required"`
 	Key string `yaml:"key,omitempty" valid:"type(string),minstringlength(1),required"`
+}
+
+type MlModelTrainingInfo struct {
+	TimeSteps int64 `yaml:"timeSteps,omitempty" valid:"type(int64),required"`
 }
 
 func appendInvalid(err error) error {

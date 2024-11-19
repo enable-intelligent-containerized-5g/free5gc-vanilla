@@ -1,12 +1,12 @@
 {
-    "name": "model_RFR_NF_LOAD_AMF_60s_1731974400_1731974391",
-    "uri": "models/model_RFR_NF_LOAD_AMF_60s_1731974400_1731974391.pkl",
-    "size": 3312880,
-    "figureUri": "models/figures/model_RFR_NF_LOAD_AMF_60s_1731974400_1731974391.png",
-    "mse": 0.004002864847278462,
-    "r2": 0.517597883649909,
-    "mseCpu": 0.005563821775579939,
-    "r2Cpu": 0.5099471519618985,
-    "mseMem": 0.002441907918976984,
-    "r2Mem": 0.525248615337919
+    "name": "model_RFR_NF_LOAD_AMF_60s_1731974400_1732006355",
+    "uri": "models/model_RFR_NF_LOAD_AMF_60s_1731974400_1732006355.pkl",
+    "size": 5505856,
+    "figureUri": "models/figures/model_RFR_NF_LOAD_AMF_60s_1731974400_1732006355.png",
+    "mse": 0.00025808215988492136,
+    "r2": 0.9359189746891255,
+    "mseCpu": 0.00034739210943858837,
+    "r2Cpu": 0.9292479568271605,
+    "mseMem": 0.0001687722103312541,
+    "r2Mem": 0.9425899925510905
 }

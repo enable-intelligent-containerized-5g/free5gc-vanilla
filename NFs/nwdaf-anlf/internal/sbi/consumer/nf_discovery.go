@@ -71,7 +71,7 @@ func SearchMlModelInfoInstance(mtlfUri *string, nrfUri string, targetNfType, req
 	TargetMtlfUri = *mtlfUri
 	if TargetMtlfUri == "" {
 		logger.ConsumerLog.Error("MTLF URI not found", TargetMtlfUri)
-		return errors.New("NF can not select an target AnLF by NRF")
+		return errors.New("NF can not select an target MTLF by NRF")
 	}
 
 	return nil
