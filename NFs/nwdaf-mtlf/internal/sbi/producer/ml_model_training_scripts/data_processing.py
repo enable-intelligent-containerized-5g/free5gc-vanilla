@@ -106,8 +106,8 @@ def validateCsv(file_csv, fieldnames):
 
 def main():
     # Verify the params
-    if len(sys.argv) < 11:
-        sys.exit(1)
+    if len(sys.argv) < 12:
+        sys.exit("Missing params")
 
     # Getting params
     loc_script = sys.argv[0]
@@ -119,8 +119,9 @@ def main():
     cpu_file = sys.argv[6]
     mem_file = sys.argv[7]
     dataset_file = sys.argv[8]
-    cpu_column = sys.argv[9]
-    mem_column = sys.argv[10]
+    selected_dataset_file = sys.argv[9]
+    cpu_column = sys.argv[10]
+    mem_column = sys.argv[11]
     
     # Validate folders
     isFolder([data_path, data_raw_path, data_preprocessed_path, data_processed_path, data_labeled_path])
@@ -134,6 +135,7 @@ def main():
     output_cpu_csv = data_processed_path + "processedCpuUsage.csv"
     output_mem_csv = data_processed_path + "processedMemUsage.csv"
     output_data_csv = data_labeled_path + dataset_file
+    selected_dataset_path = data_labeled_path + selected_dataset_file
     
     # Validate Files
     isFile([cpu_file_path, mem_file_path])
@@ -164,7 +166,8 @@ def main():
     fieldnames_common = ['namespace', 'pod', 'container', 'timestamp']
 
     # Validate csv
-    df_base = validateCsv(output_data_csv, fieldnames_base)
+    df_output = validateCsv(output_data_csv, fieldnames_base)
+    df_base = validateCsv(selected_dataset_path, fieldnames_base)
     df_cpu = validateCsv(output_cpu_csv, fieldnames_cpu)
     df_mem = validateCsv(output_mem_csv, fieldnames_mem)
         
@@ -185,7 +188,8 @@ def main():
     # Delete rows with NaN columns
     df_clean = df_sorted.dropna()
     # Save dataset
-    df_clean.to_csv(output_data_csv, index=False)
+    df_output = df_clean
+    df_output.to_csv(output_data_csv, index=False)
         
     # combine_csv_files(output_cpu_csv, output_mem_csv, intermediate_data_csv, cpu_column, mem_column)
     # clean_csv(intermediate_data_csv, output_data_csv)

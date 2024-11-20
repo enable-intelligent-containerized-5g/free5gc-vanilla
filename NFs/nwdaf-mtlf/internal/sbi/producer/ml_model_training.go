@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
+	packetcapturemodule "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 
@@ -23,6 +24,11 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type PairNum struct {
+	Start int64
+	End   int64
+}
 
 func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *httpwrapper.Response) {
 	logger.MlModelTrainingLog.Info("Handle MlModelTrainingNfLoadMetricRequest")
@@ -54,6 +60,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	currentTime := time.Now()
 	namespace := factory.NwdafConfig.Configuration.Namespace
 	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
+	pcmUri := factory.NwdafConfig.Configuration.OamUri
 
 	eventID := mlTrainingReq.EventId
 	targetPeriod := mlTrainingReq.TargetPeriod
@@ -87,8 +94,15 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	}
 
 	// Running Pods
-	runningPods := consumer.GetRunningPods(instancek8s, namespace, "", currentTime)
-	// logger.MlModelTrainingLog.Warn(runningPods)
+	runningPods, errPods := packetcapturemodule.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
+	if errPods != nil {
+		problemDetails := models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Detail: fmt.Sprintf("Error getting running pods from Packet Capture module: %s", errPods.Error()),
+		}
+		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
+		return models.MlModelTrainingResponse{}, false, &problemDetails
+	}
 
 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
 		// ServiceNames: optional.Interface{},
@@ -135,14 +149,25 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	}
 
 	// Get CPU and RAM  from Ml Model Training
-	cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime)
-	memUsageAverageRange := consumer.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime)
-	cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime)[0]
-	memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime)[0]
+	cpuUsageAverageRange, errCpu := packetcapturemodule.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	memUsageAverageRange, errMem := packetcapturemodule.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime, pcmUri)
+	memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime, pcmUri)
+	cpuLimitValue := cpuLimit[0]
+	memLimitValue := memLimit[0]
+
+	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil {
+		problemDetails := models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Detail: fmt.Sprintf("Error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
+		}
+		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
+		return models.MlModelTrainingResponse{}, false, &problemDetails
+	}
 
 	logger.MlModelTrainingLog.Info("Saving data")
-	models.DivideValues(&cpuUsageAverageRange, cpuLimit.Value)
-	models.DivideValues(&memUsageAverageRange, memLimit.Value)
+	models.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
+	models.DivideValues(&memUsageAverageRange, memLimitValue.Value)
 
 	// // Data paths
 	dataPath := util.NwdafDefaultDataPath
@@ -179,21 +204,24 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Build the datasetName
 	baseName := fmt.Sprintf("%s_%s_%ds", eventID, nfType, targetPeriod)
-	nameID := fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
+	nameId := fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
 	baseNameDataset := fmt.Sprintf("dataset_%s", baseName)
-	datasetFile := fmt.Sprintf("%s_%s.csv", baseNameDataset, nameID)
+	datasetFile := fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
 	// datasetFile = "dataset_NF_LOAD_AMF_60s_1731787200_1731825367.csv"
 
 	// Select a suitable dataset
 	selectedDatasetFile := datasetFile
 	if !newDataset {
-		nameID, errSelectDataset := selecDataset(dataLabeledPath, startTimeSeconds, baseNameDataset)
+		idSeconds, errSelectDataset := selecDataset(dataLabeledPath, startTimeSeconds, baseNameDataset)
 		if errSelectDataset != nil {
 			logger.MlModelTrainingLog.Warnf("No suitable dataset found for '%s'\n", datasetFile)
 		} else {
-			selectedDatasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, nameID)
-			datasetFile = selectedDatasetFile
-			logger.MlModelTrainingLog.Warnf("Selected Dataset for %s: %s", datasetFile, selectedDatasetFile)
+			// Define the selected dataset
+			selectedDatasetFile = fmt.Sprintf("%s_%d_%d.csv", baseNameDataset, idSeconds.Start, idSeconds.End)
+			logger.MlModelTrainingLog.Warnf("Selected Dataset for (%s): %s", datasetFile, selectedDatasetFile)
+			// Set de dataset name for the data
+			nameId = fmt.Sprintf("%d_%d.csv", idSeconds.Start, currentTimeSeconds)
+			datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
 		}
 	}
 
@@ -201,7 +229,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	cmd := exec.Command("python3", pathDataProcessingScript, dataPath,
 		dataRawPath, dataPreprocessedPath,
 		dataProcessedPath, dataLabeledPath,
-		cpuUsageFile, menUsageFile, datasetFile,
+		cpuUsageFile, menUsageFile, datasetFile, selectedDatasetFile,
 		cpuColumn, memColumn)
 
 	// Get the output and error
@@ -219,7 +247,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	// Training Model
 	logger.MlModelTrainingLog.Info("Training Ml Model")
 	timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
-	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameID)
+	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameId)
 	// fullBaseName = "NF_LOAD_AMF_60s_1731787200_1731825367"
 	modelTrainingScriptPath := util.NwdafDefaultModelTrainingScriptPath
 	modelsPath := util.NwdafDefaultModelsPath
@@ -322,11 +350,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	return modelInfoResponse, true, nil
 }
 
-func selecDataset(dirPath string, start int64, baseName string) (newID string, err error) {
-	type PairNum struct {
-		Start int64
-		End   int64
-	}
+func selecDataset(dirPath string, start int64, baseName string) (newID PairNum, err error) {
 	filesCsv, errLoadFiles := models.LoadCsvFiles(dirPath)
 	var listNum []PairNum
 
@@ -356,34 +380,36 @@ func selecDataset(dirPath string, start int64, baseName string) (newID string, e
 		}
 
 		if len(listNum) > 0 {
-			var minNum = PairNum{
-				Start: math.MaxInt64,
-				// End: math.MaxInt64,
+			var minNum = PairNum{Start: math.MaxInt64, End: math.MaxInt64}
+			var maxNum = PairNum{Start: math.MinInt64, End: math.MinInt64}
+			var selectedDatasets []PairNum
+			var filteredByMin []PairNum
+
+			// Filter  datasets
+			for _, num := range listNum {
+				if num.Start < start && start < num.End {
+					selectedDatasets = append(selectedDatasets, num)
+				}
 			}
-			var maxNum = PairNum{
-				Start: math.MinInt64,
-				End:   math.MinInt64,
-			}
-			var listSelectedNum []PairNum
+			// logger.MlModelTrainingLog.Warn("filtered datasets: ", selectedDatasets)
 
 			// Select de min StartTime
-			for _, num := range listNum {
+			for _, num := range selectedDatasets {
 				if num.Start < minNum.Start {
 					minNum = num
 				}
 			}
 
 			// Filter by min StartTime
-			for _, num := range listNum {
+			for _, num := range selectedDatasets {
 				if num.Start == minNum.Start {
-					listSelectedNum = append(listSelectedNum, num)
+					filteredByMin = append(filteredByMin, num)
 				}
 			}
-			// logger.MlModelTrainingLog.Warn("filter mi: ", listSelectedNum)
 
 			// Select the max EndTime
-			if len(listSelectedNum) > 0 {
-				for _, num := range listSelectedNum {
+			if len(filteredByMin) > 0 {
+				for _, num := range filteredByMin {
 					if num.End > maxNum.End {
 						maxNum = num
 					}
@@ -392,14 +418,14 @@ func selecDataset(dirPath string, start int64, baseName string) (newID string, e
 			// logger.MlModelTrainingLog.Warn("filter max: ", maxNum)
 
 			// Select the newID
-			if maxNum.Start < start {
-				return fmt.Sprintf("%d_%d", maxNum.Start, maxNum.End), nil
+			if maxNum.Start < start && start < maxNum.End {
+				return maxNum, nil
 			}
 		}
 
 	}
 
-	return newID, fmt.Errorf(" No foun a dataset for: %s", baseName)
+	return PairNum{}, fmt.Errorf("no found a dataset for: %s", baseName)
 }
 
 func loadMlmodelInfoFromJson(modelInfo *models.MlModelTrainingModelInfo, filePath string) (err error) {

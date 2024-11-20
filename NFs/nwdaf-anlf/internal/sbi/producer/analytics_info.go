@@ -13,6 +13,7 @@ import (
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/util"
@@ -249,7 +250,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	endTime := request.EndTime.UTC()
 	currentTime := time.Now()
 
-	logger.AniLog.Infof("StartTime: %s, EndTime: %s, CurrentTime: %s", startTime, endTime, currentTime)
+	// logger.AniLog.Infof("StartTime: %s, EndTime: %s, CurrentTime: %s", startTime, endTime, currentTime)
 
 	var DefaultNfLoad = models.ResourcesNfLoad{
 		CpuLoad: 0,
@@ -280,6 +281,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	// Convert time to seconds
 	offSet := models.ParseTimeToSeconds(&endTime, &currentTime)
 
+	pcmUri := factory.NwdafConfig.Configuration.OamUri
 	namespace := factory.NwdafConfig.Configuration.Namespace
 	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
 
@@ -290,7 +292,15 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		analysisType = models.AnalysisType_PREDICTIONS
 
 		// Running Pods
-		runningPods := consumer.GetRunningPods(instancek8s, namespace, "", currentTime)
+		runningPods, errPods := packetcapturemodule.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
+		if errPods != nil {
+			problemDetails := models.ProblemDetails{
+				Status: http.StatusInternalServerError,
+				Detail: fmt.Sprintf("Error getting running pods from Packet Capture module: %s", errPods.Error()),
+			}
+			logger.AniLog.Errorf(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		}
 
 		var mtlfUri string
 
@@ -377,14 +387,25 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			newStartTime := models.SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
 			logger.AniLog.Warnf("numSamples: %d, newStartTime: %s, currentTime: %s", numSamples, newStartTime, currentTime)
 
-			cpuUsageAverageRange := consumer.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
-			memUsageAverageRange := consumer.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime)
-			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime)[0]
-			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime)[0]
+			cpuUsageAverageRange, errCpu := packetcapturemodule.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime, pcmUri)
+			memUsageAverageRange, errMem := packetcapturemodule.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime, pcmUri)
+			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime, pcmUri)
+			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime, pcmUri)
+			cpuLimitValue := cpuLimit[0]
+			memLimitValue := memLimit[0]
 
-			logger.MlModelTrainingLog.Info("Saving data")
-			models.DivideValues(&cpuUsageAverageRange, cpuLimit.Value)
-			models.DivideValues(&memUsageAverageRange, memLimit.Value)
+			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil  {
+				problemDetails := models.ProblemDetails{
+					Status: http.StatusInternalServerError,
+					Detail: fmt.Sprintf("Error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
+				}
+				logger.AniLog.Errorf(problemDetails.Detail)
+				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+			}
+
+			logger.AniLog.Info("Saving data")
+			models.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
+			models.DivideValues(&memUsageAverageRange, memLimitValue.Value)
 
 			// Data paths
 			dataPath := util.NwdafDefaultDataPath
@@ -396,22 +417,22 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			pathCpuUsage := dataRawPath + cpuUsageFile
 			errToCsvCpu := models.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
 			if errToCsvCpu != nil {
-				logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
+				logger.AniLog.Error("Error: ", errToCsvCpu)
 			} else {
-				logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
+				logger.AniLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
 			}
 
 			// Save Memory usage in a JSON file
 			pathMemUsage := dataRawPath + menUsageFile
 			errToCsvMem := models.SaveToJson(pathMemUsage, memUsageAverageRange)
 			if errToCsvMem != nil {
-				logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
+				logger.AniLog.Error("Error: ", errToCsvMem)
 			} else {
-				logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
+				logger.AniLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
 			}
 
 			// Processing data
-			logger.MlModelTrainingLog.Info("Processing data")
+			logger.AniLog.Info("Processing data")
 			cpuColumn := string(models.MetricType_CPU_USAGE_AVERAGE)
 			memColumn := string(models.MetricType_MEMORY_USAGE_AVERAGE)
 			pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
@@ -437,14 +458,14 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 					Status: http.StatusInternalServerError,
 					Cause:  fmt.Sprintf("Error in processing data %s. %s", *eventID, string(outputProcess)),
 				}
-				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Cause)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 			}
-			logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %v", dataLabeledPath+datasetFile)
+			logger.AniLog.Infof("Data processing completed and saved in: %v", dataLabeledPath+datasetFile)
 
 			// Analize the CPU and RAM
 
-			logger.MlModelTrainingLog.Infof("predicting %s", *eventID)
+			logger.AniLog.Infof("predicting %s", *eventID)
 			timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
 			selectedModel := selectedModels[0]
 			selectedModelUri := selectedModel.URI
@@ -462,14 +483,14 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 					Status: http.StatusInternalServerError,
 					Cause:  fmt.Sprintf("Error in predicting %s. %s", *eventID, string(outputPrediction)),
 				}
-				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Cause)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 
 			}
 			if strings.TrimSpace(string(outputPrediction)) != "" {
-				logger.MlModelTrainingLog.Warn(string(outputPrediction))
+				logger.AniLog.Warn(string(outputPrediction))
 			}
-			logger.MlModelTrainingLog.Infof("%s prediction completed and saved in %s", *eventID, dataPath+predictionsFile)
+			logger.AniLog.Infof("%s prediction completed and saved in %s", *eventID, dataPath+predictionsFile)
 
 			// Load the predictions
 			var nfLoadPred models.PredictionResult
@@ -480,13 +501,13 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 					Status: http.StatusInternalServerError,
 					Cause:  "Error getting saved prediction information: " + errLoadPrediction.Error(),
 				}
-				logger.MlModelTrainingLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Cause)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 			}
 
 			// Calculate de real values of cpu and memory average
-			realCpuAverage := cpuLimit.Value * nfLoadPred.CpuAverage
-			realMemAverage := memLimit.Value * nfLoadPred.MemAverage
+			realCpuAverage := cpuLimitValue.Value * nfLoadPred.CpuAverage
+			realMemAverage := memLimitValue.Value * nfLoadPred.MemAverage
 
 			nfLoadValues := models.ResourcesNfLoad{
 				CpuLoad: nfLoadPred.CpuAverage,
@@ -501,8 +522,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				Container:    containerName,
 				CpuUsage:     realCpuAverage,
 				MemUsage:     realMemAverage,
-				CpuLimit:     cpuLimit.Value,
-				MemLimit:     memLimit.Value,
+				CpuLimit:     cpuLimitValue.Value,
+				MemLimit:     memLimitValue.Value,
 				NfLoad:       nfLoadValues,
 				NfStatus:     profile.NfStatus,
 				Confidence:   selectedModels[0].Confidence,
@@ -528,7 +549,15 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		analysisType = models.AnalysisType_STATISTICS
 
 		// Running Pods
-		runningPods := consumer.GetRunningPods(instancek8s, namespace, "", endTime)
+		runningPods, errPods := packetcapturemodule.GetRunningPods(instancek8s, namespace, "", endTime, pcmUri)
+		if errPods != nil {
+			problemDetails := models.ProblemDetails{
+				Status: http.StatusBadRequest,
+				Detail: "Error getting running pods from Packet Capture module",
+			}
+			logger.AniLog.Errorf(problemDetails.Detail)
+			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+		}
 
 		// For each profile: get data from Prometheus
 		NfLoadsAnalitics := []models.NwdafAnalyticsInfoNfLoad{}
@@ -547,15 +576,27 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				continue
 			}
 
-			// logger.AniLog.Infof("NAMESPACE: %s,POD: %s, CONTAINER: %s", namespace, podName, containerName)
-			cpuUsageAverage := consumer.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
-			memUsageAverage := consumer.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime)[0]
-			cpuLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, endTime)[0]
-			memLimit := consumer.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime)[0]
+			cpuUsageAverage, errCpu := packetcapturemodule.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime, pcmUri)
+			memUsageAverage, errMem := packetcapturemodule.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime, pcmUri)
+			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, endTime, pcmUri)
+			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime, pcmUri)
+			cpuAverageValue := cpuUsageAverage[0]
+			memAverageValue := memUsageAverage[0]
+			cpuLimitValue := cpuLimit[0]
+			memLimitValue := memLimit[0]
+
+			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil  {
+				problemDetails := models.ProblemDetails{
+					Status: http.StatusInternalServerError,
+					Detail: fmt.Sprintf("Error getting dsta from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
+				}
+				logger.AniLog.Errorf(problemDetails.Detail)
+				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
+			}
 
 			var nfLoad = models.ResourcesNfLoad{
-				CpuLoad: models.GetPercentil(cpuUsageAverage.Value, cpuLimit.Value),
-				MemLoad: models.GetPercentil(memUsageAverage.Value, memLimit.Value),
+				CpuLoad: models.GetPercentil(cpuAverageValue.Value, cpuLimitValue.Value),
+				MemLoad: models.GetPercentil(memAverageValue.Value, memLimitValue.Value),
 			}
 
 			NfLoad = models.NwdafAnalyticsInfoNfLoad{
@@ -563,10 +604,10 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 				Pod:          podName,
 				Container:    containerName,
 				NfType:       profile.NfType,
-				CpuUsage:     cpuUsageAverage.Value,
-				MemUsage:     memUsageAverage.Value,
-				CpuLimit:     cpuLimit.Value,
-				MemLimit:     memLimit.Value,
+				CpuUsage:     cpuAverageValue.Value,
+				MemUsage:     memAverageValue.Value,
+				CpuLimit:     cpuLimitValue.Value,
+				MemLimit:     memLimitValue.Value,
 				NfLoad:       nfLoad,
 				NfStatus:     profile.NfStatus,
 			}

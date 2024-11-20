@@ -122,7 +122,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     # Save the plot
     fig_format = "png"
     
-    fig_name = f"model_{name}_{base_name}"
+    fig_name = f"figure_{name}_{base_name}"
     fig_uri = f"{figures_path}{fig_name}.{fig_format}"
     plt.savefig(fig_uri, format=fig_format, bbox_inches='tight')
     
@@ -135,7 +135,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     model_format = 'pkl'
     model_info_path = f"{data_path}{model_info_file}"
     
-    model_name = fig_name
+    model_name = f"model_{name}_{base_name}"
     model_uri = f"{models_path}{model_name}.{model_format}"
     joblib.dump(rf_model, model_uri)
     model_size = os.path.getsize(model_uri)
@@ -195,7 +195,7 @@ def isFolder(folder_paths):
 def main():
     # Verify the params
     if len(sys.argv) < 12:
-        sys.exit(1)
+        sys.exit("Missing params to Ml Model Training")
 
     # Get the params
     loc_script = sys.argv[0]
