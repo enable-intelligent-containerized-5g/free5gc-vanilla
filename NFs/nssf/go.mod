@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
-	github.com/enable-intelligent-containerized-5g/openapi v1.0.4
+	github.com/enable-intelligent-containerized-5g/openapi v1.0.41
 	github.com/evanphx/json-patch v0.5.2
 	github.com/free5gc/util v1.0.3
 	github.com/gin-gonic/gin v1.7.3
@@ -14,4 +14,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
+// replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
