@@ -121,20 +121,6 @@ def plot_results(y_test_invertido, y_pred_invertido, name, large_name, model, mo
 
         with open(info_models_path, 'w') as json_file:
             json.dump(models_info, json_file, indent=4)
-    
-    # Plot the results for CPU and Memory
-    # plt.figure(figsize=(12, 6))
-    # plt.scatter(y_test_invertido[:, 0], y_pred_invertido[:, 0], color='blue', label='Prediction vs Real CPU')  # Para CPU
-    # plt.scatter(y_test_invertido[:, 1], y_pred_invertido[:, 1], color='green', label='Prediction vs Real Memory')  # Para Memoria
-    # plt.plot([min(y_test_invertido[:, 0]), max(y_test_invertido[:, 0])], [min(y_test_invertido[:, 0]), max(y_test_invertido[:, 0])], color='red', linestyle='--', label='CPU reference line')
-    # plt.plot([min(y_test_invertido[:, 1]), max(y_test_invertido[:, 1])], [min(y_test_invertido[:, 1]), max(y_test_invertido[:, 1])], color='orange', linestyle='--', label='Memory reference line')
-    # # Add tags and title
-    # plt.xlabel('Real Values')
-    # plt.ylabel('Predictions')
-    # plt.title(f'{large_name} ({name}) (MSE: {mse:.4f}, R²: {r2:.4f})\nMSE(CPU) = {mse_cpu:.3f}, MSE(Mem) = {mse_mem:.3f}\nR²(CPU) = {r2_cpu:.3f}, R²(Mem) = {r2_mem:.3f}')
-    # plt.legend()
-    # Show the graph
-    # plt.show()
 
     
 def save_figure(plot, fig_path, model_name, format):
