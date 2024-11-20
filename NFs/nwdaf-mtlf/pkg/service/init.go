@@ -27,7 +27,6 @@ import (
 	"github.com/free5gc/util/httpwrapper"
 	logger_util "github.com/free5gc/util/logger"
 
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type NWDAF struct {

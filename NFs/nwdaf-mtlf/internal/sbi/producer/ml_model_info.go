@@ -9,8 +9,6 @@ import (
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 func HandleNwdafMlModelInfoRequest(request *httpwrapper.Request) *httpwrapper.Response {
