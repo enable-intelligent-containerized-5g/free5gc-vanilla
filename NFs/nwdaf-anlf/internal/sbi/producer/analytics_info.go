@@ -12,15 +12,14 @@ import (
 	"time"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
-	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
 	"github.com/free5gc/nwdaf/internal/util"
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 )
-
 
 func filterNfInstanceById(nfIntances *[]models.NfProfile, nfInstanceIds []string) (nfInstancesFiltered []models.NfProfile) {
 	for _, nfInstance := range *nfIntances {
@@ -69,38 +68,58 @@ func filterNfInstancesWithIpDuplicate(nfInstances *[]models.NfProfile) (mlNfProf
 	return mlNfProfileFiltered
 }
 
-
 // Get ML by NfType, Size, Accuracy
-func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, accuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
+func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, reqAccuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
 
-	if len(*mlmodels) == 0 || mlmodels == nil {
+	if len(*mlmodels) <= 0 || mlmodels == nil {
 		logger.AniLog.Error("No Found MlModels")
 		return nil
 	}
 
 	// Filter By NfType
-	var amfModels []models.MlModelData
+	var nfModels []models.MlModelData
 	for _, model := range *mlmodels {
 		if model.NfType == *nftype {
-			amfModels = append(amfModels, model)
+			nfModels = append(nfModels, model)
 		}
 	}
 
-	if len(amfModels) == 0 || amfModels == nil {
+	if len(nfModels) <= 0 || nfModels == nil {
+		return nil
+	}
+
+	// Filter By Accuracy
+	var accuracyModels []models.MlModelData
+	if reqAccuracy != nil && *reqAccuracy != "" { // Request Accuracy
+		for _, model := range nfModels {
+			if model.Accuracy == *reqAccuracy {
+				accuracyModels = append(accuracyModels, model)
+			}
+		}
+	} else { // Default Accuracy Priority
+		definedAccuracies := models.NewNwdafMlModelAccuracyPriority()
+		for _, priority := range definedAccuracies {
+			for _, model := range nfModels {
+				if model.Accuracy == priority {
+					accuracyModels = append(accuracyModels, model)
+				}
+			}
+		}
+	}
+
+	if len(accuracyModels) <= 0 || accuracyModels == nil {
 		return nil
 	}
 
 	// Select the smallest models
-	// find the smallestSize
-	minSize := amfModels[0].Size
-	for _, model := range amfModels {
+	minSize := accuracyModels[0].Size
+	for _, model := range accuracyModels {
 		if model.Size < minSize {
 			minSize = model.Size
 		}
 	}
-	// logger.AniLog.Info("minSize: ", minSize)
 	var smallestModels []models.MlModelData
-	for _, model := range amfModels {
+	for _, model := range accuracyModels {
 		if model.Size == minSize {
 			smallestModels = append(smallestModels, model)
 		}
@@ -110,45 +129,7 @@ func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, 
 		return nil
 	}
 
-	// Filter by Accuracy
-	definedAccuracies := []models.NwdafMlModelAccuracy{
-		models.NwdafMlModelAccuracy_LOW,
-		models.NwdafMlModelAccuracy_MEDIUM,
-		models.NwdafMlModelAccuracy_HIGH,
-	}
-	// definedAccuracies := models.NewNwdafMlModelAccuracyPriority()
-
-	if accuracy != nil && *accuracy != "" {
-		// logger.AniLog.Info("Custom Acuracy: ", *accuracy)
-		requestAccuracy := *accuracy
-
-		for i, v := range definedAccuracies {
-			if v == requestAccuracy {
-				// Move the requestAccuracy to he begining
-				definedAccuracies = append([]models.NwdafMlModelAccuracy{v}, append(definedAccuracies[:i], definedAccuracies[i+1:]...)...)
-				break
-			}
-		}
-	}
-	// Search models by accuracy priority
-	var priorityModels []models.MlModelData
-	for _, priority := range definedAccuracies {
-		for _, model := range smallestModels {
-			if model.Accuracy == priority {
-				priorityModels = append(priorityModels, model)
-			}
-		}
-		// If we find models with the current priority, we exit the loop.
-		if len(priorityModels) > 0 {
-			break
-		}
-	}
-
-	if len(priorityModels) == 0 || priorityModels == nil {
-		return nil
-	}
-
-	return priorityModels
+	return smallestModels
 }
 
 func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePayloadRequest) (response *httpwrapper.Response) {
@@ -394,7 +375,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			cpuLimitValue := cpuLimit[0]
 			memLimitValue := memLimit[0]
 
-			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil  {
+			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil {
 				problemDetails := models.ProblemDetails{
 					Status: http.StatusInternalServerError,
 					Detail: fmt.Sprintf("Error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
@@ -585,7 +566,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			cpuLimitValue := cpuLimit[0]
 			memLimitValue := memLimit[0]
 
-			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil  {
+			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil {
 				problemDetails := models.ProblemDetails{
 					Status: http.StatusInternalServerError,
 					Detail: fmt.Sprintf("Error getting dsta from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
@@ -635,7 +616,6 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		return httpwrapper.NewResponse(http.StatusBadRequest, nil, problemDetails)
 	}
 }
-
 
 func loadPredictionInfoFromJson(nfLoadPred *models.PredictionResult, filePath string) (err error) {
 	data, err := os.ReadFile(filePath)
