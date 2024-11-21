@@ -1,5 +1,0 @@
-namespace,pod,container,timestamp,cpu-average
-free5gc,free5gc-amf-8745675cb-q9xkv,amf,1732056254167,7.276595390325607e-05
-free5gc,free5gc-amf-8745675cb-q9xkv,amf,1732056314167,0.0
-free5gc,free5gc-amf-8745675cb-q9xkv,amf,1732056374167,0.0001419508023686
-free5gc,free5gc-amf-8745675cb-q9xkv,amf,1732056434167,0.0004758847038657
