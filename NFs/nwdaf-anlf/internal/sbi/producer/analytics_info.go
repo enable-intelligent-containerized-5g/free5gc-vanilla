@@ -21,117 +21,6 @@ import (
 	"github.com/free5gc/util/httpwrapper"
 )
 
-func filterNfInstanceById(nfIntances *[]models.NfProfile, nfInstanceIds []string) (nfInstancesFiltered []models.NfProfile) {
-	for _, nfInstance := range *nfIntances {
-		for _, nfInstanceId := range nfInstanceIds {
-			if nfInstance.NfInstanceId == nfInstanceId {
-				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
-			}
-		}
-	}
-	return nfInstancesFiltered
-}
-
-func filterNfInstanceByNfType(nfIntances *[]models.NfProfile, nfTypes []models.NfType) (nfInstancesFiltered []models.NfProfile) {
-	for _, nfInstance := range *nfIntances {
-		for _, nfType := range nfTypes {
-			if nfInstance.NfType == nfType {
-				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
-			}
-		}
-	}
-	return nfInstancesFiltered
-}
-
-func filterMlModelInfo(mlModelInfoList *[]models.MlModelData, eventId *models.EventId, targetPeriod int64) (mlModelInfoFiltered []models.MlModelData) {
-	for _, mlModelInfo := range *mlModelInfoList {
-		if mlModelInfo.EventId == *eventId && mlModelInfo.TargetPeriod == targetPeriod {
-			mlModelInfoFiltered = append(mlModelInfoFiltered, mlModelInfo)
-		}
-	}
-
-	return mlModelInfoFiltered
-}
-
-func filterNfInstancesWithIpDuplicate(nfInstances *[]models.NfProfile) (mlNfProfileFiltered []models.NfProfile) {
-	ipTracker := make(map[string]bool)
-
-	// Filter the NfInstances
-	for _, instance := range *nfInstances {
-		if _, exists := ipTracker[instance.Ipv4Addresses[0]]; !exists {
-			// If no exits IP ADD instance
-			mlNfProfileFiltered = append(mlNfProfileFiltered, instance)
-			ipTracker[instance.Ipv4Addresses[0]] = true
-		}
-	}
-
-	return mlNfProfileFiltered
-}
-
-// Get ML by NfType, Size, Accuracy
-func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, reqAccuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
-
-	if len(*mlmodels) <= 0 || mlmodels == nil {
-		logger.AniLog.Error("No Found MlModels")
-		return nil
-	}
-
-	// Filter By NfType
-	var nfModels []models.MlModelData
-	for _, model := range *mlmodels {
-		if model.NfType == *nftype {
-			nfModels = append(nfModels, model)
-		}
-	}
-
-	if len(nfModels) <= 0 || nfModels == nil {
-		return nil
-	}
-
-	// Filter By Accuracy
-	var accuracyModels []models.MlModelData
-	if reqAccuracy != nil && *reqAccuracy != "" { // Request Accuracy
-		for _, model := range nfModels {
-			if model.Accuracy == *reqAccuracy {
-				accuracyModels = append(accuracyModels, model)
-			}
-		}
-	} else { // Default Accuracy Priority
-		definedAccuracies := models.NewNwdafMlModelAccuracyPriority()
-		for _, priority := range definedAccuracies {
-			for _, model := range nfModels {
-				if model.Accuracy == priority {
-					accuracyModels = append(accuracyModels, model)
-				}
-			}
-		}
-	}
-
-	if len(accuracyModels) <= 0 || accuracyModels == nil {
-		return nil
-	}
-
-	// Select the smallest models
-	minSize := accuracyModels[0].Size
-	for _, model := range accuracyModels {
-		if model.Size < minSize {
-			minSize = model.Size
-		}
-	}
-	var smallestModels []models.MlModelData
-	for _, model := range accuracyModels {
-		if model.Size == minSize {
-			smallestModels = append(smallestModels, model)
-		}
-	}
-
-	if len(smallestModels) == 0 || smallestModels == nil {
-		return nil
-	}
-
-	return smallestModels
-}
-
 func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePayloadRequest) (response *httpwrapper.Response) {
 	logger.AniLog.Info("Handle Analytics Info NFLoad Metrics Request")
 
@@ -146,7 +35,6 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 	// Check if NRF URI is set
 	if NrfUri == "" {
 		problemDetails := models.ProblemDetails{
-			Title:  "NrfUri is not set",
 			Status: http.StatusInternalServerError,
 			Detail: "NrfUri is not set",
 		}
@@ -163,9 +51,8 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 	err := consumer.SearchAllNfInstance(&nfInstances, NrfUri, "", models.NfType_NWDAF, param)
 	if err != nil {
 		problemDetails := models.ProblemDetails{
-			Title:  "Error geting NfProfiles",
 			Status: http.StatusInternalServerError,
-			Detail: err.Error(),
+			Detail: fmt.Sprintf("Error geting NfProfiles: %s", err.Error()),
 		}
 		logger.AniLog.Errorf(problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
@@ -195,9 +82,8 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 	default:
 		problemDetails := models.ProblemDetails{
-			Title:  "Unknown payload type",
 			Status: http.StatusBadRequest,
-			Detail: fmt.Sprintf("The %s is not a valid payload", typePayload),
+			Detail: fmt.Sprintf("Unknown payload type: the %s is not a valid payload", typePayload),
 		}
 		logger.AniLog.Errorf(problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
@@ -208,9 +94,8 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 
 	if len(nfInstancesFilteredByIP) <= 0 {
 		problemDetails := models.ProblemDetails{
-			Title:  "Error filtering NFs",
 			Status: http.StatusNotFound,
-			Detail: "NFs not found",
+			Detail: "Error filtering NFs: NFs not found",
 		}
 		logger.AniLog.Errorf(problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
@@ -251,7 +136,6 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	// Check the TargetPeriod
 	if targetPeriod < 60 || targetPeriod <= 0 {
 		problemDetails := models.ProblemDetails{
-			Title:  "Error TargetPeriod value",
 			Status: http.StatusBadRequest,
 			Detail: "The difference between the start date and the end date must be greater than 60 seconds",
 		}
@@ -292,7 +176,6 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		err := consumer.SearchMlModelInfoInstance(&mtlfUri, *NrfUri, models.NfType_NWDAF, models.NfType_NWDAF, param)
 		if err != nil {
 			problemDetails := models.ProblemDetails{
-				Title:  "Error getting Ml Model Info",
 				Status: http.StatusInternalServerError,
 				Detail: fmt.Sprintf("MTLF URI not found: %s", err),
 			}
@@ -308,7 +191,6 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		err = consumer.SendGetMlModelInfoList(&mlModelInfoList, mtlfUri)
 		if err != nil {
 			problemDetails := models.ProblemDetails{
-				Title:  "Error getting Ml Model Info",
 				Status: http.StatusInternalServerError,
 				Detail: fmt.Sprintf("Error getting Ml Model Info: %s", err.Error()),
 			}
@@ -329,7 +211,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		if mlModelInfoFiltered == nil {
 			problemDetails := models.ProblemDetails{
 				Status: http.StatusNotFound,
-				Detail: "No Found MlModels for predictions",
+				Detail: "No Found MlModels for the predictions",
 			}
 			logger.AniLog.Error(problemDetails.Detail)
 			return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
@@ -437,9 +319,9 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			if errProcess != nil {
 				problemDetails := &models.ProblemDetails{
 					Status: http.StatusInternalServerError,
-					Cause:  fmt.Sprintf("Error in processing data %s. %s", *eventID, string(outputProcess)),
+					Detail: fmt.Sprintf("Error in processing data %s. %s", *eventID, string(outputProcess)),
 				}
-				logger.AniLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Detail)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 			}
 			logger.AniLog.Infof("Data processing completed and saved in: %v", dataLabeledPath+datasetFile)
@@ -462,9 +344,9 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			if errTraining != nil {
 				problemDetails := &models.ProblemDetails{
 					Status: http.StatusInternalServerError,
-					Cause:  fmt.Sprintf("Error in predicting %s. %s", *eventID, string(outputPrediction)),
+					Detail: fmt.Sprintf("Error in predicting %s. %s", *eventID, string(outputPrediction)),
 				}
-				logger.AniLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Detail)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 
 			}
@@ -480,9 +362,9 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			if errLoadPrediction != nil {
 				problemDetails := &models.ProblemDetails{
 					Status: http.StatusInternalServerError,
-					Cause:  "Error getting saved prediction information: " + errLoadPrediction.Error(),
+					Detail: "Error getting saved prediction information: " + errLoadPrediction.Error(),
 				}
-				logger.AniLog.Error(problemDetails.Cause)
+				logger.AniLog.Error(problemDetails.Detail)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 			}
 
@@ -608,13 +490,124 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		return httpwrapper.NewResponse(http.StatusOK, nil, responseNfLoad)
 
 	default:
-		logger.AniLog.Error("Invalid time range")
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  "EndTime must be greater than StartTime",
+			Detail: "EndTime must be greater than StartTime",
 		}
+		logger.AniLog.Error("Invalid time range: ", problemDetails.Detail)
 		return httpwrapper.NewResponse(http.StatusBadRequest, nil, problemDetails)
 	}
+}
+
+func filterNfInstanceById(nfIntances *[]models.NfProfile, nfInstanceIds []string) (nfInstancesFiltered []models.NfProfile) {
+	for _, nfInstance := range *nfIntances {
+		for _, nfInstanceId := range nfInstanceIds {
+			if nfInstance.NfInstanceId == nfInstanceId {
+				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
+			}
+		}
+	}
+	return nfInstancesFiltered
+}
+
+func filterNfInstanceByNfType(nfIntances *[]models.NfProfile, nfTypes []models.NfType) (nfInstancesFiltered []models.NfProfile) {
+	for _, nfInstance := range *nfIntances {
+		for _, nfType := range nfTypes {
+			if nfInstance.NfType == nfType {
+				nfInstancesFiltered = append(nfInstancesFiltered, nfInstance)
+			}
+		}
+	}
+	return nfInstancesFiltered
+}
+
+func filterMlModelInfo(mlModelInfoList *[]models.MlModelData, eventId *models.EventId, targetPeriod int64) (mlModelInfoFiltered []models.MlModelData) {
+	for _, mlModelInfo := range *mlModelInfoList {
+		if mlModelInfo.EventId == *eventId && mlModelInfo.TargetPeriod == targetPeriod {
+			mlModelInfoFiltered = append(mlModelInfoFiltered, mlModelInfo)
+		}
+	}
+
+	return mlModelInfoFiltered
+}
+
+func filterNfInstancesWithIpDuplicate(nfInstances *[]models.NfProfile) (mlNfProfileFiltered []models.NfProfile) {
+	ipTracker := make(map[string]bool)
+
+	// Filter the NfInstances
+	for _, instance := range *nfInstances {
+		if _, exists := ipTracker[instance.Ipv4Addresses[0]]; !exists {
+			// If no exits IP ADD instance
+			mlNfProfileFiltered = append(mlNfProfileFiltered, instance)
+			ipTracker[instance.Ipv4Addresses[0]] = true
+		}
+	}
+
+	return mlNfProfileFiltered
+}
+
+// Get ML by NfType, Size, Accuracy
+func getMlModelByProfile(mlmodels *[]models.MlModelData, nftype *models.NfType, reqAccuracy *models.NwdafMlModelAccuracy) (mlmodel []models.MlModelData) {
+
+	if len(*mlmodels) <= 0 || mlmodels == nil {
+		logger.AniLog.Error("No Found MlModels")
+		return nil
+	}
+
+	// Filter By NfType
+	var nfModels []models.MlModelData
+	for _, model := range *mlmodels {
+		if model.NfType == *nftype {
+			nfModels = append(nfModels, model)
+		}
+	}
+
+	if len(nfModels) <= 0 || nfModels == nil {
+		return nil
+	}
+
+	// Filter By Accuracy
+	var accuracyModels []models.MlModelData
+	if reqAccuracy != nil && *reqAccuracy != "" { // Request Accuracy
+		for _, model := range nfModels {
+			if model.Accuracy == *reqAccuracy {
+				accuracyModels = append(accuracyModels, model)
+			}
+		}
+	} else { // Default Accuracy Priority
+		definedAccuracies := models.NewNwdafMlModelAccuracyPriority()
+		for _, priority := range definedAccuracies {
+			for _, model := range nfModels {
+				if model.Accuracy == priority {
+					accuracyModels = append(accuracyModels, model)
+				}
+			}
+		}
+	}
+
+	if len(accuracyModels) <= 0 || accuracyModels == nil {
+		return nil
+	}
+
+	// Select the smallest models
+	minSize := accuracyModels[0].Size
+	for _, model := range accuracyModels {
+		if model.Size < minSize {
+			minSize = model.Size
+		}
+	}
+	var smallestModels []models.MlModelData
+	for _, model := range accuracyModels {
+		if model.Size == minSize {
+			smallestModels = append(smallestModels, model)
+		}
+	}
+
+	if len(smallestModels) == 0 || smallestModels == nil {
+		return nil
+	}
+
+	return smallestModels
 }
 
 func loadPredictionInfoFromJson(nfLoadPred *models.PredictionResult, filePath string) (err error) {

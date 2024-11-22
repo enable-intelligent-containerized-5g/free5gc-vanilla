@@ -33,22 +33,28 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 
 	nwdafMlTrainingReq, ok := request.Body.(models.NwdafMlModelTrainingRequest)
 	if !ok {
-		return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type NwdafMlModelTrainingRequest")
+		problemDetails := models.ProblemDetails{
+			Status: http.StatusInternalServerError,
+			Detail: "The request body is't type NwdafMlModelTrainingRequest",
+		}
+		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
+		return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 	}
 
 	putData, created, problemDetails := MlModelTrainingNfLoadProcedure(nwdafMlTrainingReq)
 	if created {
 		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
 	} else if problemDetails != nil {
+		logger.MlModelTrainingLog.Errorf("Error training the Ml model: %s", problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
+		Detail:  "UNSPECIFIED",
 	}
 
-	logger.MlModelTrainingLog.Error("SaveMlModel failed")
+	logger.MlModelTrainingLog.Error("Ml model Training failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
 }
 
@@ -72,7 +78,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if targetPeriod < 60 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusBadRequest,
-			Cause:  "The difference between the start date and the end date must be greater than 60 seconds",
+			Detail:  "The difference between the start date and the end date must be greater than 60 seconds",
 		}
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
@@ -86,7 +92,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if NrfUri == "" {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  "NrfUri is not set",
+			Detail:  "NrfUri is not set",
 		}
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
@@ -112,18 +118,18 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if err != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
+			Detail:  fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	if len(nfInstances) <= 0 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("Nf type %s not found", nfType),
+			Detail:  fmt.Sprintf("Nf type %s not found", nfType),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -140,9 +146,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	} else {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Cause:  fmt.Sprintf("No pod found for the specified container: %s", containerName),
+			Detail:  fmt.Sprintf("No pod found for the specified container: %s", containerName),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -235,9 +241,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errProcess != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
+			Detail:  fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
@@ -263,9 +269,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errTraining != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
+			Detail:  fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	if strings.TrimSpace(string(outputTraining)) != "" {
@@ -280,9 +286,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errLoadModel != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  "Error getting saved model information: " + errLoadModel.Error(),
+			Detail:  "Error getting saved model information: " + errLoadModel.Error(),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -291,9 +297,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errGettingFigure != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  "Error getting the saved figure: " + errGettingFigure.Error(),
+			Detail:  "Error getting the saved figure: " + errGettingFigure.Error(),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	// Encode the figure
@@ -324,9 +330,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if !saved || len(mlModelSaveResponse.MlModels) <= 0 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Cause:  "Error saving the Ml Model in  the DB: " + errSave.Detail,
+			Detail:  "Error saving the Ml Model in  the DB: " + errSave.Detail,
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Cause)
+		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -467,13 +473,13 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 		// logger.MlModelTrainingLog.Info("SaveMlModel success")
 		return httpwrapper.NewResponse(http.StatusCreated, nil, putData)
 	} else if problemDetails != nil {
-		// logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Cause)
+		// logger.MlModelTrainingLog.Errorf("SaveMlModel failed: %s", problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
-		Cause:  "UNSPECIFIED",
+		Detail:  "UNSPECIFIED",
 	}
 	logger.MlModelTrainingLog.Error("SaveMlModel failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
