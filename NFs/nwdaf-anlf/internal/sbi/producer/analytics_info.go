@@ -344,7 +344,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			if errTraining != nil {
 				problemDetails := &models.ProblemDetails{
 					Status: http.StatusInternalServerError,
-					Detail: fmt.Sprintf("Error in predicting %s. %s", *eventID, string(outputPrediction)),
+					Detail: fmt.Sprintf("Error in predicting %s. %s", *eventID, string(errTraining.Error())),
 				}
 				logger.AniLog.Error(problemDetails.Detail)
 				return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)

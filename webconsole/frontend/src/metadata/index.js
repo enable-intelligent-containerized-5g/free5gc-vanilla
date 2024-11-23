@@ -30,13 +30,13 @@ let subModalSchema = {
         type: "string",
         title: "PLMN ID",
         pattern: "^[0-9]{5,6}$",
-        default: "20893",
+        default: "00101",
       },
       ueId: {
         type: "string",
         title: "SUPI (IMSI)",
         pattern: "^[0-9]{10,15}$",
-        default: "208930000000003",
+        default: "001010000000001",
       },
       authenticationMethod: {
         type: "string",
@@ -48,7 +48,7 @@ let subModalSchema = {
         type: "string",
         title: "K",
         pattern: "^[A-Fa-f0-9]{32}$",
-        default: "8baf473f2f8fd09487cccbd7097c6862",
+        default: "465B5CE8B199B49FAA5F0A2EE238A6BC",
       },
       OPOPcSelect: {
         type: "string",
@@ -60,7 +60,7 @@ let subModalSchema = {
         type: "string",
         title: "Operator Code Value",
         pattern: "^[A-Fa-f0-9]{32}$",
-        default: "8e27b6af0e692e750f32667a3b14605d",
+        default: "E8ED289DEBA952E4283B54E88E6183CA",
       },
       SQN: {
         type: "string",
@@ -76,7 +76,7 @@ let subModalSchema = {
           {
             snssai: {
               "sst": 1,
-              "sd": "010203",
+              "sd": "000001",
               "isDefault": true,
             },
             dnnConfigurations: [
@@ -87,7 +87,7 @@ let subModalSchema = {
                 "5qi": 9,
               },
               {
-                dnn: "internet2",
+                dnn: "streaming",
                 uplinkAmbr: "200 Mbps",
                 downlinkAmbr: "100 Mbps",
                 "5qi": 9,
@@ -97,7 +97,7 @@ let subModalSchema = {
           {
             snssai: {
               "sst": 1,
-              "sd": "112233",
+              "sd": "000002",
               "isDefault": true,
             },
             dnnConfigurations: [
@@ -108,7 +108,7 @@ let subModalSchema = {
                 "5qi": 9,
               },
               {
-                dnn: "internet2",
+                dnn: "streaming",
                 uplinkAmbr: "200 Mbps",
                 downlinkAmbr: "100 Mbps",
                 "5qi": 9,
