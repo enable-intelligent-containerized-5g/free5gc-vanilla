@@ -3,28 +3,25 @@ package producer
 import (
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 
-	"github.com/mohae/deepcopy"
-
-	"github.com/free5gc/amf/internal/context"
-	gmm_message "github.com/free5gc/amf/internal/gmm/message"
-	"github.com/free5gc/amf/internal/logger"
-	"github.com/free5gc/amf/internal/nas"
-	ngap_message "github.com/free5gc/amf/internal/ngap/message"
-	"github.com/free5gc/amf/internal/sbi/consumer"
-	"github.com/free5gc/amf/internal/util"
-	"github.com/enable-intelligent-containerized-5g/nas/nasConvert"
-	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
 	"github.com/enable-intelligent-containerized-5g/ngap/ngapType"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	"github.com/free5gc/amf/internal/context"
+	gmm_common "github.com/free5gc/amf/internal/gmm/common"
+	gmm_message "github.com/free5gc/amf/internal/gmm/message"
+	"github.com/free5gc/amf/internal/logger"
+	amf_nas "github.com/free5gc/amf/internal/nas"
+	ngap_message "github.com/free5gc/amf/internal/ngap/message"
+	"github.com/free5gc/amf/internal/sbi/consumer"
 	"github.com/free5gc/util/httpwrapper"
 )
 
 func HandleSmContextStatusNotify(request *httpwrapper.Request) *httpwrapper.Response {
 	logger.ProducerLog.Infoln("[AMF] Handle SmContext Status Notify")
 
-	guti := request.Params["guti"]
+	supi := request.Params["supi"]
 	pduSessionIDString := request.Params["pduSessionId"]
 	var pduSessionID int
 	if pduSessionIDTmp, err := strconv.Atoi(pduSessionIDString); err != nil {
@@ -34,7 +31,7 @@ func HandleSmContextStatusNotify(request *httpwrapper.Request) *httpwrapper.Resp
 	}
 	smContextStatusNotification := request.Body.(models.SmContextStatusNotification)
 
-	problemDetails := SmContextStatusNotifyProcedure(guti, int32(pduSessionID), smContextStatusNotification)
+	problemDetails := SmContextStatusNotifyProcedure(supi, int32(pduSessionID), smContextStatusNotification)
 	if problemDetails != nil {
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	} else {
@@ -42,22 +39,27 @@ func HandleSmContextStatusNotify(request *httpwrapper.Request) *httpwrapper.Resp
 	}
 }
 
-func SmContextStatusNotifyProcedure(guti string, pduSessionID int32,
-	smContextStatusNotification models.SmContextStatusNotification) *models.ProblemDetails {
-	amfSelf := context.AMF_Self()
+func SmContextStatusNotifyProcedure(supi string, pduSessionID int32,
+	smContextStatusNotification models.SmContextStatusNotification,
+) *models.ProblemDetails {
+	amfSelf := context.GetSelf()
 
-	ue, ok := amfSelf.AmfUeFindByGuti(guti)
+	ue, ok := amfSelf.AmfUeFindBySupi(supi)
 	if !ok {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
 			Cause:  "CONTEXT_NOT_FOUND",
-			Detail: fmt.Sprintf("Guti[%s] Not Found", guti),
+			Detail: fmt.Sprintf("Supi[%s] Not Found", supi),
 		}
 		return problemDetails
 	}
 
+	ue.Lock.Lock()
+	defer ue.Lock.Unlock()
+
 	smContext, ok := ue.SmContextFindByPDUSessionID(pduSessionID)
 	if !ok {
+		ue.ProducerLog.Errorf("SmContext[PDU Session ID:%d] not found", pduSessionID)
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
 			Cause:  "CONTEXT_NOT_FOUND",
@@ -67,81 +69,14 @@ func SmContextStatusNotifyProcedure(guti string, pduSessionID int32,
 	}
 
 	if smContextStatusNotification.StatusInfo.ResourceStatus == models.ResourceStatus_RELEASED {
-		ue.ProducerLog.Debugf("Release PDU Session[%d] (Cause: %s)", pduSessionID,
-			smContextStatusNotification.StatusInfo.Cause)
-
 		if smContext.PduSessionIDDuplicated() {
-			ue.ProducerLog.Debugf("Resume establishing PDU Session[%d]", pduSessionID)
+			ue.ProducerLog.Infof("Local release duplicated SmContext[%d]", pduSessionID)
 			smContext.SetDuplicatedPduSessionID(false)
-			go func() {
-				var (
-					snssai    models.Snssai
-					dnn       string
-					smMessage []byte
-				)
-				smMessage = smContext.ULNASTransport().GetPayloadContainerContents()
-
-				if smContext.ULNASTransport().SNSSAI != nil {
-					snssai = nasConvert.SnssaiToModels(smContext.ULNASTransport().SNSSAI)
-				} else {
-					if allowedNssai, ok := ue.AllowedNssai[smContext.AccessType()]; ok {
-						snssai = *allowedNssai[0].AllowedSnssai
-					} else {
-						ue.GmmLog.Error("Ue doesn't have allowedNssai")
-						return
-					}
-				}
-
-				if smContext.ULNASTransport().DNN != nil {
-					dnn = smContext.ULNASTransport().DNN.GetDNN()
-				} else {
-					if ue.SmfSelectionData != nil {
-						snssaiStr := util.SnssaiModelsToHex(snssai)
-						if snssaiInfo, ok := ue.SmfSelectionData.SubscribedSnssaiInfos[snssaiStr]; ok {
-							for _, dnnInfo := range snssaiInfo.DnnInfos {
-								if dnnInfo.DefaultDnnIndicator {
-									dnn = dnnInfo.Dnn
-								}
-							}
-						} else {
-							// user's subscription context obtained from UDM does not contain the default DNN for the,
-							// S-NSSAI, the AMF shall use a locally configured DNN as the DNN
-							dnn = "internet"
-						}
-					}
-				}
-
-				newSmContext, cause, err := consumer.SelectSmf(ue, smContext.AccessType(), pduSessionID, snssai, dnn)
-				if err != nil {
-					logger.CallbackLog.Error(err)
-					gmm_message.SendDLNASTransport(ue.RanUe[smContext.AccessType()],
-						nasMessage.PayloadContainerTypeN1SMInfo,
-						smContext.ULNASTransport().GetPayloadContainerContents(), pduSessionID, cause, nil, 0)
-					return
-				}
-
-				response, smContextRef, errResponse, problemDetail, err := consumer.SendCreateSmContextRequest(
-					ue, newSmContext, nil, smMessage)
-				if response != nil {
-					newSmContext.SetSmContextRef(smContextRef)
-					newSmContext.SetUserLocation(deepcopy.Copy(ue.Location).(models.UserLocation))
-					ue.GmmLog.Infof("create smContext[pduSessionID: %d] Success", pduSessionID)
-					ue.StoreSmContext(pduSessionID, newSmContext)
-					// TODO: handle response(response N2SmInfo to RAN if exists)
-				} else if errResponse != nil {
-					ue.ProducerLog.Warnf("PDU Session Establishment Request is rejected by SMF[pduSessionId:%d]\n", pduSessionID)
-					gmm_message.SendDLNASTransport(ue.RanUe[smContext.AccessType()],
-						nasMessage.PayloadContainerTypeN1SMInfo, errResponse.BinaryDataN1SmMessage, pduSessionID, 0, nil, 0)
-				} else if err != nil {
-					ue.ProducerLog.Errorf("Failed to Create smContext[pduSessionID: %d], Error[%s]\n", pduSessionID, err.Error())
-				} else {
-					ue.ProducerLog.Errorf("Failed to Create smContext[pduSessionID: %d], Error[%v]\n", pduSessionID, problemDetail)
-				}
-				smContext.DeleteULNASTransport()
-			}()
 		} else {
-			ue.SmContextList.Delete(pduSessionID)
+			ue.ProducerLog.Infof("Release SmContext[%d] (Cause: %s)", pduSessionID,
+				smContextStatusNotification.StatusInfo.Cause)
 		}
+		ue.SmContextList.Delete(pduSessionID)
 	} else {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusBadRequest,
@@ -171,8 +106,9 @@ func HandleAmPolicyControlUpdateNotifyUpdate(request *httpwrapper.Request) *http
 }
 
 func AmPolicyControlUpdateNotifyUpdateProcedure(polAssoID string,
-	policyUpdate models.PolicyUpdate) *models.ProblemDetails {
-	amfSelf := context.AMF_Self()
+	policyUpdate models.PolicyUpdate,
+) *models.ProblemDetails {
+	amfSelf := context.GetSelf()
 
 	ue, ok := amfSelf.AmfUeFindByPolicyAssociationID(polAssoID)
 	if !ok {
@@ -183,6 +119,9 @@ func AmPolicyControlUpdateNotifyUpdateProcedure(polAssoID string,
 		}
 		return problemDetails
 	}
+
+	ue.Lock.Lock()
+	defer ue.Lock.Unlock()
 
 	ue.AmPolicyAssociation.Triggers = policyUpdate.Triggers
 	ue.RequestTriggerLocationChange = false
@@ -207,6 +146,13 @@ func AmPolicyControlUpdateNotifyUpdateProcedure(polAssoID string,
 	if ue != nil {
 		// use go routine to write response first to ensure the order of the procedure
 		go func() {
+			defer func() {
+				if p := recover(); p != nil {
+					// Print stack for panic to log. Fatalf() will let program exit.
+					logger.CallbackLog.Fatalf("panic: %v\n%s", p, string(debug.Stack()))
+				}
+			}()
+
 			// UE is CM-Connected State
 			if ue.CmConnect(models.AccessType__3_GPP_ACCESS) {
 				gmm_message.SendConfigurationUpdateCommand(ue, models.AccessType__3_GPP_ACCESS, nil)
@@ -251,8 +197,9 @@ func HandleAmPolicyControlUpdateNotifyTerminate(request *httpwrapper.Request) *h
 }
 
 func AmPolicyControlUpdateNotifyTerminateProcedure(polAssoID string,
-	terminationNotification models.TerminationNotification) *models.ProblemDetails {
-	amfSelf := context.AMF_Self()
+	terminationNotification models.TerminationNotification,
+) *models.ProblemDetails {
+	amfSelf := context.GetSelf()
 
 	ue, ok := amfSelf.AmfUeFindByPolicyAssociationID(polAssoID)
 	if !ok {
@@ -264,10 +211,20 @@ func AmPolicyControlUpdateNotifyTerminateProcedure(polAssoID string,
 		return problemDetails
 	}
 
+	ue.Lock.Lock()
+	defer ue.Lock.Unlock()
+
 	logger.CallbackLog.Infof("Cause of AM Policy termination[%+v]", terminationNotification.Cause)
 
 	// use go routine to write response first to ensure the order of the procedure
 	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				// Print stack for panic to log. Fatalf() will let program exit.
+				logger.CallbackLog.Fatalf("panic: %v\n%s", p, string(debug.Stack()))
+			}
+		}()
+
 		problem, err := consumer.AMPolicyControlDelete(ue)
 		if problem != nil {
 			logger.ProducerLog.Errorf("AM Policy Control Delete Failed Problem[%+v]", problem)
@@ -295,7 +252,7 @@ func HandleN1MessageNotify(request *httpwrapper.Request) *httpwrapper.Response {
 func N1MessageNotifyProcedure(n1MessageNotify models.N1MessageNotify) *models.ProblemDetails {
 	logger.ProducerLog.Debugf("n1MessageNotify: %+v", n1MessageNotify)
 
-	amfSelf := context.AMF_Self()
+	amfSelf := context.GetSelf()
 
 	registrationCtxtContainer := n1MessageNotify.JsonData.RegistrationCtxtContainer
 	if registrationCtxtContainer.UeContext == nil {
@@ -318,6 +275,13 @@ func N1MessageNotifyProcedure(n1MessageNotify models.N1MessageNotify) *models.Pr
 	}
 
 	go func() {
+		defer func() {
+			if p := recover(); p != nil {
+				// Print stack for panic to log. Fatalf() will let program exit.
+				logger.CallbackLog.Fatalf("panic: %v\n%s", p, string(debug.Stack()))
+			}
+		}()
+
 		var amfUe *context.AmfUe
 		ueContext := registrationCtxtContainer.UeContext
 		if ueContext.Supi != "" {
@@ -325,6 +289,10 @@ func N1MessageNotifyProcedure(n1MessageNotify models.N1MessageNotify) *models.Pr
 		} else {
 			amfUe = amfSelf.NewAmfUe("")
 		}
+
+		amfUe.Lock.Lock()
+		defer amfUe.Lock.Unlock()
+
 		amfUe.CopyDataFromUeContextModel(*ueContext)
 
 		ranUe := ran.RanUeFindByRanUeNgapID(int64(registrationCtxtContainer.AnN2ApId))
@@ -343,9 +311,9 @@ func N1MessageNotifyProcedure(n1MessageNotify models.N1MessageNotify) *models.Pr
 			amfUe.ConfiguredNssai = registrationCtxtContainer.ConfiguredNssai
 		}
 
-		amfUe.AttachRanUe(ranUe)
+		gmm_common.AttachRanUeToAmfUeAndReleaseOldIfAny(amfUe, ranUe)
 
-		nas.HandleNAS(ranUe, ngapType.ProcedureCodeInitialUEMessage, n1MessageNotify.BinaryDataN1Message)
+		amf_nas.HandleNAS(ranUe, ngapType.ProcedureCodeInitialUEMessage, n1MessageNotify.BinaryDataN1Message, true)
 	}()
 	return nil
 }

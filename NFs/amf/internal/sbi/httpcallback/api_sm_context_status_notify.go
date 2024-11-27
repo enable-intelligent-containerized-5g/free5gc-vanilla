@@ -5,10 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/free5gc/amf/internal/logger"
-	"github.com/free5gc/amf/internal/sbi/producer"
 	"github.com/enable-intelligent-containerized-5g/openapi"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	"github.com/free5gc/amf/internal/logger"
+	"github.com/free5gc/amf/internal/sbi/producer"
 	"github.com/free5gc/util/httpwrapper"
 )
 
@@ -42,7 +42,7 @@ func HTTPSmContextStatusNotify(c *gin.Context) {
 	}
 
 	req := httpwrapper.NewRequest(c.Request, smContextStatusNotification)
-	req.Params["guti"] = c.Params.ByName("guti")
+	req.Params["supi"] = c.Params.ByName("supi")
 	req.Params["pduSessionId"] = c.Params.ByName("pduSessionId")
 
 	rsp := producer.HandleSmContextStatusNotify(req)

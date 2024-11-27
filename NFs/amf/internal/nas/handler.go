@@ -1,13 +1,17 @@
 package nas
 
 import (
-	"github.com/free5gc/amf/internal/context"
+	"fmt"
+
+	"github.com/enable-intelligent-containerized-5g/nas"
+	amf_context "github.com/free5gc/amf/internal/context"
+	gmm_common "github.com/free5gc/amf/internal/gmm/common"
 	"github.com/free5gc/amf/internal/logger"
 	"github.com/free5gc/amf/internal/nas/nas_security"
 )
 
-func HandleNAS(ue *context.RanUe, procedureCode int64, nasPdu []byte) {
-	amfSelf := context.AMF_Self()
+func HandleNAS(ue *amf_context.RanUe, procedureCode int64, nasPdu []byte, initialMessage bool) {
+	amfSelf := amf_context.GetSelf()
 
 	if ue == nil {
 		logger.NasLog.Error("RanUe is nil")
@@ -21,16 +25,34 @@ func HandleNAS(ue *context.RanUe, procedureCode int64, nasPdu []byte) {
 
 	if ue.AmfUe == nil {
 		ue.AmfUe = amfSelf.NewAmfUe("")
-		ue.AmfUe.AttachRanUe(ue)
+		gmm_common.AttachRanUeToAmfUeAndReleaseOldIfAny(ue.AmfUe, ue)
 	}
 
-	msg, err := nas_security.Decode(ue.AmfUe, ue.Ran.AnType, nasPdu)
+	msg, integrityProtected, err := nas_security.Decode(ue.AmfUe, ue.Ran.AnType, nasPdu, initialMessage)
 	if err != nil {
 		ue.AmfUe.NASLog.Errorln(err)
 		return
 	}
+	ue.AmfUe.MacFailed = !integrityProtected
 
 	if err := Dispatch(ue.AmfUe, ue.Ran.AnType, procedureCode, msg); err != nil {
 		ue.AmfUe.NASLog.Errorf("Handle NAS Error: %v", err)
 	}
+}
+
+// Get5GSMobileIdentityFromNASPDU is used to find MobileIdentity from plain nas
+// return value is: mobileId, mobileIdType, err
+func GetNas5GSMobileIdentity(gmmMessage *nas.GmmMessage) (string, string, error) {
+	var err error
+	var mobileId, mobileIdType string
+
+	if gmmMessage.GmmHeader.GetMessageType() == nas.MsgTypeRegistrationRequest {
+		mobileId, mobileIdType, err = gmmMessage.RegistrationRequest.MobileIdentity5GS.GetMobileIdentity()
+	} else if gmmMessage.GmmHeader.GetMessageType() == nas.MsgTypeServiceRequest {
+		mobileId, mobileIdType, err = gmmMessage.ServiceRequest.TMSI5GS.Get5GSTMSI()
+	} else {
+		err = fmt.Errorf("gmmMessageType: [%d] is not RegistrationRequest or ServiceRequest",
+			gmmMessage.GmmHeader.GetMessageType())
+	}
+	return mobileId, mobileIdType, err
 }

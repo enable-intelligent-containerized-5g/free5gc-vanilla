@@ -6,10 +6,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	amf_context "github.com/free5gc/amf/internal/context"
-	"github.com/free5gc/amf/internal/logger"
 	"github.com/enable-intelligent-containerized-5g/openapi/Namf_Communication"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	amf_context "github.com/free5gc/amf/internal/context"
+	"github.com/free5gc/amf/internal/logger"
 )
 
 var HttpLog *logrus.Entry
@@ -49,7 +49,8 @@ func SendN1N2TransferFailureNotification(ue *amf_context.AmfUe, cause models.N1N
 }
 
 func SendN1MessageNotify(ue *amf_context.AmfUe, n1class models.N1MessageClass, n1Msg []byte,
-	registerContext *models.RegistrationContextContainer) {
+	registerContext *models.RegistrationContextContainer,
+) {
 	ue.N1N2MessageSubscription.Range(func(key, value interface{}) bool {
 		subscriptionID := key.(int64)
 		subscription := value.(models.UeN1N2InfoSubscriptionCreateData)
@@ -86,7 +87,8 @@ func SendN1MessageNotify(ue *amf_context.AmfUe, n1class models.N1MessageClass, n
 
 // TS 29.518 5.2.2.3.5.2
 func SendN1MessageNotifyAtAMFReAllocation(
-	ue *amf_context.AmfUe, n1Msg []byte, registerContext *models.RegistrationContextContainer) {
+	ue *amf_context.AmfUe, n1Msg []byte, registerContext *models.RegistrationContextContainer,
+) {
 	configuration := Namf_Communication.NewConfiguration()
 	client := Namf_Communication.NewAPIClient(configuration)
 

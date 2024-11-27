@@ -5,17 +5,18 @@ import (
 	"context"
 	"fmt"
 
-	amf_context "github.com/free5gc/amf/internal/context"
-	"github.com/free5gc/amf/internal/logger"
 	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
 	"github.com/enable-intelligent-containerized-5g/openapi"
 	"github.com/enable-intelligent-containerized-5g/openapi/Namf_Communication"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	amf_context "github.com/free5gc/amf/internal/context"
+	"github.com/free5gc/amf/internal/logger"
 )
 
 func BuildUeContextCreateData(ue *amf_context.AmfUe, targetRanId models.NgRanTargetId,
 	sourceToTargetData models.N2InfoContent, pduSessionList []models.N2SmInformation,
-	n2NotifyUri string, ngapCause *models.NgApCause) models.UeContextCreateData {
+	n2NotifyUri string, ngapCause *models.NgApCause,
+) models.UeContextCreateData {
 	var ueContextCreateData models.UeContextCreateData
 
 	ueContext := BuildUeContextModel(ue)
@@ -115,7 +116,8 @@ func buildAmPolicyReqTriggers(triggers []models.RequestTrigger) (amPolicyReqTrig
 }
 
 func CreateUEContextRequest(ue *amf_context.AmfUe, ueContextCreateData models.UeContextCreateData) (
-	ueContextCreatedData *models.UeContextCreatedData, problemDetails *models.ProblemDetails, err error) {
+	ueContextCreatedData *models.UeContextCreatedData, problemDetails *models.ProblemDetails, err error,
+) {
 	configuration := Namf_Communication.NewConfiguration()
 	configuration.SetBasePath(ue.TargetAmfUri)
 	client := Namf_Communication.NewAPIClient(configuration)
@@ -124,6 +126,14 @@ func CreateUEContextRequest(ue *amf_context.AmfUe, ueContextCreateData models.Ue
 		JsonData: &ueContextCreateData,
 	}
 	res, httpResp, localErr := client.IndividualUeContextDocumentApi.CreateUEContext(context.TODO(), ue.Guti, req)
+	defer func() {
+		if httpResp != nil {
+			if rspCloseErr := httpResp.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("CreateUEContext response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if localErr == nil {
 		ueContextCreatedData = res.JsonData
 		logger.ConsumerLog.Debugf("UeContextCreatedData: %+v", *ueContextCreatedData)
@@ -137,11 +147,12 @@ func CreateUEContextRequest(ue *amf_context.AmfUe, ueContextCreateData models.Ue
 	} else {
 		err = openapi.ReportError("%s: server no response", ue.TargetAmfUri)
 	}
-	return
+	return ueContextCreatedData, problemDetails, err
 }
 
 func ReleaseUEContextRequest(ue *amf_context.AmfUe, ngapCause models.NgApCause) (
-	problemDetails *models.ProblemDetails, err error) {
+	problemDetails *models.ProblemDetails, err error,
+) {
 	configuration := Namf_Communication.NewConfiguration()
 	configuration.SetBasePath(ue.TargetAmfUri)
 	client := Namf_Communication.NewAPIClient(configuration)
@@ -163,6 +174,14 @@ func ReleaseUEContextRequest(ue *amf_context.AmfUe, ngapCause models.NgApCause) 
 
 	httpResp, localErr := client.IndividualUeContextDocumentApi.ReleaseUEContext(
 		context.TODO(), ueContextId, ueContextRelease)
+	defer func() {
+		if httpResp != nil {
+			if rspCloseErr := httpResp.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("ReleaseUEContext response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if localErr == nil {
 		return
 	} else if httpResp != nil {
@@ -180,7 +199,8 @@ func ReleaseUEContextRequest(ue *amf_context.AmfUe, ngapCause models.NgApCause) 
 
 func UEContextTransferRequest(
 	ue *amf_context.AmfUe, accessType models.AccessType, transferReason models.TransferReason) (
-	ueContextTransferRspData *models.UeContextTransferRspData, problemDetails *models.ProblemDetails, err error) {
+	ueContextTransferRspData *models.UeContextTransferRspData, problemDetails *models.ProblemDetails, err error,
+) {
 	configuration := Namf_Communication.NewConfiguration()
 	configuration.SetBasePath(ue.TargetAmfUri)
 	client := Namf_Communication.NewAPIClient(configuration)
@@ -195,7 +215,10 @@ func UEContextTransferRequest(
 	}
 	if transferReason == models.TransferReason_INIT_REG || transferReason == models.TransferReason_MOBI_REG {
 		var buf bytes.Buffer
-		ue.RegistrationRequest.EncodeRegistrationRequest(&buf)
+		err = ue.RegistrationRequest.EncodeRegistrationRequest(&buf)
+		if err != nil {
+			return nil, nil, fmt.Errorf("re-encoding registration request message is failed: %w", err)
+		}
 		ueContextTransferReqData.RegRequest = &models.N1MessageContainer{
 			N1MessageClass: models.N1MessageClass__5_GMM,
 			N1MessageContent: &models.RefToBinaryData{
@@ -209,6 +232,14 @@ func UEContextTransferRequest(
 	ueContextId := fmt.Sprintf("5g-guti-%s", ue.Guti)
 
 	res, httpResp, localErr := client.IndividualUeContextDocumentApi.UEContextTransfer(context.TODO(), ueContextId, req)
+	defer func() {
+		if httpResp != nil {
+			if rspCloseErr := httpResp.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("UEContextTransfer response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if localErr == nil {
 		ueContextTransferRspData = res.JsonData
 		logger.ConsumerLog.Debugf("UeContextTransferRspData: %+v", *ueContextTransferRspData)
@@ -227,14 +258,23 @@ func UEContextTransferRequest(
 
 // This operation is called "RegistrationCompleteNotify" at TS 23.502
 func RegistrationStatusUpdate(ue *amf_context.AmfUe, request models.UeRegStatusUpdateReqData) (
-	regStatusTransferComplete bool, problemDetails *models.ProblemDetails, err error) {
+	regStatusTransferComplete bool, problemDetails *models.ProblemDetails, err error,
+) {
 	configuration := Namf_Communication.NewConfiguration()
 	configuration.SetBasePath(ue.TargetAmfUri)
 	client := Namf_Communication.NewAPIClient(configuration)
 
 	ueContextId := fmt.Sprintf("5g-guti-%s", ue.Guti)
-	res, httpResp, localErr :=
-		client.IndividualUeContextDocumentApi.RegistrationStatusUpdate(context.TODO(), ueContextId, request)
+	res, httpResp, localErr := client.IndividualUeContextDocumentApi.
+		RegistrationStatusUpdate(context.TODO(), ueContextId, request)
+	defer func() {
+		if httpResp != nil {
+			if rspCloseErr := httpResp.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("RegistrationStatusUpdate response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if localErr == nil {
 		regStatusTransferComplete = res.RegStatusTransferComplete
 	} else if httpResp != nil {
@@ -247,5 +287,5 @@ func RegistrationStatusUpdate(ue *amf_context.AmfUe, request models.UeRegStatusU
 	} else {
 		err = openapi.ReportError("%s: server no response", ue.TargetAmfUri)
 	}
-	return
+	return regStatusTransferComplete, problemDetails, err
 }

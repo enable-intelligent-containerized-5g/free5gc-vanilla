@@ -1,8 +1,8 @@
 package common
 
 import (
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/amf/internal/context"
-  "github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 func StopAll5GSMMTimers(ue *context.AmfUe) {

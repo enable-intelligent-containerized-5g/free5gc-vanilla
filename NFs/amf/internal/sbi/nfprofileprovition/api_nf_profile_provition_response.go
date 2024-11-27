@@ -11,7 +11,7 @@ import (
 )
 
 func HTTPNfProfileProvitionRequest(c *gin.Context) {
-	self := context.AMF_Self()
+	self := context.GetSelf()
 	if self == nil {
 		logger.NfPer.Error("NWDAF self is not initialized")
 		problemDetails := models.ProblemDetails{

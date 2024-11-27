@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"github.com/antihax/optional"
-	"github.com/enable-intelligent-containerized-5g/openapi/models"
 
-	amf_context "github.com/free5gc/amf/internal/context"
-	"github.com/free5gc/amf/internal/util"
 	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
 	"github.com/enable-intelligent-containerized-5g/openapi"
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/Nsmf_PDUSession"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	amf_context "github.com/free5gc/amf/internal/context"
+	"github.com/free5gc/amf/internal/logger"
+	"github.com/free5gc/amf/internal/util"
+	"github.com/free5gc/amf/pkg/factory"
 )
 
 func SelectSmf(
@@ -85,8 +87,8 @@ func SelectSmf(
 	if ue.PlmnId.Mcc != "" {
 		param.TargetPlmnList = optional.NewInterface(openapi.MarshToJsonString(ue.PlmnId))
 	}
-	if amf_context.AMF_Self().Locality != "" {
-		param.PreferredLocality = optional.NewString(amf_context.AMF_Self().Locality)
+	if amf_context.GetSelf().Locality != "" {
+		param.PreferredLocality = optional.NewString(amf_context.GetSelf().Locality)
 	}
 
 	ue.GmmLog.Debugf("Search SMF from NRF[%s]", nrfUri)
@@ -129,8 +131,16 @@ func SendCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.Sm
 	configuration.SetBasePath(smContext.SmfUri())
 	client := Nsmf_PDUSession.NewAPIClient(configuration)
 
-	postSmContextReponse, httpResponse, err := client.SMContextsCollectionApi.PostSmContexts(context.Background(), postSmContextsRequest)
-
+	postSmContextReponse, httpResponse, err := client.SMContextsCollectionApi.
+		PostSmContexts(context.Background(), postSmContextsRequest)
+	defer func() {
+		if httpResponse != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("PostSmContexts response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if err == nil {
 		response = &postSmContextReponse
 		smContextRef = httpResponse.Header.Get("Location")
@@ -156,7 +166,7 @@ func SendCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.Sm
 func buildCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.SmContext,
 	requestType *models.RequestType,
 ) (smContextCreateData models.SmContextCreateData) {
-	context := amf_context.AMF_Self()
+	context := amf_context.GetSelf()
 	smContextCreateData.Supi = ue.Supi
 	smContextCreateData.UnauthenticatedSupi = ue.UnauthenticatedSupi
 	smContextCreateData.Pei = ue.Pei
@@ -182,8 +192,8 @@ func buildCreateSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.S
 	// 	smContextCreateData.UeLocation = ue.Location
 	// }
 	smContextCreateData.UeTimeZone = ue.TimeZone
-	smContextCreateData.SmContextStatusUri = context.GetIPv4Uri() + "/namf-callback/v1/smContextStatus/" +
-		ue.Guti + "/" + strconv.Itoa(int(smContext.PduSessionID()))
+	smContextCreateData.SmContextStatusUri = context.GetIPv4Uri() + factory.AmfCallbackResUriPrefix + "/smContextStatus/" +
+		ue.Supi + "/" + strconv.Itoa(int(smContext.PduSessionID()))
 
 	return smContextCreateData
 }
@@ -218,7 +228,7 @@ func SendUpdateSmContextActivateUpCnxState(
 		updateData.AnType = smContext.AccessType()
 	}
 	if ladn, ok := ue.ServingAMF().LadnPool[smContext.Dnn()]; ok {
-		if amf_context.InTaiList(ue.Tai, ladn.TaiLists) {
+		if amf_context.InTaiList(ue.Tai, ladn.TaiList) {
 			updateData.PresenceInLadn = models.PresenceState_IN_AREA
 		}
 	}
@@ -278,7 +288,7 @@ func SendUpdateSmContextXnHandover(
 	updateData.ToBeSwitched = true
 	updateData.UeLocation = &ue.Location
 	if ladn, ok := ue.ServingAMF().LadnPool[smContext.Dnn()]; ok {
-		if amf_context.InTaiList(ue.Tai, ladn.TaiLists) {
+		if amf_context.InTaiList(ue.Tai, ladn.TaiList) {
 			updateData.PresenceInLadn = models.PresenceState_IN_AREA
 		} else {
 			updateData.PresenceInLadn = models.PresenceState_OUT_OF_AREA
@@ -349,7 +359,7 @@ func SendUpdateSmContextN2HandoverComplete(
 		updateData.Guami = guami
 	}
 	if ladn, ok := ue.ServingAMF().LadnPool[smContext.Dnn()]; ok {
-		if amf_context.InTaiList(ue.Tai, ladn.TaiLists) {
+		if amf_context.InTaiList(ue.Tai, ladn.TaiList) {
 			updateData.PresenceInLadn = models.PresenceState_IN_AREA
 		} else {
 			updateData.PresenceInLadn = models.PresenceState_OUT_OF_AREA
@@ -403,7 +413,7 @@ func SendUpdateSmContextHandoverBetweenAMF(
 			updateData.UeLocation = &ue.Location
 		}
 		if ladn, ok := ue.ServingAMF().LadnPool[smContext.Dnn()]; ok {
-			if amf_context.InTaiList(ue.Tai, ladn.TaiLists) {
+			if amf_context.InTaiList(ue.Tai, ladn.TaiList) {
 				updateData.PresenceInLadn = models.PresenceState_IN_AREA
 			}
 		}
@@ -425,9 +435,17 @@ func SendUpdateSmContextRequest(smContext *amf_context.SmContext,
 	updateSmContextRequest.BinaryDataN1SmMessage = n1Msg
 	updateSmContextRequest.BinaryDataN2SmInformation = n2Info
 
-	updateSmContextReponse, httpResponse, err := client.IndividualSMContextApi.UpdateSmContext(context.Background(), smContext.SmContextRef(),
-		updateSmContextRequest)
-
+	updateSmContextReponse, httpResponse, err := client.IndividualSMContextApi.
+		UpdateSmContext(context.Background(), smContext.SmContextRef(),
+			updateSmContextRequest)
+	defer func() {
+		if httpResponse != nil {
+			if rspCloseErr := httpResponse.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("UpdateSmContext response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if err == nil {
 		response = &updateSmContextReponse
 	} else if httpResponse != nil {
@@ -466,16 +484,28 @@ func SendReleaseSmContextRequest(ue *amf_context.AmfUe, smContext *amf_context.S
 
 	response, err1 := client.IndividualSMContextApi.ReleaseSmContext(
 		context.Background(), smContext.SmContextRef(), releaseSmContextRequest)
-
+	defer func() {
+		if response != nil {
+			if rspCloseErr := response.Body.Close(); rspCloseErr != nil {
+				logger.ConsumerLog.Errorf("ReleaseSmContext response body cannot close: %+v",
+					rspCloseErr)
+			}
+		}
+	}()
 	if err1 == nil {
 		ue.SmContextList.Delete(smContext.PduSessionID())
 	} else if response != nil && response.Status == err1.Error() {
-		problem := err1.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
-		detail = &problem
+		if response.StatusCode == 404 {
+			// assume succeeded to release SmContext
+			ue.SmContextList.Delete(smContext.PduSessionID())
+		} else {
+			problem := err1.(openapi.GenericOpenAPIError).Model().(models.ProblemDetails)
+			detail = &problem
+		}
 	} else {
 		err = err1
 	}
-	return
+	return detail, err
 }
 
 func buildReleaseSmContextRequest(

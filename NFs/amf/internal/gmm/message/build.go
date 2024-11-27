@@ -3,18 +3,19 @@ package message
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/mitchellh/mapstructure"
 
+	"github.com/free5gc/amf/internal/context"
+	"github.com/free5gc/amf/internal/logger"
+	"github.com/free5gc/amf/internal/nas/nas_security"
+	"github.com/free5gc/amf/pkg/factory"
 	"github.com/enable-intelligent-containerized-5g/nas"
 	"github.com/enable-intelligent-containerized-5g/nas/nasConvert"
 	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
 	"github.com/enable-intelligent-containerized-5g/nas/nasType"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
-	"github.com/free5gc/amf/internal/context"
-	"github.com/free5gc/amf/internal/logger"
-	"github.com/free5gc/amf/internal/nas/nas_security"
-	"github.com/free5gc/amf/pkg/factory"
 )
 
 func BuildDLNASTransport(ue *context.AmfUe, accessType models.AccessType, payloadContainerType uint8, nasPdu []byte,
@@ -137,7 +138,8 @@ func BuildAuthenticationRequest(ue *context.AmfUe) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		authenticationRequest.AuthenticationParameterRAND = nasType.NewAuthenticationParameterRAND(nasMessage.AuthenticationRequestAuthenticationParameterRANDType)
+		authenticationRequest.AuthenticationParameterRAND = nasType.
+			NewAuthenticationParameterRAND(nasMessage.AuthenticationRequestAuthenticationParameterRANDType)
 		copy(tmpArray[:], rand[0:16])
 		authenticationRequest.AuthenticationParameterRAND.SetRANDValue(tmpArray)
 
@@ -145,7 +147,8 @@ func BuildAuthenticationRequest(ue *context.AmfUe) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		authenticationRequest.AuthenticationParameterAUTN = nasType.NewAuthenticationParameterAUTN(nasMessage.AuthenticationRequestAuthenticationParameterAUTNType)
+		authenticationRequest.AuthenticationParameterAUTN = nasType.
+			NewAuthenticationParameterAUTN(nasMessage.AuthenticationRequestAuthenticationParameterAUTNType)
 		authenticationRequest.AuthenticationParameterAUTN.SetLen(uint8(len(autn)))
 		copy(tmpArray[:], autn[0:16])
 		authenticationRequest.AuthenticationParameterAUTN.SetAUTN(tmpArray)
@@ -297,10 +300,14 @@ func BuildRegistrationReject(ue *context.AmfUe, cause5GMM uint8, eapMessage stri
 	registrationReject.RegistrationRejectMessageIdentity.SetMessageType(nas.MsgTypeRegistrationReject)
 	registrationReject.Cause5GMM.SetCauseValue(cause5GMM)
 
-	if ue.T3502Value != 0 {
+	t3502Val := context.GetSelf().T3502Value
+	if ue != nil {
+		t3502Val = ue.T3502Value
+	}
+	if t3502Val != 0 {
 		registrationReject.T3502Value = nasType.NewT3502Value(nasMessage.RegistrationRejectT3502ValueType)
 		registrationReject.T3502Value.SetLen(1)
-		t3502 := nasConvert.GPRSTimer2ToNas(ue.T3502Value)
+		t3502 := nasConvert.GPRSTimer2ToNas(t3502Val)
 		registrationReject.T3502Value.SetGPRSTimer2Value(t3502)
 	}
 
@@ -354,7 +361,8 @@ func BuildSecurityModeCommand(ue *context.AmfUe, accessType models.AccessType, e
 		securityModeCommand.IMEISVRequest.SetIMEISVRequestValue(nasMessage.IMEISVRequested)
 	}
 
-	securityModeCommand.Additional5GSecurityInformation = nasType.NewAdditional5GSecurityInformation(nasMessage.SecurityModeCommandAdditional5GSecurityInformationType)
+	securityModeCommand.Additional5GSecurityInformation = nasType.
+		NewAdditional5GSecurityInformation(nasMessage.SecurityModeCommandAdditional5GSecurityInformationType)
 	securityModeCommand.Additional5GSecurityInformation.SetLen(1)
 	if ue.RetransmissionOfInitialNASMsg {
 		securityModeCommand.Additional5GSecurityInformation.SetRINMR(1)
@@ -496,12 +504,15 @@ func BuildRegistrationAccept(
 	// TODO: set smsAllowed value of RegistrationResult5GS if need
 
 	if ue.Guti != "" {
-		gutiNas := nasConvert.GutiToNas(ue.Guti)
+		gutiNas, err := nasConvert.GutiToNasWithError(ue.Guti)
+		if err != nil {
+			return nil, fmt.Errorf("encode GUTI failed: %w", err)
+		}
 		registrationAccept.GUTI5G = &gutiNas
 		registrationAccept.GUTI5G.SetIei(nasMessage.RegistrationAcceptGUTI5GType)
 	}
 
-	amfSelf := context.AMF_Self()
+	amfSelf := context.GetSelf()
 	if len(amfSelf.PlmnSupportList) > 1 {
 		registrationAccept.EquivalentPlmns = nasType.NewEquivalentPlmns(nasMessage.RegistrationAcceptEquivalentPlmnsType)
 		var buf []uint8
@@ -549,20 +560,21 @@ func BuildRegistrationAccept(
 	}
 
 	// 5gs network feature support
-	if factory.AmfConfig.Configuration.Get5gsNwFeatSuppEnable() {
-		registrationAccept.NetworkFeatureSupport5GS = nasType.NewNetworkFeatureSupport5GS(nasMessage.RegistrationAcceptNetworkFeatureSupport5GSType)
-		registrationAccept.NetworkFeatureSupport5GS.SetLen(2)
+	if c := factory.AmfConfig.GetNasIENetworkFeatureSupport5GS(); c != nil && c.Enable {
+		registrationAccept.NetworkFeatureSupport5GS = nasType.
+			NewNetworkFeatureSupport5GS(nasMessage.RegistrationAcceptNetworkFeatureSupport5GSType)
+		registrationAccept.NetworkFeatureSupport5GS.SetLen(c.Length)
 		if anType == models.AccessType__3_GPP_ACCESS {
-			registrationAccept.SetIMSVoPS3GPP(factory.AmfConfig.Configuration.Get5gsNwFeatSuppImsVoPS())
+			registrationAccept.SetIMSVoPS3GPP(c.ImsVoPS)
 		} else {
-			registrationAccept.SetIMSVoPSN3GPP(factory.AmfConfig.Configuration.Get5gsNwFeatSuppImsVoPS())
+			registrationAccept.SetIMSVoPSN3GPP(c.ImsVoPS)
 		}
-		registrationAccept.SetEMC(factory.AmfConfig.Configuration.Get5gsNwFeatSuppEmc())
-		registrationAccept.SetEMF(factory.AmfConfig.Configuration.Get5gsNwFeatSuppEmf())
-		registrationAccept.SetIWKN26(factory.AmfConfig.Configuration.Get5gsNwFeatSuppIwkN26())
-		registrationAccept.SetMPSI(factory.AmfConfig.Configuration.Get5gsNwFeatSuppMpsi())
-		registrationAccept.SetEMCN(factory.AmfConfig.Configuration.Get5gsNwFeatSuppEmcN3())
-		registrationAccept.SetMCSI(factory.AmfConfig.Configuration.Get5gsNwFeatSuppMcsi())
+		registrationAccept.SetEMC(c.Emc)
+		registrationAccept.SetEMF(c.Emf)
+		registrationAccept.SetIWKN26(c.IwkN26)
+		registrationAccept.SetMPSI(c.Mpsi)
+		registrationAccept.SetEMCN(c.EmcN3)
+		registrationAccept.SetMCSI(c.Mcsi)
 	}
 
 	if pDUSessionStatus != nil {
@@ -572,7 +584,8 @@ func BuildRegistrationAccept(
 	}
 
 	if reactivationResult != nil {
-		registrationAccept.PDUSessionReactivationResult = nasType.NewPDUSessionReactivationResult(nasMessage.RegistrationAcceptPDUSessionReactivationResultType)
+		registrationAccept.PDUSessionReactivationResult = nasType.
+			NewPDUSessionReactivationResult(nasMessage.RegistrationAcceptPDUSessionReactivationResultType)
 		registrationAccept.PDUSessionReactivationResult.SetLen(2)
 		registrationAccept.PDUSessionReactivationResult.Buffer = nasConvert.PSIToBuf(*reactivationResult)
 	}
@@ -589,7 +602,7 @@ func BuildRegistrationAccept(
 		registrationAccept.LADNInformation = nasType.NewLADNInformation(nasMessage.RegistrationAcceptLADNInformationType)
 		buf := make([]uint8, 0)
 		for _, ladn := range ue.LadnInfo {
-			ladnNas := nasConvert.LadnToNas(ladn.Dnn, ladn.TaiLists)
+			ladnNas := nasConvert.LadnToNas(ladn.Dnn, ladn.TaiList)
 			buf = append(buf, ladnNas...)
 		}
 		registrationAccept.LADNInformation.SetLen(uint16(len(buf)))
@@ -597,7 +610,8 @@ func BuildRegistrationAccept(
 	}
 
 	if ue.NetworkSlicingSubscriptionChanged {
-		registrationAccept.NetworkSlicingIndication = nasType.NewNetworkSlicingIndication(nasMessage.RegistrationAcceptNetworkSlicingIndicationType)
+		registrationAccept.NetworkSlicingIndication = nasType.
+			NewNetworkSlicingIndication(nasMessage.RegistrationAcceptNetworkSlicingIndicationType)
 		registrationAccept.NetworkSlicingIndication.SetNSSCI(1)
 		registrationAccept.NetworkSlicingIndication.SetDCNI(0)
 		ue.NetworkSlicingSubscriptionChanged = false // reset the value
@@ -619,9 +633,10 @@ func BuildRegistrationAccept(
 	}
 
 	if anType == models.AccessType_NON_3_GPP_ACCESS {
-		registrationAccept.Non3GppDeregistrationTimerValue = nasType.NewNon3GppDeregistrationTimerValue(nasMessage.RegistrationAcceptNon3GppDeregistrationTimerValueType)
+		registrationAccept.Non3GppDeregistrationTimerValue = nasType.
+			NewNon3GppDeregistrationTimerValue(nasMessage.RegistrationAcceptNon3GppDeregistrationTimerValueType)
 		registrationAccept.Non3GppDeregistrationTimerValue.SetLen(1)
-		timerValue := nasConvert.GPRSTimer2ToNas(ue.Non3gppDeregistrationTimerValue)
+		timerValue := nasConvert.GPRSTimer2ToNas(ue.Non3gppDeregTimerValue)
 		registrationAccept.Non3GppDeregistrationTimerValue.SetGPRSTimer2Value(timerValue)
 	}
 
@@ -633,7 +648,8 @@ func BuildRegistrationAccept(
 	}
 
 	if ue.UESpecificDRX != nasMessage.DRXValueNotSpecified {
-		registrationAccept.NegotiatedDRXParameters = nasType.NewNegotiatedDRXParameters(nasMessage.RegistrationAcceptNegotiatedDRXParametersType)
+		registrationAccept.NegotiatedDRXParameters = nasType.
+			NewNegotiatedDRXParameters(nasMessage.RegistrationAcceptNegotiatedDRXParametersType)
 		registrationAccept.NegotiatedDRXParameters.SetLen(1)
 		registrationAccept.NegotiatedDRXParameters.SetDRXValue(ue.UESpecificDRX)
 	}
@@ -691,17 +707,22 @@ func BuildConfigurationUpdateCommand(ue *context.AmfUe, anType models.AccessType
 	configurationUpdateCommand.SetMessageType(nas.MsgTypeConfigurationUpdateCommand)
 
 	if ue.ConfigurationUpdateIndication.Octet != 0 {
-		configurationUpdateCommand.ConfigurationUpdateIndication = nasType.NewConfigurationUpdateIndication(nasMessage.ConfigurationUpdateCommandConfigurationUpdateIndicationType)
+		configurationUpdateCommand.ConfigurationUpdateIndication = nasType.
+			NewConfigurationUpdateIndication(nasMessage.ConfigurationUpdateCommandConfigurationUpdateIndicationType)
 		configurationUpdateCommand.ConfigurationUpdateIndication = &ue.ConfigurationUpdateIndication
 	}
 
 	if networkSlicingIndication != nil {
-		configurationUpdateCommand.NetworkSlicingIndication = nasType.NewNetworkSlicingIndication(nasMessage.ConfigurationUpdateCommandNetworkSlicingIndicationType)
+		configurationUpdateCommand.NetworkSlicingIndication = nasType.
+			NewNetworkSlicingIndication(nasMessage.ConfigurationUpdateCommandNetworkSlicingIndicationType)
 		configurationUpdateCommand.NetworkSlicingIndication = networkSlicingIndication
 	}
 
 	if ue.Guti != "" {
-		gutiNas := nasConvert.GutiToNas(ue.Guti)
+		gutiNas, err := nasConvert.GutiToNasWithError(ue.Guti)
+		if err != nil {
+			return nil, fmt.Errorf("encode GUTI failed: %w", err)
+		}
 		configurationUpdateCommand.GUTI5G = &gutiNas
 		configurationUpdateCommand.GUTI5G.SetIei(nasMessage.ConfigurationUpdateCommandGUTI5GType)
 	}
@@ -714,7 +735,8 @@ func BuildConfigurationUpdateCommand(ue *context.AmfUe, anType models.AccessType
 	}
 
 	if len(ue.AllowedNssai[anType]) > 0 {
-		configurationUpdateCommand.AllowedNSSAI = nasType.NewAllowedNSSAI(nasMessage.ConfigurationUpdateCommandAllowedNSSAIType)
+		configurationUpdateCommand.AllowedNSSAI = nasType.
+			NewAllowedNSSAI(nasMessage.ConfigurationUpdateCommandAllowedNSSAIType)
 		var buf []uint8
 		for _, allowedSnssai := range ue.AllowedNssai[anType] {
 			buf = append(buf, nasConvert.SnssaiToNas(*allowedSnssai.AllowedSnssai)...)
@@ -724,7 +746,8 @@ func BuildConfigurationUpdateCommand(ue *context.AmfUe, anType models.AccessType
 	}
 
 	if len(ue.ConfiguredNssai) > 0 {
-		configurationUpdateCommand.ConfiguredNSSAI = nasType.NewConfiguredNSSAI(nasMessage.ConfigurationUpdateCommandConfiguredNSSAIType)
+		configurationUpdateCommand.ConfiguredNSSAI = nasType.
+			NewConfiguredNSSAI(nasMessage.ConfigurationUpdateCommandConfiguredNSSAIType)
 		var buf []uint8
 		for _, snssai := range ue.ConfiguredNssai {
 			buf = append(buf, nasConvert.SnssaiToNas(*snssai.ConfiguredSnssai)...)
@@ -745,13 +768,15 @@ func BuildConfigurationUpdateCommand(ue *context.AmfUe, anType models.AccessType
 	// TODO: UniversalTimeAndLocalTimeZone
 	if anType == models.AccessType__3_GPP_ACCESS && ue.AmPolicyAssociation != nil &&
 		ue.AmPolicyAssociation.ServAreaRes != nil {
-		configurationUpdateCommand.ServiceAreaList = nasType.NewServiceAreaList(nasMessage.ConfigurationUpdateCommandServiceAreaListType)
-		partialServiceAreaList := nasConvert.PartialServiceAreaListToNas(ue.PlmnId, *ue.AmPolicyAssociation.ServAreaRes)
+		configurationUpdateCommand.ServiceAreaList = nasType.
+			NewServiceAreaList(nasMessage.ConfigurationUpdateCommandServiceAreaListType)
+		partialServiceAreaList := nasConvert.
+			PartialServiceAreaListToNas(ue.PlmnId, *ue.AmPolicyAssociation.ServAreaRes)
 		configurationUpdateCommand.ServiceAreaList.SetLen(uint8(len(partialServiceAreaList)))
 		configurationUpdateCommand.ServiceAreaList.SetPartialServiceAreaList(partialServiceAreaList)
 	}
 
-	amfSelf := context.AMF_Self()
+	amfSelf := context.GetSelf()
 	if amfSelf.NetworkName.Full != "" {
 		fullNetworkName := nasConvert.FullNetworkNameToNas(amfSelf.NetworkName.Full)
 		configurationUpdateCommand.FullNameForNetwork = &fullNetworkName
@@ -767,22 +792,25 @@ func BuildConfigurationUpdateCommand(ue *context.AmfUe, anType models.AccessType
 	if ue.TimeZone != "" {
 		localTimeZone := nasConvert.EncodeLocalTimeZoneToNas(ue.TimeZone)
 		localTimeZone.SetIei(nasMessage.ConfigurationUpdateCommandLocalTimeZoneType)
-		configurationUpdateCommand.LocalTimeZone = nasType.NewLocalTimeZone(nasMessage.ConfigurationUpdateCommandLocalTimeZoneType)
+		configurationUpdateCommand.LocalTimeZone = nasType.
+			NewLocalTimeZone(nasMessage.ConfigurationUpdateCommandLocalTimeZoneType)
 		configurationUpdateCommand.LocalTimeZone = &localTimeZone
 	}
 
 	if ue.TimeZone != "" {
 		daylightSavingTime := nasConvert.EncodeDaylightSavingTimeToNas(ue.TimeZone)
 		daylightSavingTime.SetIei(nasMessage.ConfigurationUpdateCommandNetworkDaylightSavingTimeType)
-		configurationUpdateCommand.NetworkDaylightSavingTime = nasType.NewNetworkDaylightSavingTime(nasMessage.ConfigurationUpdateCommandNetworkDaylightSavingTimeType)
+		configurationUpdateCommand.NetworkDaylightSavingTime = nasType.
+			NewNetworkDaylightSavingTime(nasMessage.ConfigurationUpdateCommandNetworkDaylightSavingTimeType)
 		configurationUpdateCommand.NetworkDaylightSavingTime = &daylightSavingTime
 	}
 
 	if len(ue.LadnInfo) > 0 {
-		configurationUpdateCommand.LADNInformation = nasType.NewLADNInformation(nasMessage.ConfigurationUpdateCommandLADNInformationType)
+		configurationUpdateCommand.LADNInformation = nasType.
+			NewLADNInformation(nasMessage.ConfigurationUpdateCommandLADNInformationType)
 		var buf []uint8
 		for _, ladn := range ue.LadnInfo {
-			ladnNas := nasConvert.LadnToNas(ladn.Dnn, ladn.TaiLists)
+			ladnNas := nasConvert.LadnToNas(ladn.Dnn, ladn.TaiList)
 			buf = append(buf, ladnNas...)
 		}
 		configurationUpdateCommand.LADNInformation.SetLen(uint16(len(buf)))

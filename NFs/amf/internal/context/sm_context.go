@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/enable-intelligent-containerized-5g/nas/nasMessage"
-  "github.com/enable-intelligent-containerized-5g/openapi/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 )
 
 type SmContext struct {
