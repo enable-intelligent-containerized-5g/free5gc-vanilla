@@ -396,6 +396,7 @@ func NFRegisterProcedure(nfProfile models.NfProfile) (header http.Header, respon
 			Status: http.StatusBadRequest,
 			Detail: timer,
 		}
+		logger.ManagementLog.Error(err.Error())
 		return nil, nil, false, problemDetails
 	}
 

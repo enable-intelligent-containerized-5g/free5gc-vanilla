@@ -151,6 +151,8 @@ func (a *AmfApp) Start(tlsKeyLogPath string) {
 		profile = profileTmp
 	}
 
+	// logger.InitLog.Warnf("NrfUri: %v, Id: %v, Profile: %v, Container: %s", self.NrfUri, self.NfId, profile, profile.ContainerName)
+
 	if _, nfId, err := consumer.SendRegisterNFInstance(self.NrfUri, self.NfId, profile); err != nil {
 		logger.InitLog.Warnf("Send Register NF Instance failed: %+v", err)
 	} else {

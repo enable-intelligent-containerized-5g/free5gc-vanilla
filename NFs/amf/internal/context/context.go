@@ -42,6 +42,7 @@ func init() {
 }
 
 type AMFContext struct {
+	ContainerName                string
 	EventSubscriptionIDGenerator *idgenerator.IDGenerator
 	EventSubscriptions           sync.Map
 	UePool                       sync.Map                // map[supi]*AmfUe
@@ -107,6 +108,7 @@ func InitAmfContext(context *AMFContext) {
 	} else {
 		context.NgapIpList = []string{"127.0.0.1"} // default localhost
 	}
+	context.ContainerName = configuration.ContainerName
 	context.NgapPort = config.GetNgapPort()
 	context.UriScheme = models.UriScheme(config.GetSbiScheme())
 	context.RegisterIPv4 = config.GetSbiRegisterIP()

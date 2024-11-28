@@ -64,6 +64,7 @@ type Info struct {
 }
 
 type Configuration struct {
+	ContainerName          string            `yaml:"containerName,omitempty" valid:"required, type(string)"`
 	AmfName                string            `yaml:"amfName,omitempty" valid:"required, type(string)"`
 	NgapIpList             []string          `yaml:"ngapIpList,omitempty" valid:"required"`
 	NgapPort               int               `yaml:"ngapPort,omitempty" valid:"optional,port"`
