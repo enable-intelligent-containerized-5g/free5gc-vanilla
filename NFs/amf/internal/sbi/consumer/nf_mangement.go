@@ -17,6 +17,7 @@ import (
 )
 
 func BuildNFInstance(context *amf_context.AMFContext) (profile models.NfProfile, err error) {
+	profile.ContainerName = context.ContainerName
 	profile.NfInstanceId = context.NfId
 	profile.NfType = models.NfType_AMF
 	profile.NfStatus = models.NfStatus_REGISTERED
@@ -31,7 +32,7 @@ func BuildNFInstance(context *amf_context.AMFContext) (profile models.NfProfile,
 	}
 	amfInfo := models.AmfInfo{}
 	if len(context.ServedGuamiList) == 0 {
-		err = fmt.Errorf("Gumai List is Empty in AMF")
+		err = fmt.Errorf(" Gumai List is Empty in AMF")
 		return
 	}
 	regionId, setId, _, err1 := util.SeperateAmfId(context.ServedGuamiList[0].AmfId)
@@ -74,6 +75,7 @@ func BuildNFInstance(context *amf_context.AMFContext) (profile models.NfProfile,
 func SendRegisterNFInstance(nrfUri, nfInstanceId string, profile models.NfProfile) (
 	resouceNrfUri string, retrieveNfInstanceId string, err error,
 ) {
+
 	// Set client and set url
 	configuration := Nnrf_NFManagement.NewConfiguration()
 	configuration.SetBasePath(nrfUri)
