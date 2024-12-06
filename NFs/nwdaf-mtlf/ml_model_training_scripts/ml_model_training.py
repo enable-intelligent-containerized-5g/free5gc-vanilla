@@ -4,7 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.ensemble import RandomForestRegressor
+# from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 
@@ -53,21 +54,24 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     X_train, X_test, y_train, y_test = train_test_split(X.reshape(X.shape[0], -1), y, test_size=test_size, random_state=42)
 
     # Create the model
-    rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+    # rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+    ml_model = LinearRegression()
 
     # Train the model
-    rf_model.fit(X_train, y_train)
+    ml_model.fit(X_train, y_train)
     
     ##################################################################
     ###                          Evaluation                        ###
     ##################################################################
 
     # Info
-    name = "RFR"
-    large_name = 'Random Forest Regressor'
+    # name = "RFR"
+    # large_name = 'Random Forest Regressor'
+    name = "LR"
+    large_name = 'Linear Regressor'
        
     # Make the predictions
-    y_pred = rf_model.predict(X_test)
+    y_pred = ml_model.predict(X_test)
     # Invert the normalization to obtain the original values
     y_pred_invertido = scaler.inverse_transform(y_pred)
     y_test_invertido = scaler.inverse_transform(y_test)
@@ -137,7 +141,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     
     model_name = f"model_{name}_{base_name}"
     model_uri = f"{models_path}{model_name}.{model_format}"
-    joblib.dump(rf_model, model_uri)
+    joblib.dump(ml_model, model_uri)
     model_size = os.path.getsize(model_uri)
     
     model_info = {

@@ -1,8 +1,8 @@
 [
     {
-        "name": "model_RFR_NF_LOAD_AMF_60s_1731974400_1731994675",
-        "uri": "models/model_RFR_NF_LOAD_AMF_60s_1731974400_1731994675.pkl",
-        "figureUri": "models/figures/model_RFR_NF_LOAD_AMF_60s_1731974400_1731994675.png",
+        "name": "default-model_RFR_NF_LOAD_AMF_60s_1731603060_1731663000",
+        "uri": "models/default-model_RFR_NF_LOAD_AMF_60s_1731603060_1731663000.pkl",
+        "figureUri": "models/figures/default-figure_RFR_NF_LOAD_AMF_60s_1731603060_1731663000.png",
         "size": 6353152,
         "targetPeriod": 60,
         "r2": 0.624462511142252,

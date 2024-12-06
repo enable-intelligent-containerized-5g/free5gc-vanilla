@@ -3,8 +3,8 @@ description: UPF initial local configuration
 
 # The listen IP and nodeID of the N4 interface on this UPF (Can't set to 0.0.0.0)
 pfcp:
-  addr: 10.200.200.101   # IP addr for listening
-  nodeID: 10.200.200.101 # External IP or FQDN can be reached
+  addr: 127.0.0.1   # IP addr for listening
+  nodeID: 127.0.0.1  # External IP or FQDN can be reached
   retransTimeout: 1s # retransmission timeout
   maxRetrans: 3 # the max number of retransmission
 
@@ -13,7 +13,7 @@ gtpu:
   # The IP list of the N3/N9 interfaces on this UPF
   # If there are multiple connection, set addr to 0.0.0.0 or list all the addresses
   ifList:
-    - addr: 10.200.200.102
+    - addr: 10.132.0.232
       type: N3
       # name: upf.5gc.nctu.me
       # ifname: gtpif

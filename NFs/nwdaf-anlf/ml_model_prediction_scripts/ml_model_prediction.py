@@ -50,7 +50,7 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
     ##################################################################
     
     try:
-        rf_model = joblib.load(selected_model_uri)
+        ml_model = joblib.load(selected_model_uri)
     except FileNotFoundError as e:
         sys.exit(f"No Found the Ml Model: {e}")
     except Exception as e:
@@ -64,7 +64,7 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
     new_input = data_scaled.reshape(1, -1)
        
     # Make the predictions
-    y_pred = rf_model.predict(new_input)
+    y_pred = ml_model.predict(new_input)
     
     # Invert the normalization to obtain the original values
     y_pred_invertido = scaler.inverse_transform(y_pred)

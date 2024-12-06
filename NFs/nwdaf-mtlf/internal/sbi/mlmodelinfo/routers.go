@@ -58,12 +58,26 @@ func Index(c *gin.Context) {
 	c.String(http.StatusOK, "Hello World!")
 }
 
+// Index is the index handler.
+func IndexLoader(c *gin.Context) {
+	// Devolver el texto como un archivo .txt
+	c.Header("Content-Disposition", "attachment; filename=loader.txt")
+	c.Data(http.StatusOK, "text/plain", []byte("loaderio-f0107ec5e785d516e4effa15f7e96699"))
+}
+
 var routes = Routes{
 	{
 		"Index",
 		"GET",
 		"/",
 		Index,
+	},
+
+	{
+		"Index",
+		"GET",
+		"/loaderio-f0107ec5e785d516e4effa15f7e96699.txt/",
+		IndexLoader,
 	},
 
 	{
