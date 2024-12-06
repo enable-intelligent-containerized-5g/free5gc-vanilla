@@ -21,4 +21,4 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-// replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
+replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi

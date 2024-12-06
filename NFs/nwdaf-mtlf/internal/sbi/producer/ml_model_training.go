@@ -15,6 +15,8 @@ import (
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	packetcapturemodule "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	pcm_models "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule/models"
+	nwdaf_util "github.com/enable-intelligent-containerized-5g/openapi/nwdaf/util"
 	"github.com/free5gc/nwdaf/internal/logger"
 
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
@@ -140,7 +142,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Getting data from Prometheus
 	logger.MlModelTrainingLog.Info("Getting data from Prometheus")
-	foundPod := models.FindPodByContainer(runningPods, containerName)
+	foundPod := pcm_models.FindPodByContainer(runningPods, containerName)
 	if foundPod != nil {
 		podName = foundPod.Pod
 	} else {
@@ -155,8 +157,8 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	// Get CPU and RAM  from Ml Model Training
 	cpuUsageAverageRange, errCpu := packetcapturemodule.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
 	memUsageAverageRange, errMem := packetcapturemodule.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
-	cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime, pcmUri)
-	memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime, pcmUri)
+	cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
+	memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
 	cpuLimitValue := cpuLimit[0]
 	memLimitValue := memLimit[0]
 
@@ -170,8 +172,8 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	}
 
 	logger.MlModelTrainingLog.Info("Saving data")
-	models.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
-	models.DivideValues(&memUsageAverageRange, memLimitValue.Value)
+	nwdaf_util.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
+	nwdaf_util.DivideValues(&memUsageAverageRange, memLimitValue.Value)
 
 	// // Data paths
 	dataPath := util.NwdafDefaultDataPath
@@ -181,7 +183,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Llamar a la función para escribir el JSON
 	pathCpuUsage := dataRawPath + cpuUsageFile
-	errToCsvCpu := models.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
+	errToCsvCpu := nwdaf_util.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
 	if errToCsvCpu != nil {
 		logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
 	} else {
@@ -190,7 +192,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Llamar a la función para escribir el JSON
 	pathMemUsage := dataRawPath + menUsageFile
-	errToCsvMem := models.SaveToJson(pathMemUsage, memUsageAverageRange)
+	errToCsvMem := nwdaf_util.SaveToJson(pathMemUsage, memUsageAverageRange)
 	if errToCsvMem != nil {
 		logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
 	} else {
@@ -199,8 +201,8 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 
 	// Processing data
 	logger.MlModelTrainingLog.Info("Processing data")
-	cpuColumn := string(models.MetricType_CPU_USAGE_AVERAGE)
-	memColumn := string(models.MetricType_MEMORY_USAGE_AVERAGE)
+	cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
+	memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
 	pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
 	dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
 	dataProcessedPath := util.NwdafDefaultDataProcessedPath
@@ -355,7 +357,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 }
 
 func selecDataset(dirPath string, start int64, baseName string) (newID PairNum, err error) {
-	filesCsv, errLoadFiles := models.LoadCsvFiles(dirPath)
+	filesCsv, errLoadFiles := nwdaf_util.LoadCsvFiles(dirPath)
 	var listNum []PairNum
 
 	if errLoadFiles == nil {

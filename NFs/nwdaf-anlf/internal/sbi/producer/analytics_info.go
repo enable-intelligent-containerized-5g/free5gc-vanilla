@@ -13,6 +13,9 @@ import (
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	"github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
+	nwdaf_util "github.com/enable-intelligent-containerized-5g/openapi/nwdaf/util"
+	pcm_models "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule/models"
+	pcm "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	"github.com/free5gc/nwdaf/internal/logger"
 	"github.com/free5gc/nwdaf/internal/sbi/consumer"
@@ -20,6 +23,19 @@ import (
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 )
+
+func GetUploadThroughputAverage(ns string, pod string, tp int64, timeReq time.Time, pcmUri string) ([]pcm_models.PrometheusResult, error) {
+	var params = pcm_models.PrometheusQueryParams{
+		Namespace:    ns,
+		Pod:          pod,
+		TargetPeriod: pcm.BuiildTargetPeriod(tp),
+	}
+
+	query := pcm_models.BuildUploadThroughputQuery(&params)
+	metric := pcm_models.MetricType_CPU_USAGE_AVERAGE
+
+	return pcm.ExecutePrometheusQuery(query, metric, timeReq, pcmUri)
+}
 
 func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload models.TypePayloadRequest) (response *httpwrapper.Response) {
 	logger.AniLog.Info("Handle Analytics Info NFLoad Metrics Request")
@@ -132,7 +148,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	}
 
 	// Convert time to seconds
-	targetPeriod := models.ParseTimeToSeconds(&startTime, &endTime)
+	targetPeriod := nwdaf_util.ParseTimeToSeconds(&startTime, &endTime)
 	// Check the TargetPeriod
 	if targetPeriod < 60 || targetPeriod <= 0 {
 		problemDetails := models.ProblemDetails{
@@ -144,7 +160,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 	}
 
 	// Convert time to seconds
-	offSet := models.ParseTimeToSeconds(&endTime, &currentTime)
+	offSet := nwdaf_util.ParseTimeToSeconds(&endTime, &currentTime)
 
 	pcmUri := factory.NwdafConfig.Configuration.OamUri
 	namespace := factory.NwdafConfig.Configuration.Namespace
@@ -236,7 +252,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			var podName string
 			containerName := profile.ContainerName
 
-			foundPod := models.FindPodByContainer(runningPods, containerName)
+			foundPod := pcm_models.FindPodByContainer(runningPods, containerName)
 
 			if foundPod != nil {
 				podName = foundPod.Pod
@@ -247,13 +263,13 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			// Get CPU and RAM  from Prometheus
 			var numSamples int64 = 4
-			newStartTime := models.SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
+			newStartTime := nwdaf_util.SubtractSeconds(currentTime, targetPeriod*(numSamples-1)) // Subtarct secons to curenntime
 			logger.AniLog.Warnf("numSamples: %d, newStartTime: %s, currentTime: %s", numSamples, newStartTime, currentTime)
 
 			cpuUsageAverageRange, errCpu := packetcapturemodule.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime, pcmUri)
 			memUsageAverageRange, errMem := packetcapturemodule.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, newStartTime, currentTime, pcmUri)
-			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, currentTime, pcmUri)
-			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, currentTime, pcmUri)
+			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
+			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
 			cpuLimitValue := cpuLimit[0]
 			memLimitValue := memLimit[0]
 
@@ -267,8 +283,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			}
 
 			logger.AniLog.Info("Saving data")
-			models.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
-			models.DivideValues(&memUsageAverageRange, memLimitValue.Value)
+			nwdaf_util.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
+			nwdaf_util.DivideValues(&memUsageAverageRange, memLimitValue.Value)
 
 			// Data paths
 			dataPath := util.NwdafDefaultDataPath
@@ -278,7 +294,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			// Save Cpu usaje in a JSON file
 			pathCpuUsage := dataRawPath + cpuUsageFile
-			errToCsvCpu := models.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
+			errToCsvCpu := nwdaf_util.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
 			if errToCsvCpu != nil {
 				logger.AniLog.Error("Error: ", errToCsvCpu)
 			} else {
@@ -287,7 +303,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			// Save Memory usage in a JSON file
 			pathMemUsage := dataRawPath + menUsageFile
-			errToCsvMem := models.SaveToJson(pathMemUsage, memUsageAverageRange)
+			errToCsvMem := nwdaf_util.SaveToJson(pathMemUsage, memUsageAverageRange)
 			if errToCsvMem != nil {
 				logger.AniLog.Error("Error: ", errToCsvMem)
 			} else {
@@ -296,8 +312,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			// Processing data
 			logger.AniLog.Info("Processing data")
-			cpuColumn := string(models.MetricType_CPU_USAGE_AVERAGE)
-			memColumn := string(models.MetricType_MEMORY_USAGE_AVERAGE)
+			cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
+			memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
 			pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
 			dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
 			dataProcessedPath := util.NwdafDefaultDataProcessedPath
@@ -406,6 +422,11 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 		// Return results
 		return httpwrapper.NewResponse(http.StatusOK, nil, responseNfLoad)
 
+
+
+
+
+
 	// Statistics metrics
 	case startTime.Before(currentTime) && endTime.Before(currentTime):
 		logger.AniLog.Info("Statistics metrics: EndTime is less than now")
@@ -430,7 +451,7 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			// containerName := util.GetPodNameFromIpv4(profile.Ipv4Addresses[0])[0]
 			containerName := profile.ContainerName
 
-			foundPod := models.FindPodByContainer(runningPods, containerName)
+			foundPod := pcm_models.FindPodByContainer(runningPods, containerName)
 
 			if foundPod != nil {
 				podName = foundPod.Pod
@@ -441,14 +462,17 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 
 			cpuUsageAverage, errCpu := packetcapturemodule.GetCpuUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime, pcmUri)
 			memUsageAverage, errMem := packetcapturemodule.GetMemUsageAverage(namespace, podName, containerName, targetPeriod, 0, endTime, pcmUri)
-			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_CORE, endTime, pcmUri)
-			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, models.PrometheusUnit_BYTE, endTime, pcmUri)
+			cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, endTime, pcmUri)
+			memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, endTime, pcmUri)
+			// upThroughput, errUpThroug := GetUploadThroughputAverage(namespace, podName, targetPeriod, endTime, pcmUri)
 			cpuAverageValue := cpuUsageAverage[0]
 			memAverageValue := memUsageAverage[0]
 			cpuLimitValue := cpuLimit[0]
 			memLimitValue := memLimit[0]
+			// upThroughputValue := upThroughput[0]
+			// print(upThroughput)
 
-			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil {
+			if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil  {
 				problemDetails := models.ProblemDetails{
 					Status: http.StatusInternalServerError,
 					Detail: fmt.Sprintf("Error getting dsta from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
@@ -458,8 +482,8 @@ func GetAnaliticsNfLoadProcedure(request *models.NwdafAnalyticsInfoRequest, even
 			}
 
 			var nfLoad = models.ResourcesNfLoad{
-				CpuLoad: models.GetPercentil(cpuAverageValue.Value, cpuLimitValue.Value),
-				MemLoad: models.GetPercentil(memAverageValue.Value, memLimitValue.Value),
+				CpuLoad: nwdaf_util.GetPercentil(cpuAverageValue.Value, cpuLimitValue.Value),
+				MemLoad: nwdaf_util.GetPercentil(memAverageValue.Value, memLimitValue.Value),
 			}
 
 			NfLoad = models.NwdafAnalyticsInfoNfLoad{
