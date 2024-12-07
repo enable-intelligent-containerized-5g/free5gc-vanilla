@@ -406,12 +406,14 @@ func insertData(db *gorm.DB) error {
 		for index, model := range mlModels {
 			modelNum := index + 1
 			modelConfidence := models.MlModelDataConfidence{
-				R2:     model.R2,
-				MSE:    model.MSE,
-				R2Cpu:  model.R2,
-				R2Mem:  model.R2Mem,
-				MSECpu: model.MSECpu,
-				MSEMem: model.MSEMem,
+				R2:           model.R2,
+				MSE:          model.MSE,
+				R2Cpu:        model.R2,
+				R2Mem:        model.R2Mem,
+				R2Troughput:  model.R2Thrpt,
+				MSECpu:       model.MSECpu,
+				MSEMem:       model.MSEMem,
+				MSETroughput: model.MSEThrpt,
 			}
 
 			mlModelInfo := models.MlModelData{

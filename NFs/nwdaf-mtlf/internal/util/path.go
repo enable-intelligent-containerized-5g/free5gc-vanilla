@@ -19,4 +19,5 @@ var (
 	NwdafDefaultInitModelInfoListFile    = "default_models_list.json"
 	NwdafDefaultMenUsageFile             = "memUsage.json"
 	NwdafDefaultCpuUsageFile             = "cpuUsage.json"
+	NwdafDefaultTotalThroughputFile      = "totalThroughput.json"
 )

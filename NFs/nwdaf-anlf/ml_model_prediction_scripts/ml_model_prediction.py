@@ -3,23 +3,23 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
-def result_validate(data, cpu_pred, mem_pred):
+def result_validate(data, cpu_pred, mem_pred, thrpt_pred):
     # Must be a numpy array
     if not isinstance(data, np.ndarray):
         return False, f"The prediction has an incorrect format"
 
     # Must be two-dimensional
     if data.ndim != 2:
-        return False, f"The result does not have the predictions of {cpu_pred} and {mem_pred}"
+        return False, f"The result does not have the predictions of {cpu_pred}, {mem_pred} and {thrpt_pred}"
 
-    # Check that it has exactly 1 row and 2 columns
-    if data.shape[1] != 2:
-        return False, f"The result does not have 2 predictions, has {data.shape[1]}"
+    # Check that it has exactly 1 row and 3 columns
+    if data.shape[1] != 3:
+        return False, f"The result does not have 3 predictions, has {data.shape[1]}"
 
     return True, "The prediction has a correct format"
 
 
-def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, mem_column, selected_model_uri, time_steps):
+def nf_load_prediction(data_path, dataset_path, prediction_file, selected_model_uri, time_steps, cpu_column, mem_column, thrpt_column):
     
     ##################################################################
     ###                 Get and Process the data                   ###
@@ -28,13 +28,13 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
     # Load data from a CSV file
     def load_data_from_csv(csv_file):
         data = pd.read_csv(csv_file)
-        return data
+        return data    
 
     # Load dataset from a CSV file
     df = load_data_from_csv(dataset_path)
     
     # We select the columns that we are going to use for the prediction
-    data_values = df[[cpu_column, mem_column]].values
+    data_values = df[[cpu_column, mem_column, thrpt_column]].values
     
     if len(data_values) != time_steps :
         sys.exit(f"The dataset does not have the required number of rows, provides a larger dataset")
@@ -55,6 +55,8 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
         sys.exit(f"No Found the Ml Model: {e}")
     except Exception as e:
         sys.exit(f"Error loading the Ml Model: {e}")
+    except:
+        sys.exit("UnKnow Error")
     
     ##################################################################
     ###                          Prediction                        ###
@@ -64,17 +66,18 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
     new_input = data_scaled.reshape(1, -1)
        
     # Make the predictions
-    y_pred = ml_model.predict(new_input)
+    y_pred = ml_model.predict(new_input) 
     
     # Invert the normalization to obtain the original values
-    y_pred_invertido = scaler.inverse_transform(y_pred)
+    y_pred_invertido = scaler.inverse_transform(y_pred)    
     
-    result, err_pred = result_validate(y_pred_invertido, cpu_column, mem_column)
+    result, err_pred = result_validate(y_pred_invertido, cpu_column, mem_column, thrpt_column)
     if result == False :
         sys.exit(err_pred)
         
     cpu_prediction = y_pred_invertido[0][0]
     mem_prediction = y_pred_invertido[0][1]
+    thrpt_prediction = y_pred_invertido[0][2]
     
     
     ##################################################################
@@ -86,7 +89,8 @@ def nf_load_prediction(data_path, dataset_path, prediction_file , cpu_column, me
     
     prediction_info = {
         'cpuAverage': cpu_prediction,
-        'memAverage': mem_prediction
+        'memAverage': mem_prediction,
+        'throughput': thrpt_prediction
     }
     
     with open(prediction_info_path, 'w') as json_file:
@@ -106,7 +110,7 @@ def isFolder(folder_paths):
 
 def main():
     # Verify the params
-    if len(sys.argv) < 10:
+    if len(sys.argv) < 11:
         sys.exit(1)
 
     # Get the params
@@ -118,8 +122,9 @@ def main():
     prediction_file = sys.argv[5]
     cpu_column = sys.argv[6]
     mem_column = sys.argv[7]
-    selected_model_uri = sys.argv[8]
-    time_steps = sys.argv[9]
+    thrpt_column = sys.argv[8]
+    selected_model_uri = sys.argv[9]
+    time_steps = sys.argv[10]
     
     # Validate time_steps
     try:
@@ -129,7 +134,6 @@ def main():
     
     # Validate folders
     isFolder([models_path, data_path, data_labeled_path])
-    
     dataset_path = data_labeled_path + dataset_file
     
     # Validate dataset_path
@@ -148,7 +152,7 @@ def main():
     except Exception as e:
         sys.exit(f"Error opening the dataset {dataset_file}")
         
-    nf_load_prediction(data_path, dataset_path, prediction_file, cpu_column, mem_column, selected_model_uri, int_time_steps)
+    nf_load_prediction(data_path, dataset_path, prediction_file, selected_model_uri, int_time_steps, cpu_column, mem_column, thrpt_column)
 
 if __name__ == "__main__":
     main()

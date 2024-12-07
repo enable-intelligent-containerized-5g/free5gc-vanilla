@@ -1,0 +1,26 @@
+[
+    {
+        "name": "default-model_LR_NF_LOAD_NWDAF_60s_1733529300_1733544675",
+        "uri": "models/default-model_LR_NF_LOAD_NWDAF_60s_1733529300_1733544675.pkl",
+        "figureUri": "models/figures/default-figure_LR_NF_LOAD_NWDAF_60s_1733529300_1733544675.png",
+        "size": 6353152,
+        "targetPeriod": 60,
+        "r2": 0.624462511142252,
+        "mse": 0.016358653093707858,
+        "r2Cpu": 0.5564209912299459,
+        "r2Mem": 0.692504031054558,
+        "r2Thrpt": 0.732504031054558,
+        "mseCpu": 0.03073878475478237,
+        "mseMem": 0.001978521432633337,
+        "mseThrpt": 32.31054558,
+        "nfType": {
+            "nfType": "NWDAF"
+        },
+        "accuracy": {
+            "accuracy": "LOW"
+        },
+        "event": {
+            "eventId": "NF_LOAD"
+        }
+    }
+]

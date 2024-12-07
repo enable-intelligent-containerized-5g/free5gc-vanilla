@@ -52,12 +52,14 @@ func NwdafMlModelInfoRequestProcedure() (models.MlModelDataResponse, error) {
 	var mlModelList []models.MlModelData
 	for _, model := range mlModels {
 		modelConfidence := models.MlModelDataConfidence{
-			R2:     model.R2,
-			R2Cpu:  model.R2Cpu,
-			R2Mem:  model.R2Mem,
-			MSE:    model.MSE,
-			MSECpu: model.MSECpu,
-			MSEMem: model.MSEMem,
+			R2:           model.R2,
+			R2Cpu:        model.R2Cpu,
+			R2Mem:        model.R2Mem,
+			R2Troughput:  model.R2Thrpt,
+			MSE:          model.MSE,
+			MSECpu:       model.MSECpu,
+			MSEMem:       model.MSEMem,
+			MSETroughput: model.MSEThrpt,
 		}
 
 		mlModelData := models.MlModelData{

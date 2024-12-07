@@ -17,4 +17,5 @@ var (
 	NwdafDefaultModelPredictionFile       = "model_prediction.json"
 	NwdafDefaultMenUsageFile              = "memUsage.json"
 	NwdafDefaultCpuUsageFile              = "cpuUsage.json"
+	NwdafDefaultTotalThroughputFile      = "totalThroughput.json"
 )

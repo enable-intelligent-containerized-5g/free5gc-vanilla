@@ -1,0 +1,42 @@
+[
+    {
+        "timestamp": 1733550125348,
+        "value": 0.035546875,
+        "metric": "mem-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-nwdaf-anlf-7cb5c4b977-6q989",
+        "container": "nwdaf-anlf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1733550185348,
+        "value": 0.035546875,
+        "metric": "mem-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-nwdaf-anlf-7cb5c4b977-6q989",
+        "container": "nwdaf-anlf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1733550245348,
+        "value": 0.035546875,
+        "metric": "mem-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-nwdaf-anlf-7cb5c4b977-6q989",
+        "container": "nwdaf-anlf",
+        "phase": "",
+        "uid": ""
+    },
+    {
+        "timestamp": 1733550305348,
+        "value": 0.035546875,
+        "metric": "mem-average",
+        "namespace": "free5gc",
+        "pod": "free5gc-nwdaf-anlf-7cb5c4b977-6q989",
+        "container": "nwdaf-anlf",
+        "phase": "",
+        "uid": ""
+    }
+]

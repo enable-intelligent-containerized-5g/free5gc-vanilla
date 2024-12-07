@@ -86,9 +86,11 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 		MSE:          mldata.Confidence.MSE,
 		MSECpu:       mldata.Confidence.MSECpu,
 		MSEMem:       mldata.Confidence.MSEMem,
+		MSEThrpt:     mldata.Confidence.MSETroughput,
 		R2:           mldata.Confidence.R2,
 		R2Cpu:        mldata.Confidence.R2Cpu,
 		R2Mem:        mldata.Confidence.R2Mem,
+		R2Thrpt:      mldata.Confidence.R2Troughput,
 		AccuracyID:   accuFound.ID,
 		EventID:      eventFound.ID,
 		NfTypeID:     nfTypeFound.ID,
@@ -110,12 +112,14 @@ func SaveMlModelProcedure(mldata models.MlModelData) (models.MlModelDataResponse
 	}
 
 	modelConfidence := models.MlModelDataConfidence{
-		R2:     mlModelTableRequest.R2,
-		R2Cpu:  mlModelTableRequest.R2Cpu,
-		R2Mem:  mlModelTableRequest.R2Mem,
-		MSE:    mlModelTableRequest.MSE,
-		MSECpu: mlModelTableRequest.MSECpu,
-		MSEMem: mlModelTableRequest.MSEMem,
+		R2:           mlModelTableRequest.R2,
+		R2Cpu:        mlModelTableRequest.R2Cpu,
+		R2Mem:        mlModelTableRequest.R2Mem,
+		R2Troughput:  mlModelTableRequest.R2Thrpt,
+		MSE:          mlModelTableRequest.MSE,
+		MSECpu:       mlModelTableRequest.MSECpu,
+		MSEMem:       mlModelTableRequest.MSEMem,
+		MSETroughput: mlModelTableRequest.MSEThrpt,
 	}
 
 	mlmodelSaved := models.MlModelData{

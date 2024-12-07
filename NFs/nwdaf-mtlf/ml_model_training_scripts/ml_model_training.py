@@ -9,7 +9,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 
-def ml_model_training(models_path, data_path, figures_path, dataset_path, model_info_file, model_info_list, cpu_column, mem_column, base_name, time_steps):
+def ml_model_training(models_path, data_path, figures_path, dataset_path, model_info_file, model_info_list, base_name, time_steps, cpu_column, mem_column, thrpt_column):
     
     ##################################################################
     ###                 Get and Process the data                   ###
@@ -24,7 +24,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     df = load_data_from_csv(dataset_path)
     
     # We select the columns that we are going to use for the prediction
-    data_values = df[[cpu_column, mem_column]].values
+    data_values = df[[cpu_column, mem_column, thrpt_column]].values
     
     # Validate the dataset size
     # time_steps = 4 # Steps
@@ -84,10 +84,13 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     # Evaluate the model: MSE and R² for each output (CPU and Memory)
     mse_cpu = mean_squared_error(y_test_invertido[:, 0], y_pred_invertido[:, 0])  # For CPU column
     mse_mem = mean_squared_error(y_test_invertido[:, 1], y_pred_invertido[:, 1])  # for Memory column
+    mse_thrpt = mean_squared_error(y_test_invertido[:, 2], y_pred_invertido[:, 2])  # for Thrpt column
     r2_cpu = r2_score(y_test_invertido[:, 0], y_pred_invertido[:, 0])  # R² for CPU
     r2_mem = r2_score(y_test_invertido[:, 1], y_pred_invertido[:, 1])  # R² fot Memory
-    cpu_metrics = f'CPU - R²: {r2_cpu:.4f}, MSE: {mse_cpu:.4f}'
-    mem_metrics = f'Memory - R²: {r2_mem:.4f}, MSE: {mse_mem:.4f}'
+    r2_thrpt = r2_score(y_test_invertido[:, 2], y_pred_invertido[:, 2])  # R² fot Thrpt
+    cpu_metrics = f'CPU -> R²: {r2_cpu:.4f}, MSE: {mse_cpu:.4f}'
+    mem_metrics = f'Memory -> R²: {r2_mem:.4f}, MSE: {mse_mem:.4f}'
+    thrpt_metrics = f'Throughput -> R²: {r2_thrpt:.4f}, MSE: {mse_thrpt:.4f}'
     
     
     ##################################################################
@@ -95,7 +98,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     ##################################################################
     
     # Create the figure
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 6))
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 8))
 
     # CPU Graph
     ax1.scatter(y_test_invertido[:, 0], y_pred_invertido[:, 0], color='blue', label='Prediction vs Real CPU')
@@ -115,6 +118,15 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     ax2.set_title(f'Memory Predictions (MSE: {mse_mem:.4f}, R²: {r2_mem:.4f})')
     ax2.legend()
     ax2.grid(True)
+    # Througput graph
+    ax3.scatter(y_test_invertido[:, 2], y_pred_invertido[:, 2], color='green', label='Prediction vs Real Memory')
+    ax3.plot([min(y_test_invertido[:, 2]), max(y_test_invertido[:, 2])], 
+            [min(y_test_invertido[:, 2]), max(y_test_invertido[:, 2])], color='orange', linestyle='--', label='Throughput reference line')
+    ax3.set_xlabel('Real Throughput')
+    ax3.set_ylabel('Predicted Throughput')
+    ax3.set_title(f'Throughput Predictions (MSE: {mse_thrpt:.4f}, R²: {r2_thrpt:.4f})')
+    ax3.legend()
+    ax3.grid(True)
 
     # Title
     fig.suptitle(f'{large_name} ({name}) model\nMSE: {mse:.4f}, R²: {r2:.4f}', fontsize=14)
@@ -150,11 +162,13 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
         'size': model_size,
         'figureUri': fig_uri,
         'mse': mse,
-        'r2':r2,
+        'r2': r2,
         'mseCpu': mse_cpu,
-        'r2Cpu':r2_cpu,
+        'r2Cpu': r2_cpu,
         'mseMem': mse_mem,
-        'r2Mem':r2_mem,
+        'r2Mem': r2_mem,
+        'mseThrpt': mse_thrpt,
+        'r2Thrpt': r2_thrpt,
     }
     
     with open(model_info_path, 'w') as json_file:
@@ -198,7 +212,7 @@ def isFolder(folder_paths):
 
 def main():
     # Verify the params
-    if len(sys.argv) < 12:
+    if len(sys.argv) < 13:
         sys.exit("Missing params to Ml Model Training")
 
     # Get the params
@@ -212,8 +226,9 @@ def main():
     model_info_list = sys.argv[7]
     cpu_column = sys.argv[8]
     mem_column = sys.argv[9]
-    base_name = sys.argv[10]
-    time_steps = sys.argv[11]
+    thrpt_column = sys.argv[10]
+    base_name = sys.argv[11]
+    time_steps = sys.argv[12]
     
     # Validate folders
     isFolder([models_path, data_path, data_labeled_path, figures_path])
@@ -242,7 +257,7 @@ def main():
     except Exception as e:
         sys.exit(f"Error opening the dataset {dataset_file}")
         
-    ml_model_training(models_path, data_path, figures_path, dataset_path, model_info, model_info_list, cpu_column, mem_column, base_name, int_time_steps)
+    ml_model_training(models_path, data_path, figures_path, dataset_path, model_info, model_info_list, base_name, int_time_steps, cpu_column, mem_column, thrpt_column)
 
 if __name__ == "__main__":
     main()

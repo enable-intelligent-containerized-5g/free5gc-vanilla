@@ -73,7 +73,7 @@ def validateCsv(file_csv, fieldnames):
 
 def main():
     # Verify the params
-    if len(sys.argv) < 11:
+    if len(sys.argv) < 13:
         sys.exit(1)
 
     # Getting params
@@ -85,9 +85,11 @@ def main():
     data_labeled_path = sys.argv[5]
     cpu_file = sys.argv[6]
     mem_file = sys.argv[7]
-    dataset_file = sys.argv[8]
-    cpu_column = sys.argv[9]
-    mem_column = sys.argv[10]
+    thrpt_file = sys.argv[8]
+    dataset_file = sys.argv[9]
+    cpu_column = sys.argv[10]
+    mem_column = sys.argv[11]
+    thrpt_column = sys.argv[12]
     
     # Validate folders
     isFolder([data_path, data_raw_path, data_preprocessed_path, data_processed_path, data_labeled_path])
@@ -95,10 +97,13 @@ def main():
     # Define the input and output data
     cpu_file_path = data_raw_path + cpu_file
     mem_file_path = data_raw_path + mem_file
+    thrpt_file_path = data_raw_path + thrpt_file
     intermediate_cpu_csv = data_preprocessed_path + "cpuUsage.csv"
     intermediate_mem_csv = data_preprocessed_path + "memUsage.csv"
+    intermediate_thrpt_csv = data_preprocessed_path + "thrptTotal.csv"
     output_cpu_csv = data_processed_path + "processedCpuUsage.csv"
     output_mem_csv = data_processed_path + "processedMemUsage.csv"
+    output_thrpt_csv = data_processed_path + "processedThrptTotal.csv"
     output_data_csv = data_labeled_path + dataset_file
     
     # Validate Files
@@ -123,20 +128,30 @@ def main():
     process_json_to_csv(mem_file_path, intermediate_mem_csv, mem_column)
     clean_csv(intermediate_mem_csv, output_mem_csv)
     
+    process_json_to_csv(thrpt_file_path, intermediate_thrpt_csv, thrpt_column)
+    clean_csv(intermediate_thrpt_csv, output_thrpt_csv)
+    
     # Fieldnames
     fieldnames_cpu = ['namespace', 'pod', 'container', 'timestamp', cpu_column]
     fieldnames_mem = ['namespace', 'pod', 'container', 'timestamp', mem_column]
+    fieldnames_thrpt = ['namespace', 'pod', 'container', 'timestamp', thrpt_column]
     fieldnames_common = ['namespace', 'pod', 'container', 'timestamp']
 
     # Validate csv
     df_cpu = validateCsv(output_cpu_csv, fieldnames_cpu)
     df_mem = validateCsv(output_mem_csv, fieldnames_mem)
+    df_thrpt = validateCsv(output_thrpt_csv, fieldnames_thrpt)
         
     # Perform merge based on key columns
     merged_cpu_mem = pd.merge(df_cpu, df_mem[fieldnames_mem],
                         on=fieldnames_common,
                         how='left')
-    df_sorted = merged_cpu_mem.sort_values(by='timestamp', ascending=True)
+     # Perform merge based on key columns
+    merged_resources_thrpt = pd.merge(merged_cpu_mem, df_thrpt[fieldnames_thrpt],
+                        on=fieldnames_common,
+                        how='left')
+    
+    df_sorted = merged_resources_thrpt.sort_values(by='timestamp', ascending=True)
     # Delete rows with NaN columns
     df_clean = df_sorted.dropna()
     # Save dataset

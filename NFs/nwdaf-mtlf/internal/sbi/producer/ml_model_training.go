@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
-	packetcapturemodule "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
-	"github.com/enable-intelligent-containerized-5g/openapi/models"
+	pcm "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
 	pcm_models "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule/models"
+	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	nwdaf_util "github.com/enable-intelligent-containerized-5g/openapi/nwdaf/util"
 	"github.com/free5gc/nwdaf/internal/logger"
 
@@ -24,11 +24,6 @@ import (
 	"github.com/free5gc/nwdaf/pkg/factory"
 	"github.com/free5gc/util/httpwrapper"
 )
-
-type PairNum struct {
-	Start int64
-	End   int64
-}
 
 func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *httpwrapper.Response) {
 	logger.MlModelTrainingLog.Info("Handle MlModelTrainingNfLoadMetricRequest")
@@ -53,7 +48,7 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
-		Detail:  "UNSPECIFIED",
+		Detail: "UNSPECIFIED",
 	}
 
 	logger.MlModelTrainingLog.Error("Ml model Training failed")
@@ -80,7 +75,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if targetPeriod < 60 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusBadRequest,
-			Detail:  "The difference between the start date and the end date must be greater than 60 seconds",
+			Detail: "The difference between the start date and the end date must be greater than 60 seconds",
 		}
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
@@ -94,13 +89,13 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if NrfUri == "" {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  "NrfUri is not set",
+			Detail: "NrfUri is not set",
 		}
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Running Pods
-	runningPods, errPods := packetcapturemodule.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
+	runningPods, errPods := pcm.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
 	if errPods != nil {
 		problemDetails := models.ProblemDetails{
 			Status: http.StatusInternalServerError,
@@ -120,7 +115,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if err != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
+			Detail: fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -129,7 +124,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if len(nfInstances) <= 0 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Detail:  fmt.Sprintf("Nf type %s not found", nfType),
+			Detail: fmt.Sprintf("Nf type %s not found", nfType),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -148,21 +143,20 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	} else {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Detail:  fmt.Sprintf("No pod found for the specified container: %s", containerName),
+			Detail: fmt.Sprintf("No pod found for the specified container: %s", containerName),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
 	// Get CPU and RAM  from Ml Model Training
-	cpuUsageAverageRange, errCpu := packetcapturemodule.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
-	memUsageAverageRange, errMem := packetcapturemodule.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
-	cpuLimit, errLimCpu := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
-	memLimit, errLimMem := packetcapturemodule.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
-	cpuLimitValue := cpuLimit[0]
-	memLimitValue := memLimit[0]
+	cpuUsageAverageRange, errCpu := pcm.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	memUsageAverageRange, errMem := pcm.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	totalThroughputRange, errtotalThrougput := pcm.GetThroughputAverageRange(namespace, podName, targetPeriod, 0, pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE, startTime, currentTime, pcmUri)
+	cpuLimit, errLimCpu := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
+	memLimit, errLimMem := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
 
-	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil {
+	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil || errtotalThrougput != nil {
 		problemDetails := models.ProblemDetails{
 			Status: http.StatusInternalServerError,
 			Detail: fmt.Sprintf("Error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
@@ -172,14 +166,18 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	}
 
 	logger.MlModelTrainingLog.Info("Saving data")
+	cpuLimitValue := cpuLimit[0]
+	memLimitValue := memLimit[0]
 	nwdaf_util.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
 	nwdaf_util.DivideValues(&memUsageAverageRange, memLimitValue.Value)
+	pcm_models.UpdateContainerNameInPrometheusResultList(&totalThroughputRange, containerName)
 
 	// // Data paths
 	dataPath := util.NwdafDefaultDataPath
 	dataRawPath := util.NwdafDefaultDataRawPath
 	menUsageFile := util.NwdafDefaultMenUsageFile
 	cpuUsageFile := util.NwdafDefaultCpuUsageFile
+	totalThroughputFile := util.NwdafDefaultTotalThroughputFile
 
 	// Llamar a la función para escribir el JSON
 	pathCpuUsage := dataRawPath + cpuUsageFile
@@ -199,10 +197,20 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
 	}
 
+	// Llamar a la función para escribir el JSON
+	pathTotalThroughput := dataRawPath + totalThroughputFile
+	errToCsvThroughput := nwdaf_util.SaveToJson(pathTotalThroughput, totalThroughputRange)
+	if errToCsvThroughput != nil {
+		logger.MlModelTrainingLog.Error("Error: ", errToCsvThroughput)
+	} else {
+		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathTotalThroughput, len(totalThroughputRange))
+	}
+
 	// Processing data
 	logger.MlModelTrainingLog.Info("Processing data")
 	cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
 	memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
+	thrptColumn := string(pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE)
 	pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
 	dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
 	dataProcessedPath := util.NwdafDefaultDataProcessedPath
@@ -226,7 +234,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			selectedDatasetFile = fmt.Sprintf("%s_%d_%d.csv", baseNameDataset, idSeconds.Start, idSeconds.End)
 			logger.MlModelTrainingLog.Warnf("Selected Dataset for (%s): %s", datasetFile, selectedDatasetFile)
 			// Set de dataset name for the data
-			nameId = fmt.Sprintf("%d_%d.csv", idSeconds.Start, currentTimeSeconds)
+			nameId = fmt.Sprintf("%d_%d", idSeconds.Start, currentTimeSeconds)
 			datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
 		}
 	}
@@ -235,15 +243,15 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	cmd := exec.Command("python3", pathDataProcessingScript, dataPath,
 		dataRawPath, dataPreprocessedPath,
 		dataProcessedPath, dataLabeledPath,
-		cpuUsageFile, menUsageFile, datasetFile, selectedDatasetFile,
-		cpuColumn, memColumn)
+		cpuUsageFile, menUsageFile, totalThroughputFile, datasetFile, selectedDatasetFile,
+		cpuColumn, memColumn, thrptColumn)
 
 	// Get the output and error
 	outputProcess, errProcess := cmd.CombinedOutput()
 	if errProcess != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
+			Detail: fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -264,14 +272,14 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	cmdTraining := exec.Command("python3", modelTrainingScriptPath,
 		modelsPath, dataPath, dataLabeledPath,
 		figuresPath, datasetFile, modelInfo,
-		modelInfoList, cpuColumn, memColumn,
+		modelInfoList, cpuColumn, memColumn, thrptColumn,
 		fullBaseName, strconv.FormatInt(timeSteps, 10))
 	// Get the output and error
 	outputTraining, errTraining := cmdTraining.CombinedOutput()
 	if errTraining != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
+			Detail: fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -288,7 +296,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errLoadModel != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  "Error getting saved model information: " + errLoadModel.Error(),
+			Detail: "Error getting saved model information: " + errLoadModel.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -299,7 +307,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if errGettingFigure != nil {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  "Error getting the saved figure: " + errGettingFigure.Error(),
+			Detail: "Error getting the saved figure: " + errGettingFigure.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -308,12 +316,14 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	figureSavedBase64 := base64.StdEncoding.EncodeToString(imageBytes)
 
 	modelConfidence := models.MlModelDataConfidence{
-		R2:     mlModelCreated.R2,
-		MSE:    mlModelCreated.MSE,
-		R2Cpu:  mlModelCreated.R2CPU,
-		R2Mem:  mlModelCreated.R2Mem,
-		MSECpu: mlModelCreated.MSECPU,
-		MSEMem: mlModelCreated.MSEMem,
+		R2:           mlModelCreated.R2,
+		MSE:          mlModelCreated.MSE,
+		R2Cpu:        mlModelCreated.R2CPU,
+		R2Mem:        mlModelCreated.R2Mem,
+		R2Troughput:  mlModelCreated.R2Thrpt,
+		MSECpu:       mlModelCreated.MSECPU,
+		MSEMem:       mlModelCreated.MSEMem,
+		MSETroughput: mlModelCreated.MSEThrpt,
 	}
 
 	mlModelInfo := models.MlModelData{
@@ -332,7 +342,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	if !saved || len(mlModelSaveResponse.MlModels) <= 0 {
 		problemDetails := &models.ProblemDetails{
 			Status: http.StatusInternalServerError,
-			Detail:  "Error saving the Ml Model in  the DB: " + errSave.Detail,
+			Detail: "Error saving the Ml Model in  the DB: " + errSave.Detail,
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
@@ -356,9 +366,9 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	return modelInfoResponse, true, nil
 }
 
-func selecDataset(dirPath string, start int64, baseName string) (newID PairNum, err error) {
+func selecDataset(dirPath string, start int64, baseName string) (newID nwdaf_util.PairNum, err error) {
 	filesCsv, errLoadFiles := nwdaf_util.LoadCsvFiles(dirPath)
-	var listNum []PairNum
+	var listNum []nwdaf_util.PairNum
 
 	if errLoadFiles == nil {
 		for _, file := range filesCsv {
@@ -380,16 +390,16 @@ func selecDataset(dirPath string, start int64, baseName string) (newID PairNum, 
 
 				// logger.MlModelTrainingLog.Warn(baseNameFile, "  ",baseName)
 				if baseNameFile == baseName {
-					listNum = append(listNum, PairNum{Start: num1, End: num2})
+					listNum = append(listNum, nwdaf_util.PairNum{Start: num1, End: num2})
 				}
 			}
 		}
 
 		if len(listNum) > 0 {
-			var minNum = PairNum{Start: math.MaxInt64, End: math.MaxInt64}
-			var maxNum = PairNum{Start: math.MinInt64, End: math.MinInt64}
-			var selectedDatasets []PairNum
-			var filteredByMin []PairNum
+			var minNum = nwdaf_util.PairNum{Start: math.MaxInt64, End: math.MaxInt64}
+			var maxNum = nwdaf_util.PairNum{Start: math.MinInt64, End: math.MinInt64}
+			var selectedDatasets []nwdaf_util.PairNum
+			var filteredByMin []nwdaf_util.PairNum
 
 			// Filter  datasets
 			for _, num := range listNum {
@@ -431,7 +441,7 @@ func selecDataset(dirPath string, start int64, baseName string) (newID PairNum, 
 
 	}
 
-	return PairNum{}, fmt.Errorf("no found a dataset for: %s", baseName)
+	return nwdaf_util.PairNum{}, fmt.Errorf("no found a dataset for: %s", baseName)
 }
 
 func loadMlmodelInfoFromJson(modelInfo *models.MlModelTrainingModelInfo, filePath string) (err error) {
@@ -454,8 +464,9 @@ func loadMlmodelInfoFromJson(modelInfo *models.MlModelTrainingModelInfo, filePat
 	// Verificar si el contenido tiene datos válidos
 	if modelInfo.Size <= 0 || modelInfo.URI == "" || math.IsNaN(modelInfo.MSE) ||
 		math.IsNaN(modelInfo.R2) || math.IsNaN(modelInfo.MSECPU) ||
-		math.IsNaN(modelInfo.MSEMem) || math.IsNaN(modelInfo.R2CPU) ||
-		math.IsNaN(modelInfo.R2Mem) {
+		math.IsNaN(modelInfo.MSEMem) || math.IsNaN(modelInfo.MSEThrpt) ||
+		math.IsNaN(modelInfo.R2CPU) || math.IsNaN(modelInfo.R2Mem) ||
+		math.IsNaN(modelInfo.R2Thrpt) {
 		return fmt.Errorf("model info is missing required fields")
 	}
 
@@ -481,7 +492,7 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 
 	problemDetails = &models.ProblemDetails{
 		Status: http.StatusForbidden,
-		Detail:  "UNSPECIFIED",
+		Detail: "UNSPECIFIED",
 	}
 	logger.MlModelTrainingLog.Error("SaveMlModel failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
