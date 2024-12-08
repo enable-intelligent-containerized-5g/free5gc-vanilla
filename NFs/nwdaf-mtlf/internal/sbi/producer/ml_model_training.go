@@ -3,6 +3,7 @@ package producer
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -58,18 +59,21 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (models.MlModelTrainingResponse, bool, *models.ProblemDetails) {
 	logger.MlModelTrainingLog.Info("Procedure MlModelTrainingProcedure")
 
-	currentTime := time.Now()
-	namespace := factory.NwdafConfig.Configuration.Namespace
-	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
-	pcmUri := factory.NwdafConfig.Configuration.OamUri
-
+	// Request data
 	eventID := mlTrainingReq.EventId
 	targetPeriod := mlTrainingReq.TargetPeriod
 	nfType := mlTrainingReq.NfType
-	startTime := mlTrainingReq.StartTime.UTC()
-	newDataset := mlTrainingReq.NewDataset
-	startTimeSeconds := mlTrainingReq.StartTime.Unix()
-	currentTimeSeconds := currentTime.Unix()
+	datasetFileReq := mlTrainingReq.File
+
+	// Variables
+	currentTime := time.Now()
+	dataPath := util.NwdafDefaultDataPath
+	dataLabeledPath := util.NwdafDefaultDataLabeledPath
+	dataRawPath := util.NwdafDefaultDataRawPath
+	var datasetFile string
+	var selectedDatasetFile string
+	var baseName string
+	var nameId string
 
 	// Check the TargetPeriod
 	if targetPeriod < 60 {
@@ -80,218 +84,55 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
-	// formattedStartTime := mlTrainingReq.StartTime.Format("2006-01-02_15-04-05")
-	// formattedCurrentTime := currentTime.Format("2006-01-02_15-04-05.000000000")
 
-	logger.MlModelTrainingLog.Infof("Event ID: %s, tp: %d, NF: %s, StartTime: %s, %s", eventID, targetPeriod, nfType, startTime, currentTime)
-
-	NrfUri := factory.NwdafConfig.Configuration.NrfUri
-	if NrfUri == "" {
+	var statusGettingData int32
+	var errGettingData error
+	if strings.TrimSpace(datasetFileReq.Data) == "" || strings.TrimSpace(datasetFileReq.Name) == "" {
+		logger.MlModelTrainingLog.Info("There is not a csv file in the request")
+		// Get Data from PCM
+		statusGettingData, errGettingData = GetDataForNfLoadFromPcm(mlTrainingReq, currentTime)
+	}else{
+		logger.MlModelTrainingLog.Info("There is a csv file in the request")
+		statusGettingData, errGettingData = GetDataForNfLoadFromUploadedFile(mlTrainingReq)
+	}
+	if errGettingData != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: "NrfUri is not set",
-		}
-		return models.MlModelTrainingResponse{}, false, problemDetails
-	}
-
-	// Running Pods
-	runningPods, errPods := pcm.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
-	if errPods != nil {
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: fmt.Sprintf("Error getting running pods from Packet Capture module: %s", errPods.Error()),
-		}
-		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, &problemDetails
-	}
-
-	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
-		// ServiceNames: optional.Interface{},
-	}
-	// Var to store all NF instances
-	var nfInstances []models.NfProfile
-	// Search all NF instances
-	err := consumer.SearchAllNfInstance(&nfInstances, NrfUri, nfType, models.NfType_NWDAF, param)
-	if err != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: fmt.Sprintf("Error getting %s NfInstances: %s", nfType, err.Error()),
+			Status: statusGettingData,
+			Detail: errGettingData.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
+	logger.MlModelTrainingLog.Infof("Getting data completed and saved in: %s", dataRawPath)
 
-	if len(nfInstances) <= 0 {
+
+	// Processing Data
+	statusProcessingData, errProcessingData := ProcessingDataForNfLoad(&datasetFile, &selectedDatasetFile, &baseName, &nameId, mlTrainingReq, currentTime)
+	if errProcessingData != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Detail: fmt.Sprintf("Nf type %s not found", nfType),
-		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, problemDetails
-	}
-
-	// Select the firts profile
-	profile := nfInstances[0]
-	var podName string
-	containerName := profile.ContainerName
-
-	// Getting data from Prometheus
-	logger.MlModelTrainingLog.Info("Getting data from Prometheus")
-	foundPod := pcm_models.FindPodByContainer(runningPods, containerName)
-	if foundPod != nil {
-		podName = foundPod.Pod
-	} else {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusNotFound,
-			Detail: fmt.Sprintf("No pod found for the specified container: %s", containerName),
-		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, problemDetails
-	}
-
-	// Get CPU and RAM  from Ml Model Training
-	cpuUsageAverageRange, errCpu := pcm.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
-	memUsageAverageRange, errMem := pcm.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
-	totalThroughputRange, errtotalThrougput := pcm.GetThroughputAverageRange(namespace, podName, targetPeriod, 0, pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE, startTime, currentTime, pcmUri)
-	cpuLimit, errLimCpu := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
-	memLimit, errLimMem := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
-
-	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil || errtotalThrougput != nil {
-		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: fmt.Sprintf("Error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem),
-		}
-		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, &problemDetails
-	}
-
-	logger.MlModelTrainingLog.Info("Saving data")
-	cpuLimitValue := cpuLimit[0]
-	memLimitValue := memLimit[0]
-	nwdaf_util.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
-	nwdaf_util.DivideValues(&memUsageAverageRange, memLimitValue.Value)
-	pcm_models.UpdateContainerNameInPrometheusResultList(&totalThroughputRange, containerName)
-
-	// // Data paths
-	dataPath := util.NwdafDefaultDataPath
-	dataRawPath := util.NwdafDefaultDataRawPath
-	menUsageFile := util.NwdafDefaultMenUsageFile
-	cpuUsageFile := util.NwdafDefaultCpuUsageFile
-	totalThroughputFile := util.NwdafDefaultTotalThroughputFile
-
-	// Llamar a la función para escribir el JSON
-	pathCpuUsage := dataRawPath + cpuUsageFile
-	errToCsvCpu := nwdaf_util.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
-	if errToCsvCpu != nil {
-		logger.MlModelTrainingLog.Error("Error: ", errToCsvCpu)
-	} else {
-		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
-	}
-
-	// Llamar a la función para escribir el JSON
-	pathMemUsage := dataRawPath + menUsageFile
-	errToCsvMem := nwdaf_util.SaveToJson(pathMemUsage, memUsageAverageRange)
-	if errToCsvMem != nil {
-		logger.MlModelTrainingLog.Error("Error: ", errToCsvMem)
-	} else {
-		logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
-	}
-
-	// Llamar a la función para escribir el JSON
-	pathTotalThroughput := dataRawPath + totalThroughputFile
-	errToCsvThroughput := nwdaf_util.SaveToJson(pathTotalThroughput, totalThroughputRange)
-	if errToCsvThroughput != nil {
-		logger.MlModelTrainingLog.Error("Error: ", errToCsvThroughput)
-	} else {
-		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathTotalThroughput, len(totalThroughputRange))
-	}
-
-	// Processing data
-	logger.MlModelTrainingLog.Info("Processing data")
-	cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
-	memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
-	thrptColumn := string(pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE)
-	pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
-	dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
-	dataProcessedPath := util.NwdafDefaultDataProcessedPath
-	dataLabeledPath := util.NwdafDefaultDataLabeledPath
-
-	// Build the datasetName
-	baseName := fmt.Sprintf("%s_%s_%ds", eventID, nfType, targetPeriod)
-	nameId := fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
-	baseNameDataset := fmt.Sprintf("dataset_%s", baseName)
-	datasetFile := fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
-	// datasetFile = "dataset_NF_LOAD_AMF_60s_1731787200_1731825367.csv"
-
-	// Select a suitable dataset
-	selectedDatasetFile := datasetFile
-	if !newDataset {
-		idSeconds, errSelectDataset := selecDataset(dataLabeledPath, startTimeSeconds, baseNameDataset)
-		if errSelectDataset != nil {
-			logger.MlModelTrainingLog.Warnf("No suitable dataset found for '%s'\n", datasetFile)
-		} else {
-			// Define the selected dataset
-			selectedDatasetFile = fmt.Sprintf("%s_%d_%d.csv", baseNameDataset, idSeconds.Start, idSeconds.End)
-			logger.MlModelTrainingLog.Warnf("Selected Dataset for (%s): %s", datasetFile, selectedDatasetFile)
-			// Set de dataset name for the data
-			nameId = fmt.Sprintf("%d_%d", idSeconds.Start, currentTimeSeconds)
-			datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
-		}
-	}
-
-	// Run processing data script
-	cmd := exec.Command("python3", pathDataProcessingScript, dataPath,
-		dataRawPath, dataPreprocessedPath,
-		dataProcessedPath, dataLabeledPath,
-		cpuUsageFile, menUsageFile, totalThroughputFile, datasetFile, selectedDatasetFile,
-		cpuColumn, memColumn, thrptColumn)
-
-	// Get the output and error
-	outputProcess, errProcess := cmd.CombinedOutput()
-	if errProcess != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: fmt.Sprintf("Error processing data to Ml Model Training. %s", string(outputProcess)),
+			Status: statusProcessingData,
+			Detail: errProcessingData.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
 
+
 	// Training Model
-	logger.MlModelTrainingLog.Info("Training Ml Model")
-	timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
-	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameId)
-	// fullBaseName = "NF_LOAD_AMF_60s_1731787200_1731825367"
-	modelTrainingScriptPath := util.NwdafDefaultModelTrainingScriptPath
-	modelsPath := util.NwdafDefaultModelsPath
-	figuresPath := util.NwdafDefaultFiguresPath
-	modelInfo := util.NwdafDefaultModelInfoFile
-	modelInfoList := util.NwdafDefaultModelInfoListFile
-	// Run Ml model training script
-	cmdTraining := exec.Command("python3", modelTrainingScriptPath,
-		modelsPath, dataPath, dataLabeledPath,
-		figuresPath, datasetFile, modelInfo,
-		modelInfoList, cpuColumn, memColumn, thrptColumn,
-		fullBaseName, strconv.FormatInt(timeSteps, 10))
-	// Get the output and error
-	outputTraining, errTraining := cmdTraining.CombinedOutput()
-	if errTraining != nil {
+	statusTrainingModel, errTrainingModel := TrainingModelForNfLoad(baseName, nameId, datasetFile)
+	if errTrainingModel != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
-			Detail: fmt.Sprintf("Error in Ml Model Training. %s", string(outputTraining)),
+			Status: statusTrainingModel,
+			Detail: errTrainingModel.Error(),
 		}
 		logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
-	if strings.TrimSpace(string(outputTraining)) != "" {
-		logger.MlModelTrainingLog.Warn(string(outputTraining))
-	}
 	logger.MlModelTrainingLog.Infoln("Ml Model Training completed")
 
-	// Save the model
+	// Saving the model
 	var mlModelCreated models.MlModelTrainingModelInfo
-
 	errLoadModel := loadMlmodelInfoFromJson(&mlModelCreated, dataPath+util.NwdafDefaultModelInfoFile)
 	if errLoadModel != nil {
 		problemDetails := &models.ProblemDetails{
@@ -496,4 +337,216 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	}
 	logger.MlModelTrainingLog.Error("SaveMlModel failed")
 	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+}
+
+func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, currentTime time.Time) (int32, error) {
+	logger.MlModelTrainingLog.Info("Getting data from Packet Capture Module")
+	// Variables
+	namespace := factory.NwdafConfig.Configuration.Namespace
+	instancek8s := factory.NwdafConfig.Configuration.KsmInstance
+	pcmUri := factory.NwdafConfig.Configuration.OamUri
+	eventID := reqMlData.EventId
+	targetPeriod := reqMlData.TargetPeriod
+	nfType := reqMlData.NfType
+	startTime := reqMlData.StartTime.UTC()
+
+	// File Paths
+	dataRawPath := util.NwdafDefaultDataRawPath
+	menUsageFile := util.NwdafDefaultMenUsageFile
+	cpuUsageFile := util.NwdafDefaultCpuUsageFile
+	totalThroughputFile := util.NwdafDefaultTotalThroughputFile
+
+	logger.MlModelTrainingLog.Infof("Event ID: %s, tp: %d, NF: %s, StartTime: %s, %s", eventID, targetPeriod, nfType, startTime, currentTime)
+
+	NrfUri := factory.NwdafConfig.Configuration.NrfUri
+	if NrfUri == "" {
+		return http.StatusInternalServerError, errors.New("NrfUri is not set")
+	}
+
+	// Running Pods
+	runningPods, errPods := pcm.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
+	if errPods != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error getting running pods from Packet Capture module: %s", errPods.Error())
+	}
+
+	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
+		// ServiceNames: optional.Interface{},
+	}
+	// Var to store all NF instances
+	var nfInstances []models.NfProfile
+	// Search all NF instances
+	err := consumer.SearchAllNfInstance(&nfInstances, NrfUri, nfType, models.NfType_NWDAF, param)
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error getting %s NfInstances: %s", nfType, err.Error())
+	}
+
+	if len(nfInstances) <= 0 {
+		return http.StatusNotFound, fmt.Errorf("nf type %s not found", nfType)
+	}
+
+	// Select the firts profile
+	profile := nfInstances[0]
+	var podName string
+	containerName := profile.ContainerName
+
+	// Getting data from Prometheus
+	logger.MlModelTrainingLog.Info("Getting data from Prometheus")
+	foundPod := pcm_models.FindPodByContainer(runningPods, containerName)
+	if foundPod != nil {
+		podName = foundPod.Pod
+	} else {
+		return http.StatusNotFound, fmt.Errorf("no pod found for the specified container: %s", containerName)
+	}
+
+	// Get CPU and RAM  from Ml Model Training
+	cpuUsageAverageRange, errCpu := pcm.GetCpuUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	memUsageAverageRange, errMem := pcm.GetMemUsageAverageRange(namespace, podName, containerName, targetPeriod, 0, startTime, currentTime, pcmUri)
+	totalThroughputRange, errtotalThrougput := pcm.GetThroughputAverageRange(namespace, podName, targetPeriod, 0, pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE, startTime, currentTime, pcmUri)
+	cpuLimit, errLimCpu := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_CORE, currentTime, pcmUri)
+	memLimit, errLimMem := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
+
+	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil || errtotalThrougput != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem)
+	}
+
+	logger.MlModelTrainingLog.Info("Saving data")
+	cpuLimitValue := cpuLimit[0]
+	memLimitValue := memLimit[0]
+	nwdaf_util.DivideValues(&cpuUsageAverageRange, cpuLimitValue.Value)
+	nwdaf_util.DivideValues(&memUsageAverageRange, memLimitValue.Value)
+	pcm_models.UpdateContainerNameInPrometheusResultList(&totalThroughputRange, containerName)
+
+	// Llamar a la función para escribir el JSON
+	pathCpuUsage := dataRawPath + cpuUsageFile
+	errToCsvCpu := nwdaf_util.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
+	if errToCsvCpu != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvCpu)
+	} else {
+		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
+	}
+
+	// Llamar a la función para escribir el JSON
+	pathMemUsage := dataRawPath + menUsageFile
+	errToCsvMem := nwdaf_util.SaveToJson(pathMemUsage, memUsageAverageRange)
+	if errToCsvMem != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvMem)
+	} else {
+		logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
+	}
+
+	// Llamar a la función para escribir el JSON
+	pathTotalThroughput := dataRawPath + totalThroughputFile
+	errToCsvThroughput := nwdaf_util.SaveToJson(pathTotalThroughput, totalThroughputRange)
+	if errToCsvThroughput != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvThroughput)
+	} else {
+		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathTotalThroughput, len(totalThroughputRange))
+	}
+
+	return 0, nil
+}
+
+func GetDataForNfLoadFromUploadedFile(reqMlData models.NwdafMlModelTrainingRequest) (int32, error) {
+	logger.MlModelTrainingLog.Info("Getting data from uploaded file")
+
+	return 0, nil
+}
+
+func ProcessingDataForNfLoad(datasetFile *string, selectedDatasetFile *string, baseName *string, nameId *string, reqMlData models.NwdafMlModelTrainingRequest, currentTime time.Time) (int32, error) {
+	logger.MlModelTrainingLog.Info("Processing data")
+	// Variables
+	newDataset := reqMlData.NewDataset
+	startTimeSeconds := reqMlData.StartTime.Unix()
+	currentTimeSeconds := currentTime.Unix()
+	cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
+	memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
+	thrptColumn := string(pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE)
+	eventID := reqMlData.EventId
+	targetPeriod := reqMlData.TargetPeriod
+	nfType := reqMlData.NfType
+
+	// File Paths
+	dataPath := util.NwdafDefaultDataPath
+	dataRawPath := util.NwdafDefaultDataRawPath
+	menUsageFile := util.NwdafDefaultMenUsageFile
+	cpuUsageFile := util.NwdafDefaultCpuUsageFile
+	totalThroughputFile := util.NwdafDefaultTotalThroughputFile
+	pathDataProcessingScript := util.NwdafDefaultDataProcessingScriptPath
+	dataPreprocessedPath := util.NwdafDefaultDataPreprocessedPath
+	dataProcessedPath := util.NwdafDefaultDataProcessedPath
+	dataLabeledPath := util.NwdafDefaultDataLabeledPath
+	// Build the datasetName
+	*baseName = fmt.Sprintf("%s_%s_%ds", eventID, nfType, targetPeriod)
+	*nameId = fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
+	baseNameDataset := fmt.Sprintf("dataset_%s", *baseName)
+	*datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, *nameId)
+
+	// Select a suitable dataset
+	*selectedDatasetFile = *datasetFile
+	if !newDataset {
+		idSeconds, errSelectDataset := selecDataset(dataLabeledPath, startTimeSeconds, baseNameDataset)
+		if errSelectDataset != nil {
+			logger.MlModelTrainingLog.Warnf("No suitable dataset found for %s", *datasetFile)
+		} else {
+			// Define the selected dataset
+			*selectedDatasetFile = fmt.Sprintf("%s_%d_%d.csv", baseNameDataset, idSeconds.Start, idSeconds.End)
+			logger.MlModelTrainingLog.Warnf("Selected Dataset for (%s): %s", *datasetFile, *selectedDatasetFile)
+			// Set de dataset name for the data
+			*nameId = fmt.Sprintf("%d_%d", idSeconds.Start, currentTimeSeconds)
+			*datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, *nameId)
+		}
+	}
+
+	// Run processing data script
+	cmd := exec.Command("python3", pathDataProcessingScript, dataPath,
+		dataRawPath, dataPreprocessedPath,
+		dataProcessedPath, dataLabeledPath,
+		cpuUsageFile, menUsageFile, totalThroughputFile, *datasetFile, *selectedDatasetFile,
+		cpuColumn, memColumn, thrptColumn)
+
+	// Get the output and error
+	outputProcess, errProcess := cmd.CombinedOutput()
+	if errProcess != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error processing data to Ml Model Training. %s", string(outputProcess))
+	}
+
+	return 0, nil
+}
+
+func TrainingModelForNfLoad(baseName string, nameId string, datasetFile string) (int32, error) {
+	logger.MlModelTrainingLog.Info("Training Ml Model")
+
+	// Variables
+	timeSteps := factory.NwdafConfig.Configuration.MlModelTrainingInfo.TimeSteps
+	fullBaseName := fmt.Sprintf("%s_%s", baseName, nameId)
+	modelTrainingScriptPath := util.NwdafDefaultModelTrainingScriptPath
+	modelsPath := util.NwdafDefaultModelsPath
+	figuresPath := util.NwdafDefaultFiguresPath
+	modelInfo := util.NwdafDefaultModelInfoFile
+	modelInfoList := util.NwdafDefaultModelInfoListFile
+	cpuColumn := string(pcm_models.MetricType_CPU_USAGE_AVERAGE)
+	memColumn := string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE)
+	thrptColumn := string(pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE)
+
+	// File Paths
+	dataPath := util.NwdafDefaultDataPath
+	dataLabeledPath := util.NwdafDefaultDataLabeledPath
+
+	// Run Ml model training script
+	cmdTraining := exec.Command("python3", modelTrainingScriptPath,
+		modelsPath, dataPath, dataLabeledPath,
+		figuresPath, datasetFile, modelInfo,
+		modelInfoList, cpuColumn, memColumn, thrptColumn,
+		fullBaseName, strconv.FormatInt(timeSteps, 10))
+
+	// Get the output and error
+	outputTraining, errTraining := cmdTraining.CombinedOutput()
+	if errTraining != nil {
+		return http.StatusInternalServerError, fmt.Errorf("error in Ml Model Training. %s", string(outputTraining))
+	}
+	if strings.TrimSpace(string(outputTraining)) != "" {
+		logger.MlModelTrainingLog.Warn(string(outputTraining))
+	}
+
+	return 0, nil
 }

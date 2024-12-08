@@ -33,8 +33,14 @@ func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 		return
 	}
 
+
+
+	logger.MlModelTrainingLog.Warn("After Get Request Body")
+
 	// Deserialize Request Body
 	err = openapi.Deserialize(&mlModelTrainingRequest, requestBody, "application/json")
+	logger.MlModelTrainingLog.Warn(mlModelTrainingRequest, " error: ", err)
+
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
 		rsp := models.ProblemDetails{
@@ -46,6 +52,8 @@ func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, rsp)
 		return
 	}
+
+	logger.MlModelTrainingLog.Warn("After Deserialize Request Body")
 
 	// Initialize validater
 	validate := validator.New()

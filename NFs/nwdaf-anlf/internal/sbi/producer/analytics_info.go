@@ -97,7 +97,7 @@ func HandleAnalyticsInfoNfLoadMetrics(request *httpwrapper.Request, typePayload 
 	if len(nfInstancesFilteredByIP) <= 0 {
 		problemDetails := models.ProblemDetails{
 			Status: http.StatusNotFound,
-			Detail: "Error filtering NFs: NFs not found" + NrfUri,
+			Detail: "Error filtering NFs: NFs not found in " + NrfUri,
 		}
 		logger.AniLog.Errorf(problemDetails.Detail)
 		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
