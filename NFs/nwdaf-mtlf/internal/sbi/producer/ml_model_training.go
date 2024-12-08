@@ -84,40 +84,46 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
-
 	var statusGettingData int32
 	var errGettingData error
 	if strings.TrimSpace(datasetFileReq.Data) == "" || strings.TrimSpace(datasetFileReq.Name) == "" {
 		logger.MlModelTrainingLog.Info("There is not a csv file in the request")
 		// Get Data from PCM
 		statusGettingData, errGettingData = GetDataForNfLoadFromPcm(mlTrainingReq, currentTime)
-	}else{
-		logger.MlModelTrainingLog.Info("There is a csv file in the request")
-		statusGettingData, errGettingData = GetDataForNfLoadFromUploadedFile(mlTrainingReq)
-	}
-	if errGettingData != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: statusGettingData,
-			Detail: errGettingData.Error(),
+		if errGettingData != nil {
+			problemDetails := &models.ProblemDetails{
+				Status: statusGettingData,
+				Detail: errGettingData.Error(),
+			}
+			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			return models.MlModelTrainingResponse{}, false, problemDetails
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, problemDetails
+
+		// Processing Data
+		statusProcessingData, errProcessingData := ProcessingDataForNfLoad(&datasetFile, &selectedDatasetFile, &baseName, &nameId, mlTrainingReq, currentTime)
+		if errProcessingData != nil {
+			problemDetails := &models.ProblemDetails{
+				Status: statusProcessingData,
+				Detail: errProcessingData.Error(),
+			}
+			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			return models.MlModelTrainingResponse{}, false, problemDetails
+		}
+		logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
+
+	} else {
+		logger.MlModelTrainingLog.Info("There is a csv file in the request")
+		statusGettingData, errGettingData = GetDataForNfLoadFromUploadedFile(&datasetFile, &selectedDatasetFile, &baseName, &nameId, mlTrainingReq)
+		if errGettingData != nil {
+			problemDetails := &models.ProblemDetails{
+				Status: statusGettingData,
+				Detail: errGettingData.Error(),
+			}
+			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			return models.MlModelTrainingResponse{}, false, problemDetails
+		}
 	}
 	logger.MlModelTrainingLog.Infof("Getting data completed and saved in: %s", dataRawPath)
-
-
-	// Processing Data
-	statusProcessingData, errProcessingData := ProcessingDataForNfLoad(&datasetFile, &selectedDatasetFile, &baseName, &nameId, mlTrainingReq, currentTime)
-	if errProcessingData != nil {
-		problemDetails := &models.ProblemDetails{
-			Status: statusProcessingData,
-			Detail: errProcessingData.Error(),
-		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
-		return models.MlModelTrainingResponse{}, false, problemDetails
-	}
-	logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
-
 
 	// Training Model
 	statusTrainingModel, errTrainingModel := TrainingModelForNfLoad(baseName, nameId, datasetFile)
@@ -213,8 +219,9 @@ func selecDataset(dirPath string, start int64, baseName string) (newID nwdaf_uti
 
 	if errLoadFiles == nil {
 		for _, file := range filesCsv {
-			fileName := strings.TrimSuffix(file, ".csv")
-			parts := strings.Split(fileName, "_")
+			// fileName := strings.TrimSuffix(file, ".csv")
+			// parts := strings.Split(fileName, "_")
+			parts := TrimDatasetFileName(file)
 
 			if len(parts) == 7 {
 				baseNameFile := strings.Join(parts[:5], "_")
@@ -446,8 +453,85 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	return 0, nil
 }
 
-func GetDataForNfLoadFromUploadedFile(reqMlData models.NwdafMlModelTrainingRequest) (int32, error) {
+func GetDataForNfLoadFromUploadedFile(datasetFile *string, selectedDatasetFile *string, baseName *string, nameId *string, reqMlData models.NwdafMlModelTrainingRequest) (int32, error) {
 	logger.MlModelTrainingLog.Info("Getting data from uploaded file")
+
+	dataLabeledPath := util.NwdafDefaultDataLabeledPath
+	eventID := reqMlData.EventId
+	idFile := "dataset"
+	targetPeriod := reqMlData.TargetPeriod
+	fullTargetPeriod := fmt.Sprintf("%ds", targetPeriod)
+	nfType := reqMlData.NfType
+	base64Data := reqMlData.File.Data
+	fileName := reqMlData.File.Name
+
+	parts := TrimDatasetFileName(fileName)
+
+	if len(parts) == 7 {
+		codeIdFile := parts[0]
+		codeEventID := fmt.Sprintf("%s_%s", parts[1], parts[2])
+		codeNfType := parts[3]
+		codeTp := parts[4]
+		codeStartTime := parts[5]
+		codeEndTime := parts[6]
+
+		if idFile != codeIdFile {
+			return http.StatusBadRequest, fmt.Errorf("requested IdFile %s is different than IdFile of uploaded file %s", idFile, codeIdFile)
+		}
+		if eventID != models.EventId(codeEventID) {
+			return http.StatusBadRequest, fmt.Errorf("requested EventID %s is different than EventID of uploaded file %s", eventID, codeEventID)
+		}
+		if nfType != models.NfType(codeNfType) {
+			return http.StatusBadRequest, fmt.Errorf("requested NfType %s is different than NfType of uploaded file %s", nfType, codeNfType)
+		}
+		if fullTargetPeriod != codeTp {
+			return http.StatusBadRequest, fmt.Errorf("requested TargetPeriod %s is different than TargetPeriod of uploaded file %s", fullTargetPeriod, codeTp)
+		}
+		parsedStartTime, err := strconv.ParseInt(codeStartTime, 10, 64)
+		if err != nil {
+			return http.StatusBadRequest, fmt.Errorf("error converting StartTime of uploaded file to int64: %v", err)
+		}
+		parsedEndTime, err := strconv.ParseInt(codeEndTime, 10, 64)
+		if err != nil {
+			return http.StatusBadRequest, fmt.Errorf("error converting EndTime of uploaded file to int64: %v", err)
+		}
+
+		// Separar el prefijo del contenido Base64
+		prefix := "data:text/csv;base64,"
+		if !strings.HasPrefix(base64Data, prefix) {
+			return http.StatusInternalServerError, fmt.Errorf("Input data is not in the expected format")
+		}
+
+		// Eliminar el prefijo
+		encodedData := strings.TrimPrefix(base64Data, prefix)
+
+		// Decode encodedData
+		data, err := base64.StdEncoding.DecodeString(encodedData)
+		if err != nil {
+			return http.StatusInternalServerError, fmt.Errorf("error decoding Base64Data: %v", err)
+		}
+
+		// Crear un archivo CSV
+		datasetPath := dataLabeledPath + fileName
+		datasetFilePath, err := os.Create(datasetPath)
+		if err != nil {
+			return http.StatusInternalServerError, fmt.Errorf("error savin the uploaded dataset file: %v", err)
+		}
+		defer datasetFilePath.Close()
+
+		// Write the data in the file
+		_, err = datasetFilePath.Write(data)
+		if err != nil {
+			fmt.Printf("Error writing to file: %v\n", err)
+			return http.StatusInternalServerError, fmt.Errorf("error writing the data in the dataset: %v", err)
+		}
+
+		// Setting returned values
+		*datasetFile = fileName
+		*selectedDatasetFile = *datasetFile
+		*baseName = BuildBaseName(eventID, nfType, targetPeriod)
+		*nameId = BuildNameID(parsedStartTime, parsedEndTime)
+	}
 
 	return 0, nil
 }
@@ -476,10 +560,10 @@ func ProcessingDataForNfLoad(datasetFile *string, selectedDatasetFile *string, b
 	dataProcessedPath := util.NwdafDefaultDataProcessedPath
 	dataLabeledPath := util.NwdafDefaultDataLabeledPath
 	// Build the datasetName
-	*baseName = fmt.Sprintf("%s_%s_%ds", eventID, nfType, targetPeriod)
-	*nameId = fmt.Sprintf("%d_%d", startTimeSeconds, currentTimeSeconds)
-	baseNameDataset := fmt.Sprintf("dataset_%s", *baseName)
-	*datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, *nameId)
+	*baseName = BuildBaseName(eventID, nfType, targetPeriod)
+	*nameId = BuildNameID(startTimeSeconds, currentTimeSeconds)
+	baseNameDataset := BuildBaseNameDataset(*baseName)
+	*datasetFile = BuildDatasetFileName(baseNameDataset, *nameId)
 
 	// Select a suitable dataset
 	*selectedDatasetFile = *datasetFile
@@ -492,8 +576,8 @@ func ProcessingDataForNfLoad(datasetFile *string, selectedDatasetFile *string, b
 			*selectedDatasetFile = fmt.Sprintf("%s_%d_%d.csv", baseNameDataset, idSeconds.Start, idSeconds.End)
 			logger.MlModelTrainingLog.Warnf("Selected Dataset for (%s): %s", *datasetFile, *selectedDatasetFile)
 			// Set de dataset name for the data
-			*nameId = fmt.Sprintf("%d_%d", idSeconds.Start, currentTimeSeconds)
-			*datasetFile = fmt.Sprintf("%s_%s.csv", baseNameDataset, *nameId)
+			*nameId = BuildNameID(idSeconds.Start, currentTimeSeconds)
+			*datasetFile = BuildDatasetFileName(baseNameDataset, *nameId)
 		}
 	}
 
@@ -549,4 +633,25 @@ func TrainingModelForNfLoad(baseName string, nameId string, datasetFile string) 
 	}
 
 	return 0, nil
+}
+
+func BuildBaseName(eventID models.EventId, nfType models.NfType, targetPeriod int64) string {
+	return fmt.Sprintf("%s_%s_%ds", eventID, nfType, targetPeriod)
+}
+
+func BuildNameID(startTimeSeconds int64, endTimeSeconds int64) string {
+	return fmt.Sprintf("%d_%d", startTimeSeconds, endTimeSeconds)
+}
+
+func BuildBaseNameDataset(baseName string) string {
+	return fmt.Sprintf("dataset_%s", baseName)
+}
+
+func BuildDatasetFileName(baseNameDataset string, nameId string) string {
+	return fmt.Sprintf("%s_%s.csv", baseNameDataset, nameId)
+}
+
+func TrimDatasetFileName(file string) []string {
+	fileName := strings.TrimSuffix(file, ".csv")
+	return strings.Split(fileName, "_")
 }
