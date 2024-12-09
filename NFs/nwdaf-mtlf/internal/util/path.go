@@ -20,4 +20,5 @@ var (
 	NwdafDefaultMenUsageFile             = "memUsage.json"
 	NwdafDefaultCpuUsageFile             = "cpuUsage.json"
 	NwdafDefaultTotalThroughputFile      = "totalThroughput.json"
+	NwdafDefaultDatasetBase64Prefix      = "data:text/csv;base64,"
 )

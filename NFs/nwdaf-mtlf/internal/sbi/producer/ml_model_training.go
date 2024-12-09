@@ -2,6 +2,7 @@ package producer
 
 import (
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,11 +33,11 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 	nwdafMlTrainingReq, ok := request.Body.(models.NwdafMlModelTrainingRequest)
 	if !ok {
 		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusBadRequest,
 			Detail: "The request body is't type NwdafMlModelTrainingRequest",
 		}
 		logger.MlModelTrainingLog.Errorf(problemDetails.Detail)
-		return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+		return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 	}
 
 	putData, created, problemDetails := MlModelTrainingNfLoadProcedure(nwdafMlTrainingReq)
@@ -48,12 +49,12 @@ func HandleMlModelTrainingNfLoadMetric(request *httpwrapper.Request) (response *
 	}
 
 	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Detail: "UNSPECIFIED",
+		Status: http.StatusBadRequest,
+		Detail: "Ml model Training failed, Error: UNSPECIFIED",
 	}
 
-	logger.MlModelTrainingLog.Error("Ml model Training failed")
-	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	logger.MlModelTrainingLog.Error(problemDetails.Detail)
+	return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 }
 
 func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingRequest) (models.MlModelTrainingResponse, bool, *models.ProblemDetails) {
@@ -95,7 +96,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 				Status: statusGettingData,
 				Detail: errGettingData.Error(),
 			}
-			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 			return models.MlModelTrainingResponse{}, false, problemDetails
 		}
 
@@ -106,7 +107,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 				Status: statusProcessingData,
 				Detail: errProcessingData.Error(),
 			}
-			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 			return models.MlModelTrainingResponse{}, false, problemDetails
 		}
 		logger.MlModelTrainingLog.Infof("Data processing completed and saved in: %s", dataLabeledPath+datasetFile)
@@ -119,7 +120,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 				Status: statusGettingData,
 				Detail: errGettingData.Error(),
 			}
-			logger.MlModelTrainingLog.Error(problemDetails.Detail)
+			// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 			return models.MlModelTrainingResponse{}, false, problemDetails
 		}
 	}
@@ -132,7 +133,7 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 			Status: statusTrainingModel,
 			Detail: errTrainingModel.Error(),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
+		// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	logger.MlModelTrainingLog.Infoln("Ml Model Training completed")
@@ -142,10 +143,10 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	errLoadModel := loadMlmodelInfoFromJson(&mlModelCreated, dataPath+util.NwdafDefaultModelInfoFile)
 	if errLoadModel != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusBadRequest,
 			Detail: "Error getting saved model information: " + errLoadModel.Error(),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
+		// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -153,10 +154,10 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	imageBytes, errGettingFigure := os.ReadFile(mlModelCreated.FigureURI)
 	if errGettingFigure != nil {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusBadRequest,
 			Detail: "Error getting the saved figure: " + errGettingFigure.Error(),
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
+		// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 	// Encode the figure
@@ -188,10 +189,10 @@ func MlModelTrainingNfLoadProcedure(mlTrainingReq models.NwdafMlModelTrainingReq
 	mlModelSaveResponse, saved, errSave := util.SaveMlModelProcedure(mlModelInfo)
 	if !saved || len(mlModelSaveResponse.MlModels) <= 0 {
 		problemDetails := &models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusBadRequest,
 			Detail: "Error saving the Ml Model in  the DB: " + errSave.Detail,
 		}
-		logger.MlModelTrainingLog.Error(problemDetails.Detail)
+		// logger.MlModelTrainingLog.Error(problemDetails.Detail)
 		return models.MlModelTrainingResponse{}, false, problemDetails
 	}
 
@@ -326,7 +327,7 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 
 	mlmodeldata, ok := request.Body.(models.MlModelData)
 	if !ok {
-		return httpwrapper.NewResponse(http.StatusForbidden, nil, "The request body is't type MlModelData")
+		return httpwrapper.NewResponse(http.StatusUnprocessableEntity, nil, "The request body is't type MlModelData")
 	}
 
 	putData, created, problemDetails := util.SaveMlModelProcedure(mlmodeldata)
@@ -339,11 +340,11 @@ func HandleSaveMlModel(request *httpwrapper.Request) *httpwrapper.Response {
 	}
 
 	problemDetails = &models.ProblemDetails{
-		Status: http.StatusForbidden,
-		Detail: "UNSPECIFIED",
+		Status: http.StatusBadRequest,
+		Detail: "SaveMlModel failed, error: UNSPECIFIED",
 	}
-	logger.MlModelTrainingLog.Error("SaveMlModel failed")
-	return httpwrapper.NewResponse(http.StatusForbidden, nil, problemDetails)
+	logger.MlModelTrainingLog.Error(problemDetails.Detail)
+	return httpwrapper.NewResponse(int(problemDetails.Status), nil, problemDetails)
 }
 
 func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, currentTime time.Time) (int32, error) {
@@ -367,13 +368,13 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 
 	NrfUri := factory.NwdafConfig.Configuration.NrfUri
 	if NrfUri == "" {
-		return http.StatusInternalServerError, errors.New("NrfUri is not set")
+		return http.StatusBadRequest, errors.New("NrfUri is not set")
 	}
 
 	// Running Pods
 	runningPods, errPods := pcm.GetRunningPods(instancek8s, namespace, "", currentTime, pcmUri)
 	if errPods != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error getting running pods from Packet Capture module: %s", errPods.Error())
+		return http.StatusBadRequest, fmt.Errorf("error getting running pods from Packet Capture module: %s", errPods.Error())
 	}
 
 	param := Nnrf_NFDiscovery.SearchNFInstancesParamOpts{
@@ -384,7 +385,7 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	// Search all NF instances
 	err := consumer.SearchAllNfInstance(&nfInstances, NrfUri, nfType, models.NfType_NWDAF, param)
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error getting %s NfInstances: %s", nfType, err.Error())
+		return http.StatusBadRequest, fmt.Errorf("error getting %s NfInstances: %s", nfType, err.Error())
 	}
 
 	if len(nfInstances) <= 0 {
@@ -413,7 +414,7 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	memLimit, errLimMem := pcm.GetResourceLimit(namespace, podName, containerName, pcm_models.PrometheusUnit_BYTE, currentTime, pcmUri)
 
 	if errCpu != nil || errMem != nil || errLimCpu != nil || errLimMem != nil || errtotalThrougput != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem)
+		return http.StatusBadRequest, fmt.Errorf("error getting data from Packet capture module: %s, %s, %s, %s", errCpu, errMem, errLimCpu, errLimMem)
 	}
 
 	logger.MlModelTrainingLog.Info("Saving data")
@@ -427,7 +428,7 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	pathCpuUsage := dataRawPath + cpuUsageFile
 	errToCsvCpu := nwdaf_util.SaveToJson(pathCpuUsage, cpuUsageAverageRange)
 	if errToCsvCpu != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvCpu)
+		return http.StatusBadRequest, fmt.Errorf("error: %s", errToCsvCpu)
 	} else {
 		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathCpuUsage, len(cpuUsageAverageRange))
 	}
@@ -436,7 +437,7 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	pathMemUsage := dataRawPath + menUsageFile
 	errToCsvMem := nwdaf_util.SaveToJson(pathMemUsage, memUsageAverageRange)
 	if errToCsvMem != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvMem)
+		return http.StatusBadRequest, fmt.Errorf("error: %s", errToCsvMem)
 	} else {
 		logger.MlModelTrainingLog.Infof("MemUsage saved in %s (%d rows)", pathMemUsage, len(memUsageAverageRange))
 	}
@@ -445,7 +446,7 @@ func GetDataForNfLoadFromPcm(reqMlData models.NwdafMlModelTrainingRequest, curre
 	pathTotalThroughput := dataRawPath + totalThroughputFile
 	errToCsvThroughput := nwdaf_util.SaveToJson(pathTotalThroughput, totalThroughputRange)
 	if errToCsvThroughput != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error: %s", errToCsvThroughput)
+		return http.StatusBadRequest, fmt.Errorf("error: %s", errToCsvThroughput)
 	} else {
 		logger.MlModelTrainingLog.Infof("CpuUsage saved in %s (%d rows)", pathTotalThroughput, len(totalThroughputRange))
 	}
@@ -497,9 +498,9 @@ func GetDataForNfLoadFromUploadedFile(datasetFile *string, selectedDatasetFile *
 		}
 
 		// Separar el prefijo del contenido Base64
-		prefix := "data:text/csv;base64,"
+		prefix := util.NwdafDefaultDatasetBase64Prefix
 		if !strings.HasPrefix(base64Data, prefix) {
-			return http.StatusInternalServerError, fmt.Errorf("Input data is not in the expected format")
+			return http.StatusBadRequest, fmt.Errorf("the input data is not in the expected format: %s", prefix)
 		}
 
 		// Eliminar el prefijo
@@ -508,22 +509,36 @@ func GetDataForNfLoadFromUploadedFile(datasetFile *string, selectedDatasetFile *
 		// Decode encodedData
 		data, err := base64.StdEncoding.DecodeString(encodedData)
 		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("error decoding Base64Data: %v", err)
+			return http.StatusBadRequest, fmt.Errorf("error decoding Base64Data: %v", err)
 		}
 
 		// Crear un archivo CSV
 		datasetPath := dataLabeledPath + fileName
 		datasetFilePath, err := os.Create(datasetPath)
 		if err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("error savin the uploaded dataset file: %v", err)
+			return http.StatusBadRequest, fmt.Errorf("error savin the uploaded dataset file: %v", err)
 		}
 		defer datasetFilePath.Close()
 
 		// Write the data in the file
 		_, err = datasetFilePath.Write(data)
 		if err != nil {
-			fmt.Printf("Error writing to file: %v\n", err)
-			return http.StatusInternalServerError, fmt.Errorf("error writing the data in the dataset: %v", err)
+			return http.StatusBadRequest, fmt.Errorf("error writing the data in the dataset: %v", err)
+		}
+
+		// Required columns
+		requiredColumns := []string{string(models.MlModelDatasetCommonColumn_NAMESPACE),
+			string(models.MlModelDatasetCommonColumn_POD),
+			string(models.MlModelDatasetCommonColumn_CONTAINER),
+			string(models.MlModelDatasetCommonColumn_TIMESTAMP),
+			string(pcm_models.MetricType_CPU_USAGE_AVERAGE),
+			string(pcm_models.MetricType_MEMORY_USAGE_AVERAGE),
+			string(pcm_models.MetricType_TOTAL_THROUGPUT_AVERAGE)}
+
+		// Validate the dataset columns
+		err = ValidateCSVColumns(datasetPath, requiredColumns)
+		if err != nil {
+			return http.StatusBadRequest, fmt.Errorf("the dataset doesn't have the required columns %v: %s", requiredColumns, err.Error())
 		}
 
 		// Setting returned values
@@ -534,6 +549,45 @@ func GetDataForNfLoadFromUploadedFile(datasetFile *string, selectedDatasetFile *
 	}
 
 	return 0, nil
+}
+
+func ValidateCSVColumns(filePath string, requiredColumns []string) error {
+	// Open teh dataset
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("error opening the dataset: %v", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+
+	// Get the header
+	header, err := reader.Read()
+	if err != nil {
+		return fmt.Errorf("error reading CSV header: %v", err)
+	}
+
+	// Verify the required columns
+	missingColumns := []string{}
+	for _, col := range requiredColumns {
+		found := false
+		for _, headerCol := range header {
+			if col == headerCol {
+				found = true
+				break
+			}
+		}
+		if !found {
+			missingColumns = append(missingColumns, col)
+		}
+	}
+
+	// Return the mising required columns
+	if len(missingColumns) > 0 {
+		return fmt.Errorf("missing required columns: %v", missingColumns)
+	}
+
+	return nil
 }
 
 func ProcessingDataForNfLoad(datasetFile *string, selectedDatasetFile *string, baseName *string, nameId *string, reqMlData models.NwdafMlModelTrainingRequest, currentTime time.Time) (int32, error) {
@@ -591,7 +645,7 @@ func ProcessingDataForNfLoad(datasetFile *string, selectedDatasetFile *string, b
 	// Get the output and error
 	outputProcess, errProcess := cmd.CombinedOutput()
 	if errProcess != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error processing data to Ml Model Training. %s", string(outputProcess))
+		return http.StatusBadRequest, fmt.Errorf("error processing data to Ml Model Training. %s", string(outputProcess))
 	}
 
 	return 0, nil
@@ -626,7 +680,7 @@ func TrainingModelForNfLoad(baseName string, nameId string, datasetFile string) 
 	// Get the output and error
 	outputTraining, errTraining := cmdTraining.CombinedOutput()
 	if errTraining != nil {
-		return http.StatusInternalServerError, fmt.Errorf("error in Ml Model Training. %s", string(outputTraining))
+		return http.StatusBadRequest, fmt.Errorf("error in Ml Model Training. %s", string(outputTraining))
 	}
 	if strings.TrimSpace(string(outputTraining)) != "" {
 		logger.MlModelTrainingLog.Warn(string(outputTraining))

@@ -47,11 +47,11 @@ func HTTPSaveMlModel(c *gin.Context) {
 	if err != nil {
 		logger.MlModelTrainingLog.Errorln(err)
 		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusUnprocessableEntity,
 			Cause:  "SYSTEM_FAILURE",
 			Detail: err.Error(),
 		}
-		c.JSON(http.StatusInternalServerError, problemDetails)
+		c.JSON(http.StatusUnprocessableEntity, problemDetails)
 	} else {
 		c.Data(httpResponse.Status, "application/json", responseBody)
 	}

@@ -29,17 +29,17 @@ func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 			Detail: err.Error(),
 			Cause:  "SYSTEM_FAILURE",
 		}
-		c.JSON(http.StatusInternalServerError, problemDetails)
+		c.JSON(http.StatusBadRequest, problemDetails)
 		return
 	}
 
 
 
-	logger.MlModelTrainingLog.Warn("After Get Request Body")
+	// logger.MlModelTrainingLog.Warn("After Get Request Body")
 
 	// Deserialize Request Body
 	err = openapi.Deserialize(&mlModelTrainingRequest, requestBody, "application/json")
-	logger.MlModelTrainingLog.Warn(mlModelTrainingRequest, " error: ", err)
+	// logger.MlModelTrainingLog.Warn(mlModelTrainingRequest, " error: ", err)
 
 	if err != nil {
 		problemDetail := "[Request Body] " + err.Error()
@@ -53,7 +53,7 @@ func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 		return
 	}
 
-	logger.MlModelTrainingLog.Warn("After Deserialize Request Body")
+	// logger.MlModelTrainingLog.Warn("After Deserialize Request Body")
 
 	// Initialize validater
 	validate := validator.New()
@@ -96,18 +96,18 @@ func HTTPNwdafMlModelTrainingRequest(c *gin.Context) {
 	} else {
 		bodyMessage := fmt.Sprintf("The eventId %s is not implemented", analyticsID)
 		rsp = httpwrapper.NewResponse(http.StatusNotImplemented, nil, bodyMessage)
-		logger.MlModelTrainingLog.Warnf(bodyMessage)
+		// logger.MlModelTrainingLog.Warnf(bodyMessage)
 	}
 
 	responseBody, err := openapi.Serialize(rsp.Body, "application/json")
 	if err != nil {
 		logger.MlModelTrainingLog.Errorln(err)
 		problemDetails := models.ProblemDetails{
-			Status: http.StatusInternalServerError,
+			Status: http.StatusUnprocessableEntity,
 			Cause:  "SYSTEM_FAILURE",
 			Detail: err.Error(),
 		}
-		c.JSON(http.StatusInternalServerError, problemDetails)
+		c.JSON(http.StatusUnprocessableEntity, problemDetails)
 	} else {
 		c.Data(rsp.Status, "application/json", responseBody)
 	}
