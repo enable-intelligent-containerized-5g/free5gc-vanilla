@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/antonfisher/nested-logrus-formatter v1.3.1
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
-	github.com/enable-intelligent-containerized-5g/openapi v1.0.41
+	github.com/enable-intelligent-containerized-5g/openapi v1.0.42
 	github.com/free5gc/util v1.0.3
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.9.1
@@ -21,4 +21,4 @@ require (
 	gorm.io/gorm v1.25.12
 )
 
-replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
+// replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi

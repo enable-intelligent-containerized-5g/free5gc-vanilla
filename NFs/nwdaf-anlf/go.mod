@@ -19,7 +19,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/enable-intelligent-containerized-5g/openapi v1.0.41
+require github.com/enable-intelligent-containerized-5g/openapi v1.0.42
 
 require (
 	github.com/antihax/optional v1.0.0 // indirect
@@ -68,4 +68,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi
+// replace github.com/enable-intelligent-containerized-5g/openapi => ../../../openapi

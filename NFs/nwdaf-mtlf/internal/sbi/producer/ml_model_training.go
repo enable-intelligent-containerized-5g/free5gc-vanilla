@@ -16,7 +16,7 @@ import (
 
 	"github.com/enable-intelligent-containerized-5g/openapi/Nnrf_NFDiscovery"
 	pcm "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule"
-	pcm_models "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule/models"
+	pcm_models "github.com/enable-intelligent-containerized-5g/openapi/PacketCaptureModule/pcm_models"
 	"github.com/enable-intelligent-containerized-5g/openapi/models"
 	nwdaf_util "github.com/enable-intelligent-containerized-5g/openapi/nwdaf/util"
 	"github.com/free5gc/nwdaf/internal/logger"
