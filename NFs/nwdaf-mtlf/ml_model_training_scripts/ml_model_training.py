@@ -4,8 +4,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
-# from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+# from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 
@@ -54,8 +54,8 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     X_train, X_test, y_train, y_test = train_test_split(X.reshape(X.shape[0], -1), y, test_size=test_size, random_state=42)
 
     # Create the model
-    # rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
-    ml_model = LinearRegression()
+    ml_model = RandomForestRegressor(n_estimators=100, random_state=42)
+    # ml_model = LinearRegression()
 
     # Train the model
     ml_model.fit(X_train, y_train)
@@ -65,10 +65,10 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
     ##################################################################
 
     # Info
-    # name = "RFR"
-    # large_name = 'Random Forest Regressor'
-    name = "LR"
-    large_name = 'Linear Regressor'
+    name = "RF"
+    large_name = 'Random Forest'
+    # name = "LR"
+    # large_name = 'Linear Regressor'
        
     # Make the predictions
     y_pred = ml_model.predict(X_test)

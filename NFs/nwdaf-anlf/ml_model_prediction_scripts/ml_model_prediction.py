@@ -46,7 +46,7 @@ def nf_load_prediction(data_path, dataset_path, prediction_file, selected_model_
     
     
     ##################################################################
-    ###           Load Ramdom Forest Regresos Ml Model             ###
+    ###           Load Random Forest Regresor Ml Model             ###
     ##################################################################
     
     try:
