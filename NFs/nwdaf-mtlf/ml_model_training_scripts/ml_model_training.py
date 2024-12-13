@@ -1,4 +1,4 @@
-import sys, csv, joblib, os, json
+import sys, csv, joblib, os, json, math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -106,7 +106,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
             [min(y_test_invertido[:, 0]), max(y_test_invertido[:, 0])], color='red', linestyle='--', label='CPU reference line')
     ax1.set_xlabel('Real CPU Usage')
     ax1.set_ylabel('Predicted CPU Usage')
-    ax1.set_title(f'CPU Predictions (MSE: {mse_cpu:.4f}, R²: {r2_cpu:.4f})')
+    ax1.set_title(f'CPU Predictions (RMSE: {math.sqrt(mse_cpu):.7f}, R²: {r2_cpu:.4f})')
     ax1.legend()
     ax1.grid(True)
     # Memory graph
@@ -115,7 +115,7 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
             [min(y_test_invertido[:, 1]), max(y_test_invertido[:, 1])], color='orange', linestyle='--', label='Memory reference line')
     ax2.set_xlabel('Real Memory Usage')
     ax2.set_ylabel('Predicted Memory Usage')
-    ax2.set_title(f'Memory Predictions (MSE: {mse_mem:.4f}, R²: {r2_mem:.4f})')
+    ax2.set_title(f'Memory Predictions (RMSE: {math.sqrt(mse_mem):.7f}, R²: {r2_mem:.4f})')
     ax2.legend()
     ax2.grid(True)
     # Througput graph
@@ -124,12 +124,12 @@ def ml_model_training(models_path, data_path, figures_path, dataset_path, model_
             [min(y_test_invertido[:, 2]), max(y_test_invertido[:, 2])], color='orange', linestyle='--', label='Throughput reference line')
     ax3.set_xlabel('Real Throughput')
     ax3.set_ylabel('Predicted Throughput')
-    ax3.set_title(f'Throughput Predictions (MSE: {mse_thrpt:.4f}, R²: {r2_thrpt:.4f})')
+    ax3.set_title(f'Throughput Predictions (RMSE: {math.sqrt(mse_thrpt):.3f}, R²: {r2_thrpt:.4f})')
     ax3.legend()
     ax3.grid(True)
 
     # Title
-    fig.suptitle(f'{large_name} ({name}) model\nMSE: {mse:.4f}, R²: {r2:.4f}', fontsize=14)
+    fig.suptitle(f'{large_name} ({name}) model\nRMSE: {math.sqrt(mse):.3f}, R²: {r2:.4f}', fontsize=14)
     # Adjust the graphs
     plt.tight_layout(pad=0.8) 
     # Show plot
