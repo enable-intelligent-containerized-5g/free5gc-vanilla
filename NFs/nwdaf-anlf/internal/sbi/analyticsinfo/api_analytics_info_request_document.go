@@ -125,11 +125,11 @@ func HTTPNwdafAnalyticsInfoRequest(c *gin.Context) {
 // isValidNfInstanceIdsOrNfTypes verifica si el NfInstanceIds o NfTypes
 func isValidNfInstanceIdsOrNfTypes(nfInstanceIds []string, nfTypes []models.NfType) (typePayload models.TypePayloadRequest, err error) {
 	if nfInstanceIds == nil && nfTypes== nil {
-		err = errors.New("please provide a valid NfInstanceIds or NfTypes")
+		err = errors.New("please provide a valid NfInstanceIds or NfTypes (nil)")
 	}
 
 	if len(nfInstanceIds) == 0 && len(nfTypes) == 0 {
-		err = errors.New("please provide a valid NfInstanceIds or NfTypes")
+		err = errors.New("please provide a valid NfInstanceIds or NfTypes (empty)")
 	}
 
 	if len(nfTypes) > 0 {

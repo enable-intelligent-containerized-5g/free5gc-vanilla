@@ -601,10 +601,10 @@ func filterNfInstancesWithIpDuplicate(nfInstances *[]models.NfProfile) (mlNfProf
 
 	// Filter the NfInstances
 	for _, instance := range *nfInstances {
-		if _, exists := ipTracker[instance.Ipv4Addresses[0]]; !exists {
+		if _, exists := ipTracker[instance.NfInstanceId]; !exists {
 			// If no exits IP ADD instance
 			mlNfProfileFiltered = append(mlNfProfileFiltered, instance)
-			ipTracker[instance.Ipv4Addresses[0]] = true
+			ipTracker[instance.NfInstanceId] = true
 		}
 	}
 
