@@ -21,4 +21,5 @@ var (
 	NwdafDefaultCpuUsageFile             = "cpuUsage.json"
 	NwdafDefaultTotalThroughputFile      = "totalThroughput.json"
 	NwdafDefaultDatasetBase64Prefix      = "data:text/csv;base64,"
+	NwdafDefaultDatasetNameFormat        = "dataset_NF_LOAD_AMF_60s_1733802540_1733828626.csv"
 )

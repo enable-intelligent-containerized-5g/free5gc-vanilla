@@ -546,6 +546,8 @@ func GetDataForNfLoadFromUploadedFile(datasetFile *string, selectedDatasetFile *
 		*selectedDatasetFile = *datasetFile
 		*baseName = BuildBaseName(eventID, nfType, targetPeriod)
 		*nameId = BuildNameID(parsedStartTime, parsedEndTime)
+	} else {
+		return http.StatusBadRequest, fmt.Errorf("the dataset name doesn't have the required format: %s", util.NwdafDefaultDatasetNameFormat)
 	}
 
 	return 0, nil
