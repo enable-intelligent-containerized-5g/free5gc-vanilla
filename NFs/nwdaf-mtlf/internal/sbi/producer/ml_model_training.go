@@ -682,7 +682,7 @@ func TrainingModelForNfLoad(baseName string, nameId string, datasetFile string) 
 	// Get the output and error
 	outputTraining, errTraining := cmdTraining.CombinedOutput()
 	if errTraining != nil {
-		return http.StatusBadRequest, fmt.Errorf("error in Ml Model Training. %s", string(outputTraining))
+		return http.StatusBadRequest, fmt.Errorf("error in Ml Model Training. %s: %s", string(outputTraining), errTraining.Error())
 	}
 	if strings.TrimSpace(string(outputTraining)) != "" {
 		logger.MlModelTrainingLog.Warn(string(outputTraining))
